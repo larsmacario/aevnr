@@ -179,9 +179,6 @@ export function OnboardingWizard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <AppLogo size={32} />
-            <div style={{ fontFamily: M.label, fontWeight: 700, fontSize: 18, letterSpacing: 0.3, lineHeight: 1.1 }}>
-              {APP_NAME}
-            </div>
           </div>
           <div style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>
             Schritt {step + 1} von {stepsCount}
@@ -233,9 +230,6 @@ export function OnboardingWizard() {
         {/* STEP 1: Name & Begrüßung */}
         {step === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-              <AppLogo size={72} />
-            </div>
             <h1 style={{ fontFamily: M.numeric, fontSize: 32, fontWeight: 800, margin: 0, letterSpacing: 0.5 }}>
               Willkommen bei {APP_NAME}!
             </h1>

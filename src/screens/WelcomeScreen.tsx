@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { PhoneShell } from "../components/PhoneShell";
 import { AppLogo } from "../components/AppLogo";
-import { WelcomeHero } from "../components/WelcomeHero";
 import { APP_NAME, displayStyle, M } from "../theme";
 import { MButton } from "../components/MButton";
 
@@ -20,26 +19,23 @@ type WelcomeScreenProps = {
 
 function SlideBrand() {
   return (
-    <>
-      <WelcomeHero size={220} />
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginTop: 8 }}>
-        <div style={{ ...displayStyle(56), color: M.fg, textAlign: "center", letterSpacing: "-0.02em" }}>{APP_NAME}</div>
-        <p
-          style={{
-            margin: 0,
-            fontFamily: M.body,
-            fontWeight: 500,
-            fontSize: 16,
-            color: M.mut,
-            textAlign: "center",
-            maxWidth: 280,
-            lineHeight: 1.45,
-          }}
-        >
-          Dein Begleiter für Training, Erholung und langfristige Gesundheit.
-        </p>
-      </div>
-    </>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+      <AppLogo size={56} />
+      <p
+        style={{
+          margin: 0,
+          fontFamily: M.body,
+          fontWeight: 500,
+          fontSize: 16,
+          color: M.mut,
+          textAlign: "center",
+          maxWidth: 280,
+          lineHeight: 1.45,
+        }}
+      >
+        Dein Begleiter für Training, Erholung und langfristige Gesundheit.
+      </p>
+    </div>
   );
 }
 
