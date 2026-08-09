@@ -128,7 +128,7 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
         }}
       >
         {loading && <div style={{ color: M.mut, fontSize: 14 }}>Übungen werden geladen…</div>}
-        {error && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && filtered.length === 0 && (
           <div style={{ color: M.mut, fontSize: 14, textAlign: "center", marginTop: 24 }}>
             Keine Übungen gefunden.
@@ -158,8 +158,8 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
                         style={{
                           flex: 1,
                           minWidth: 0,
-                          fontFamily: M.disp,
-                          fontWeight: 700,
+                          fontFamily: M.display,
+                          fontWeight: 400,
                           fontSize: EXERCISE_ROW.titleSize,
                           lineHeight: 1.2,
                           color: M.fg,

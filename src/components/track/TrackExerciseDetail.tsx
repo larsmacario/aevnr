@@ -59,7 +59,7 @@ export function TrackExerciseDetail({
           style={{
             justifySelf: "center",
             textAlign: "center",
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 22,
             fontVariantNumeric: "tabular-nums",

@@ -87,7 +87,7 @@ export function UserAvatar({
   const initialContent = (
     <span
       style={{
-        fontFamily: M.disp,
+        fontFamily: M.numeric,
         fontWeight: 700,
         color: M.acc,
         fontSize,

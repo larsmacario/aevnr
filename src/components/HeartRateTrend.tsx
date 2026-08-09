@@ -105,7 +105,7 @@ export function HeartRateTrend({
       flexShrink: 0,
     };
     const bpmValueStyle: React.CSSProperties = {
-      fontFamily: M.disp,
+      fontFamily: M.numeric,
       fontWeight: 700,
       fontSize: 36,
       lineHeight: 1,
@@ -136,7 +136,7 @@ export function HeartRateTrend({
                 variant="secondary"
                 size="sm"
                 onClick={onConnect}
-                style={{ marginLeft: "auto", flexShrink: 0, fontFamily: M.disp, letterSpacing: 0.3 }}
+                style={{ marginLeft: "auto", flexShrink: 0, fontFamily: M.numeric, letterSpacing: 0.3 }}
               >
                 <Icon name="heart" size={14} color={M.fg} /> Verbinden
               </MButton>
@@ -248,7 +248,7 @@ export function HeartRateTrend({
           </div>
           <div
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: liveFontSize,
               lineHeight: 1,
@@ -377,7 +377,7 @@ export function HeartRateTrend({
           size="sm"
           fullWidth
           onClick={onConnect}
-          style={{ marginTop: 10, fontFamily: M.disp, letterSpacing: 0.4 }}
+          style={{ marginTop: 10, fontFamily: M.numeric, letterSpacing: 0.4 }}
         >
           <Icon name="heart" size={14} color={M.fg} /> Sensor verbinden
         </MButton>

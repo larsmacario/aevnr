@@ -27,7 +27,7 @@ export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: Plans
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenHeader>
         <div>
-          <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Pläne</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Pläne</div>
           <div style={{ fontSize: 14, color: M.mut, marginTop: 3, fontWeight: 600 }}>
             {loading && list.length === 0
               ? "…"
@@ -43,7 +43,7 @@ export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: Plans
         {loading && list.length === 0 && (
           <div style={{ color: M.mut, fontSize: 14 }}>Pläne werden geladen…</div>
         )}
-        {error && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && list.length === 0 && (
           <div style={{ color: M.mut, fontSize: 14, textAlign: "center", marginTop: 24 }}>
             Noch keine Trainingspläne. Erstelle deinen ersten mit +.
@@ -74,7 +74,7 @@ export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: Plans
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <div
                     style={{
-                      fontFamily: M.disp,
+                      fontFamily: M.label,
                       fontWeight: 700,
                       fontSize: 20,
                       lineHeight: 1.1,

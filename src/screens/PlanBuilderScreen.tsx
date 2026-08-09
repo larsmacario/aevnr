@@ -414,7 +414,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
         trailing={<span style={{ width: 32 }} aria-hidden />}
       />
 
-      {error && <div style={{ padding: "0 22px 8px", color: "#ff8a8a", fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ padding: "0 22px 8px", color: M.danger, fontSize: 13 }}>{error}</div>}
 
       <div style={{ padding: "0 22px 8px" }}>
         <input
@@ -422,7 +422,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
           onChange={(e) => setName(e.target.value)}
           style={{
             width: "100%",
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 30,
             lineHeight: 1,
@@ -465,7 +465,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
               style={{
                 border: "1.5px dashed " + M.line,
                 color: M.fg,
-                fontFamily: M.disp,
+                fontFamily: M.label,
                 letterSpacing: 0.4,
               }}
             >
@@ -663,7 +663,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
       >
         {configExercise && (
           <>
-            <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 4 }}>{configExercise.name}</div>
+            <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 4 }}>{configExercise.name}</div>
             <div style={{ color: M.mut, fontSize: 13, marginBottom: 12 }}>
               {configExercise.blockType === "metcon"
                 ? (configExercise.displayNote ?? formatSetSummary(configExercise.setRows, configExercise.metric))
@@ -689,7 +689,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
               variant="ghost"
               size="sm"
               fullWidth
-              style={{ marginTop: 16, color: "#ff8a8a" }}
+              style={{ marginTop: 16, color: M.danger }}
             >
               Übung entfernen
             </MButton>

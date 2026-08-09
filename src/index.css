@@ -11,26 +11,24 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #141414;
-  color: #fafafa;
+  background: #ffffff;
+  color: #18181b;
   font-family: "Archivo", system-ui, sans-serif;
   overscroll-behavior: none;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 #root {
   height: 100%;
 }
 
-/* Monochrome premium accent + logo brand green (highlights only). */
 :root {
-  --mom-acc: #fafafa;
-  --mom-brand: #7ef67b;
-  --mom-brand-soft: rgba(126, 246, 123, 0.16);
-  --mom-brand-ink: #0a1a0a;
+  --rh-brand: #18181b;
+  --rh-brand-soft: rgba(24, 24, 27, 0.06);
+  --rh-brand-ink: #ffffff;
+  --rh-acc: #18181b;
 }
 
-/* Muscle priority slider — green thumb dot, 44px touch hit area via padding */
 .muscle-prio-range {
   width: 100%;
   height: 44px;
@@ -44,7 +42,7 @@ body {
 }
 
 .muscle-prio-range:focus-visible {
-  outline: 2px solid var(--mom-brand);
+  outline: 2px solid var(--rh-acc);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -54,10 +52,10 @@ body {
   border-radius: 2px;
   background: linear-gradient(
     to right,
-    var(--mom-brand) 0%,
-    var(--mom-brand) var(--muscle-prio-pct, 50%),
-    rgba(255, 255, 255, 0.11) var(--muscle-prio-pct, 50%),
-    rgba(255, 255, 255, 0.11) 100%
+    var(--rh-acc) 0%,
+    var(--rh-acc) var(--muscle-prio-pct, 50%),
+    rgba(24, 24, 27, 0.10) var(--muscle-prio-pct, 50%),
+    rgba(24, 24, 27, 0.10) 100%
   );
 }
 
@@ -67,9 +65,9 @@ body {
   height: 14px;
   margin-top: -5px;
   border-radius: 50%;
-  background: var(--mom-brand);
-  border: 2px solid #141414;
-  box-shadow: 0 0 0 1px rgba(126, 246, 123, 0.35);
+  background: var(--rh-acc);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(24, 24, 27, 0.14);
 }
 
 .muscle-prio-range::-moz-range-track {
@@ -77,10 +75,10 @@ body {
   border-radius: 2px;
   background: linear-gradient(
     to right,
-    var(--mom-brand) 0%,
-    var(--mom-brand) var(--muscle-prio-pct, 50%),
-    rgba(255, 255, 255, 0.11) var(--muscle-prio-pct, 50%),
-    rgba(255, 255, 255, 0.11) 100%
+    var(--rh-acc) 0%,
+    var(--rh-acc) var(--muscle-prio-pct, 50%),
+    rgba(24, 24, 27, 0.10) var(--muscle-prio-pct, 50%),
+    rgba(24, 24, 27, 0.10) 100%
   );
   border: none;
 }
@@ -89,13 +87,13 @@ body {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--mom-brand);
-  border: 2px solid #141414;
-  box-shadow: 0 0 0 1px rgba(126, 246, 123, 0.35);
+  background: var(--rh-acc);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(24, 24, 27, 0.14);
 }
 
 input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
+  color: #a1a1aa;
 }
 
 button {
@@ -104,7 +102,6 @@ button {
   -webkit-user-select: none;
 }
 
-/* Hide scrollbars but keep scrolling (mobile-app feel). */
 *::-webkit-scrollbar {
   width: 0;
   height: 0;

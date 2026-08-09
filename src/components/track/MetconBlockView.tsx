@@ -119,7 +119,7 @@ export function MetconBlockView({
               fontWeight: 700,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "#f97316",
+              color: M.mut,
             }}
           >
             MetCon · {FORMAT_LABELS[config.format]}
@@ -151,12 +151,12 @@ export function MetconBlockView({
             stroke={12}
             progress={T.kind === "prep" ? 1 - T.segProgress : T.segProgress}
             color={col}
-            track="rgba(255,255,255,.06)"
+            track="M.line2"
             glow={T.running ? col : null}
           >
             <span
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: 13,
                 letterSpacing: 2,
@@ -167,7 +167,7 @@ export function MetconBlockView({
             </span>
             <span
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: 56,
                 lineHeight: 0.95,
@@ -181,7 +181,7 @@ export function MetconBlockView({
             {config.format === "amrap" && T.phase !== "prep" && !T.idle && (
               <span
                 style={{
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontWeight: 600,
                   fontSize: 16,
                   letterSpacing: 1,
@@ -195,7 +195,7 @@ export function MetconBlockView({
             {(config.format === "emom" || config.format === "circuit") && T.phase !== "prep" && !T.idle && (
               <span
                 style={{
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontWeight: 600,
                   fontSize: 14,
                   letterSpacing: 1,
@@ -222,7 +222,7 @@ export function MetconBlockView({
               background: M.brandSoft,
               border: "1px solid " + M.brandBorder,
               color: M.brand,
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: 15,
             }}
@@ -244,7 +244,7 @@ export function MetconBlockView({
                 size="md"
                 fullWidth
                 style={{
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   letterSpacing: 0.5,
                   background: T.running ? M.accSoft : M.card,
                   color: T.running ? M.fg : M.mut2,

@@ -18,7 +18,7 @@ export function TimerSettingsStep({ mode, cfg, setCfg, disabled, onBack, onNext 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minHeight: 0 }}>
       <div style={{ flexShrink: 0 }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, color: M.fg, marginBottom: 6 }}>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, marginBottom: 6 }}>
           Einstellung
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, color: M.mut }}>

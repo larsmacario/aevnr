@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { M } from "../theme";
+import { APP_NAME, M } from "../theme";
 import { useAuth } from "../lib/auth";
 import { useBreakpoint } from "../lib/responsive";
 import { Icon } from "./Icon";
@@ -60,7 +60,7 @@ export function AppSidePanel({
     },
     {
       title: "UEBERBLICK",
-      items: [{ label: "Ueber rephive", onClick: () => runFromMenu(onOpenAbout) }],
+      items: [{ label: `Ueber ${APP_NAME}`, onClick: () => runFromMenu(onOpenAbout) }],
     },
     {
       title: "HILFE",
@@ -146,7 +146,7 @@ export function AppSidePanel({
                   style={{
                     marginTop: 4,
                     color: M.fg,
-                    fontFamily: M.disp,
+                    fontFamily: M.label,
                     fontWeight: 700,
                     fontSize: 22,
                     lineHeight: 1,
@@ -195,10 +195,10 @@ export function AppSidePanel({
                           borderRadius: 10,
                           background: "transparent",
                           color: M.fg,
-                          fontFamily: M.disp,
+                          fontFamily: M.display,
                           fontSize: "clamp(30px, 3.8vw, 42px)",
                           lineHeight: 1,
-                          fontWeight: 700,
+                          fontWeight: 400,
                           cursor: "pointer",
                           textAlign: "left",
                           display: "flex",
@@ -239,10 +239,10 @@ export function AppSidePanel({
                   borderRadius: 10,
                   background: "transparent",
                   color: M.fg,
-                  fontFamily: M.disp,
+                  fontFamily: M.display,
                   fontSize: "clamp(30px, 3.8vw, 42px)",
                   lineHeight: 1,
-                  fontWeight: 700,
+                  fontWeight: 400,
                   cursor: "pointer",
                   textAlign: "left",
                 }}

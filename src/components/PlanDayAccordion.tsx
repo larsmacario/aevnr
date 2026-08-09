@@ -14,7 +14,7 @@ import { SupersetBlock } from "./SupersetBlock";
 const BUILDER_ADD_BUTTON_STYLE = {
   border: "1.5px dashed " + M.line,
   color: M.fg,
-  fontFamily: M.disp,
+  fontFamily: M.numeric,
   letterSpacing: 0.4,
   fontSize: 15,
 } as const;
@@ -78,7 +78,7 @@ function ExerciseList({
               style={
                 flat
                   ? {
-                      background: "rgba(255,255,255,.02)",
+                      background: "M.line2",
                       border: "1px solid " + M.line2,
                     }
                   : undefined
@@ -168,7 +168,7 @@ export function PlanDayExercisePreview({
                     fontSize: 13,
                     fontWeight: 700,
                     letterSpacing: 0.6,
-                    color: "#f97316",
+                    color: M.mut,
                     textTransform: "uppercase",
                   }}
                 >

@@ -62,7 +62,7 @@ export function PlanBlockSection({
             justifyContent: "center",
             background: complete && !skipped ? M.brand : M.brandSoft,
             color: complete && !skipped ? M.brandInk : M.brand,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 16,
             opacity: skipped ? 0.5 : 1,

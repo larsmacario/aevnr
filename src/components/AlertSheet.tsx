@@ -39,7 +39,7 @@ export function AlertSheet({
           <Icon name={icon} size={22} stroke={2.2} color={M.acc} />
         </div>
       )}
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 8, flexShrink: 0 }}>{title}</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 8, flexShrink: 0 }}>{title}</div>
       <div style={{ color: M.mut, fontSize: 14, marginBottom: 18, lineHeight: 1.45, flexShrink: 0 }}>{message}</div>
       <MButton type="button" onClick={onClose} variant="primary" size="md" fullWidth style={{ flexShrink: 0 }}>
         {buttonLabel}

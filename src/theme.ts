@@ -1,43 +1,53 @@
 import type { CSSProperties } from "react";
 
-// rephive — design tokens (charcoal premium, Saira Condensed display / Archivo body).
-export const APP_NAME = "rephive";
+// ÆVNR (Arbeitstitel) — Superpower-style monochrome premium (Paper White, Ink, rationierte Graustufen).
+export const APP_NAME = "ÆVNR";
 /** PWA home-screen label (max. ~12 Zeichen empfohlen). */
-export const APP_NAME_SHORT = "rephive";
-/** App-Logo (Biene, transparent). Favicons bleiben PNG für PWA/OS. */
-export const LOGO_ICON = "/bee-without-bg.svg";
-/** Wordmark mit „YOUR“ in Akzentfarbe. */
-export const LOGO_WORDMARK = "/logo.png";
+export const APP_NAME_SHORT = "ÆVNR";
+/** Geplante Marketing-Domain (Arbeitstitel). */
+export const APP_DOMAIN = "aevos.life";
 
 export const M = {
-  bg: "#141414",
-  panel: "#1c1c1c",
-  card: "#262626",
-  cardHi: "#323232",
-  line: "rgba(255,255,255,.11)",
-  line2: "rgba(255,255,255,.07)",
-  fg: "#fafafa",
-  mut: "rgba(255,255,255,.58)",
-  mut2: "rgba(255,255,255,.32)",
-  acc: "var(--mom-acc, #fafafa)",
-  accSoft: "rgba(255,255,255,.10)",
-  accInk: "#0a0a0a",
-  brand: "var(--mom-brand, #7ef67b)",
-  brandStrong: "#7ef67b",
-  brandSoft: "var(--mom-brand-soft, rgba(126,246,123,.16))",
-  brandInk: "var(--mom-brand-ink, #0a1a0a)",
-  brandBorder: "rgba(126,246,123,.25)",
-  brandButtonGradient: "linear-gradient(180deg, #8ef885 0%, #7ef67b 45%, #6de066 100%)",
-  brandButtonGlow: "0 4px 24px rgba(126,246,123,.35), 0 0 48px rgba(126,246,123,.12)",
-  brandGlow: "0 0 20px rgba(126,246,123,.22)",
-  brandGradient:
-    "linear-gradient(160deg, color-mix(in oklab, var(--mom-brand, #7ef67b) 14%, #262626), #1c1c1c)",
-  brandGradientSubtle:
-    "linear-gradient(160deg, color-mix(in oklab, var(--mom-brand, #7ef67b) 8%, #262626), #202020)",
-  rest: "#525252",
-  prep: "#a3a3a3",
-  disp: "'Saira Condensed', sans-serif",
-  body: "'Archivo', sans-serif",
+  bg: "#FFFFFF",
+  panel: "#FFFFFF",
+  card: "#FFFFFF",
+  cardHi: "#F4F4F5",
+  line: "rgba(24,24,27,0.10)",
+  line2: "rgba(24,24,27,0.06)",
+  fg: "#18181B",
+  fgBody: "#52525B",
+  mut: "#71717A",
+  mut2: "#A1A1AA",
+  acc: "#18181B",
+  accSoft: "rgba(24,24,27,0.06)",
+  accInk: "#FFFFFF",
+  /** Monochrome accent alias — maps to ink, not chromatic color. */
+  brand: "#18181B",
+  brandStrong: "#18181B",
+  brandText: "#18181B",
+  brandSoft: "rgba(24,24,27,0.06)",
+  brandInk: "#FFFFFF",
+  brandBorder: "rgba(24,24,27,0.14)",
+  danger: "#DC2626",
+  dangerSoft: "rgba(220,38,38,0.08)",
+  dangerBorder: "rgba(220,38,38,0.25)",
+  warning: "#71717A",
+  warningSoft: "rgba(113,113,122,0.10)",
+  success: "#18181B",
+  successSoft: "rgba(24,24,27,0.06)",
+  shadow: "none",
+  overlay: "rgba(24,24,27,0.40)",
+  overlayLight: "rgba(24,24,27,0.04)",
+  rest: "#71717A",
+  prep: "#A1A1AA",
+  display: "'Archivo', system-ui, sans-serif",
+  numeric: "'Archivo', system-ui, sans-serif",
+  label: "'Archivo', system-ui, sans-serif",
+  body: "'Archivo', system-ui, sans-serif",
+  /** @deprecated Use M.display, M.numeric, or M.label */
+  disp: "'Archivo', system-ui, sans-serif",
+  radiusCard: 12,
+  radiusButton: 9999,
 } as const;
 
 /** Typography scale — minimum 12px for readable UI text on mobile. */
@@ -51,6 +61,41 @@ export const TYPE = {
   title: 22,
   display: 28,
 } as const;
+
+/** Display headline — geometric sans, tight tracking (Superpower-style). */
+export function displayStyle(fontSize: number, options?: { italic?: boolean }): CSSProperties {
+  const tracking = fontSize >= 32 ? -0.03 : fontSize >= 24 ? -0.025 : -0.02;
+  return {
+    fontFamily: M.display,
+    fontWeight: 500,
+    fontSize,
+    letterSpacing: `${tracking}em`,
+    lineHeight: fontSize >= 28 ? 1.05 : 1.15,
+    ...(options?.italic ? { fontStyle: "italic" as const } : null),
+  };
+}
+
+/** Tabular numbers for timers, steppers, stats. */
+export function numericStyle(options?: { fontSize?: number; fontWeight?: number }): CSSProperties {
+  return {
+    fontFamily: M.numeric,
+    fontVariantNumeric: "tabular-nums",
+    fontFeatureSettings: '"tnum" 1',
+    ...(options?.fontSize != null ? { fontSize: options.fontSize } : null),
+    ...(options?.fontWeight != null ? { fontWeight: options.fontWeight } : null),
+  };
+}
+
+/** Micro-labels — sentence case, muted (Superpower-style). */
+export function labelStyle(options?: { fontSize?: number; letterSpacing?: number }): CSSProperties {
+  return {
+    fontFamily: M.label,
+    fontSize: options?.fontSize ?? TYPE.caption,
+    fontWeight: 500,
+    letterSpacing: options?.letterSpacing ?? 0.01,
+    color: M.mut,
+  };
+}
 
 /** Compact exercise list rows (Track, Plan, Bibliothek, Picker). */
 export const EXERCISE_ROW = {
@@ -70,7 +115,7 @@ export function exerciseRowStyle(options?: {
   background?: ExerciseRowBackground;
   borderRadius?: number;
 }): CSSProperties {
-  const bg = options?.background ?? "panel";
+  const bg = options?.background ?? "transparent";
   return {
     height: EXERCISE_ROW.height,
     boxSizing: "border-box",
@@ -79,7 +124,7 @@ export function exerciseRowStyle(options?: {
     gap: EXERCISE_ROW.gap,
     padding: `0 ${EXERCISE_ROW.paddingX}px`,
     borderRadius: options?.borderRadius ?? EXERCISE_ROW.borderRadius,
-    background: bg === "card" ? M.card : bg === "panel" ? M.panel : "transparent",
+    background: bg === "transparent" ? "transparent" : M.bg,
     border: bg === "transparent" ? "none" : "1px solid " + M.line2,
     flexShrink: 0,
     width: "100%",
@@ -94,55 +139,53 @@ export const exerciseRowEllipsis: CSSProperties = {
 
 export type BrandSurfaceVariant = "hero" | "card" | "selected";
 
-/** Reusable card/surface styles for brand-accented UI. */
+/** Flat premium surfaces — hairline borders, no tinted fills. */
 export function brandSurface(variant: BrandSurfaceVariant): CSSProperties {
   switch (variant) {
     case "hero":
       return {
-        background: M.brandGradient,
-        border: "1px solid " + M.brandBorder,
-        borderRadius: 20,
+        background: M.bg,
+        border: "1px solid " + M.line,
+        borderRadius: M.radiusCard,
       };
     case "card":
       return {
-        background: M.brandGradientSubtle,
+        background: M.bg,
         border: "1px solid " + M.line2,
-        borderRadius: 18,
+        borderRadius: M.radiusCard,
       };
     case "selected":
       return {
-        background: M.brand,
-        color: M.brandInk,
-        border: "1px solid transparent",
-        boxShadow: M.brandGlow,
+        background: M.bg,
+        color: M.fg,
+        border: `2px solid ${M.fg}`,
       };
   }
 }
 
-/** Primary CTA — gradient + neon glow (Referenz Onboarding/Checkout). */
-export function brandButtonStyle(options?: { glow?: boolean }): CSSProperties {
-  const glow = options?.glow !== false;
+/** Primary CTA — solid ink pill (Superpower). */
+export function brandButtonStyle(): CSSProperties {
   return {
-    background: M.brandButtonGradient,
-    color: M.brandInk,
+    background: M.acc,
+    color: M.accInk,
     borderColor: "transparent",
-    fontFamily: M.disp,
-    ...(glow ? { boxShadow: M.brandButtonGlow } : null),
+    fontFamily: M.body,
+    fontWeight: 600,
+    borderRadius: M.radiusButton,
   };
 }
 
-/** Wizard/list selection — green border + soft fill. */
+/** List selection — ink border on white. */
 export function brandSelectionStyle(selected: boolean): CSSProperties {
   return selected
     ? {
-        border: `2px solid ${M.brand}`,
-        background: M.brandSoft,
-        color: M.brand,
-        boxShadow: M.brandGlow,
+        border: `2px solid ${M.fg}`,
+        background: M.bg,
+        color: M.fg,
       }
     : {
         border: `1px solid ${M.line}`,
-        background: M.card,
+        background: M.bg,
         color: M.fg,
       };
 }
@@ -164,18 +207,9 @@ export const mKind = (k: SegmentKind): string =>
 export type ButtonSizeToken = "sm" | "md" | "lg" | "icon";
 export type ButtonVariantToken = "primary" | "secondary" | "ghost" | "danger";
 
-/** Press/release transitions for MButton tactile feedback. */
 export const buttonPressTransition =
-  "transform 150ms ease-out, opacity 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out, box-shadow 180ms cubic-bezier(0.34, 1.4, 0.64, 1)";
+  "transform 150ms ease-out, opacity 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out";
 
-/** Dimmed glow while primary button is pressed. */
-export const buttonPrimaryPressedGlow = "0 2px 12px rgba(126,246,123,.18), 0 0 24px rgba(126,246,123,.06)";
-
-/** Brief glow pulse on primary button release (~180 ms). */
-export const buttonPrimaryReleaseGlow =
-  "0 6px 32px rgba(126,246,123,.48), 0 0 72px rgba(126,246,123,.22)";
-
-/** Variant-specific press styles for MButton. */
 export function buttonPressStyle(
   variant: ButtonVariantToken,
   pressed: boolean,
@@ -189,7 +223,7 @@ export function buttonPressStyle(
       case "primary":
         return { opacity: 0.88 };
       case "secondary":
-        return { opacity: 0.88, borderColor: M.brandBorder };
+        return { opacity: 0.88, borderColor: M.line };
       case "danger":
         return { opacity: 0.88 };
       case "ghost":
@@ -199,32 +233,16 @@ export function buttonPressStyle(
 
   switch (variant) {
     case "primary":
-      return {
-        transform: "scale(0.96) translateY(1px)",
-        boxShadow: buttonPrimaryPressedGlow,
-      };
+      return { transform: "scale(0.98)", opacity: 0.92 };
     case "secondary":
-      return {
-        transform: "scale(0.97)",
-        borderColor: M.brandBorder,
-        background: M.brandSoft,
-      };
+      return { transform: "scale(0.98)", borderColor: M.fg, background: M.accSoft };
     case "danger":
-      return {
-        transform: "scale(0.97)",
-        background: "rgba(245,180,180,.08)",
-      };
+      return { transform: "scale(0.98)", background: M.dangerSoft };
     case "ghost":
       return { transform: "scale(0.98)" };
   }
 }
 
-/** Release glow pulse style for primary MButton. */
-export function buttonReleaseGlowStyle(): CSSProperties {
-  return { boxShadow: buttonPrimaryReleaseGlow };
-}
-
-/** Shared button base — mirrors MButton defaults. */
 export const buttonBase: CSSProperties = {
   border: "1px solid transparent",
   cursor: "pointer",
@@ -236,19 +254,18 @@ export const buttonBase: CSSProperties = {
   fontWeight: 600,
   fontSize: 14,
   lineHeight: 1,
-  letterSpacing: 0.2,
+  letterSpacing: 0.01,
   transition: buttonPressTransition,
   WebkitTapHighlightColor: "transparent",
 };
 
 export const buttonSizes: Record<ButtonSizeToken, CSSProperties> = {
-  sm: { minHeight: 44, padding: "0 14px", borderRadius: 10, fontSize: 14 },
-  md: { minHeight: 48, padding: "0 18px", borderRadius: 11, fontSize: 15 },
-  lg: { minHeight: 52, padding: "0 22px", borderRadius: 11, fontSize: 16 },
-  icon: { width: 48, height: 48, padding: 0, borderRadius: 11, fontSize: 15 },
+  sm: { minHeight: 44, padding: "0 18px", borderRadius: M.radiusButton, fontSize: 14 },
+  md: { minHeight: 48, padding: "0 22px", borderRadius: M.radiusButton, fontSize: 15 },
+  lg: { minHeight: 52, padding: "0 26px", borderRadius: M.radiusButton, fontSize: 16 },
+  icon: { width: 48, height: 48, padding: 0, borderRadius: M.radiusButton, fontSize: 15 },
 };
 
-// Inline +/- buttons inside set steppers (Track, Builder).
 export const mMini: CSSProperties = {
   width: 28,
   height: 28,
@@ -265,7 +282,6 @@ export const mMini: CSSProperties = {
   fontFamily: M.body,
 };
 
-/** Larger stepper buttons — 44px touch target (Plan Builder, Session Edit). */
 export const mMiniLg: CSSProperties = {
   width: 44,
   height: 44,
@@ -282,3 +298,6 @@ export const mMiniLg: CSSProperties = {
   fontFamily: M.body,
   flexShrink: 0,
 };
+
+/** Premium section spacing helper. */
+export const SECTION_GAP = 28;

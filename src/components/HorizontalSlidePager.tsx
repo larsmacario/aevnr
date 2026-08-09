@@ -237,7 +237,7 @@ export function HorizontalSlidePager({
                   background: "transparent",
                   cursor: "pointer",
                   flexShrink: 0,
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontSize: isLgTabs ? 16 : 13,
                   fontWeight: isActive ? 700 : 600,
                   color: isActive ? M.brand : M.mut2,

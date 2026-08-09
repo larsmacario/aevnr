@@ -45,13 +45,13 @@ function MenuAction({
         border: "none",
         borderBottom: "1px solid " + M.line2,
         cursor: "pointer",
-        color: danger ? "#f5b4b4" : M.fg,
+        color: danger ? M.danger : M.fg,
         fontSize: 15,
         fontWeight: 600,
         textAlign: "left",
       }}
     >
-      <Icon name={icon} size={18} stroke={2} color={danger ? "#f5b4b4" : M.mut2} />
+      <Icon name={icon} size={18} stroke={2} color={danger ? M.danger : M.mut2} />
       {label}
     </button>
   );
@@ -80,8 +80,8 @@ export function TrackExerciseMenuSheet({
       <div style={{ padding: "4px 20px 20px" }}>
         <div
           style={{
-            fontFamily: M.disp,
-            fontWeight: 700,
+            fontFamily: M.display,
+            fontWeight: 400,
             fontSize: 18,
             color: M.fg,
             marginBottom: 8,

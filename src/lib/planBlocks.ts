@@ -63,10 +63,10 @@ export const BLOCK_GUIDE_HINTS: Record<TrainingBlockType, string> = {
 
 /** Accent colors per block (subtle differentiation). */
 export const BLOCK_ACCENT: Record<TrainingBlockType, string> = {
-  warmup: "#f59e0b",
-  skill: "#38bdf8",
-  strength: "#c8ff00",
-  metcon: "#f97316",
+  warmup: "#A1A1AA",
+  skill: "#71717A",
+  strength: "#18181B",
+  metcon: "#52525B",
 };
 
 const BLOCK_SET = new Set<string>(BLOCK_ORDER);

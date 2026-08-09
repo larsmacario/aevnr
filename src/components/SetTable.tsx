@@ -175,7 +175,7 @@ export function SetTable({
                 <span
                   style={{
                     flexShrink: 0,
-                    fontFamily: M.disp,
+                    fontFamily: M.numeric,
                     fontWeight: 700,
                     fontSize: collapsed ? 18 : 22,
                     color: s.done ? M.acc : si === 0 && s.warmUp ? M.acc : suggested ? M.brand : M.fg,
@@ -283,14 +283,14 @@ export function SetTable({
           alignItems: "center",
           minHeight: isLg ? 68 : undefined,
           padding: wrapped ? (isLg ? "10px 0" : "8px 0") : isLg ? "10px 6px" : "6px 4px",
-          borderTop: "1px solid " + (suggested ? "rgba(200,255,0,.22)" : M.line2),
+          borderTop: "1px solid " + (suggested ? M.brandSoft : M.line2),
           ...(suggested
             ? {
                 margin: wrapped ? "0 -4px" : undefined,
                 paddingLeft: wrapped ? 4 : undefined,
                 paddingRight: wrapped ? 4 : undefined,
                 borderRadius: wrapped ? 10 : undefined,
-                boxShadow: "0 0 0 1px rgba(200,255,0,.06)",
+                boxShadow: "0 0 0 1px M.brandSoft",
               }
             : {}),
         };
@@ -301,7 +301,7 @@ export function SetTable({
               style={{
                 width: setColWidth,
                 flexShrink: 0,
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: valueFontSize,
                 color: s.done ? M.acc : si === 0 && s.warmUp ? M.acc : suggested ? M.brand : M.mut,

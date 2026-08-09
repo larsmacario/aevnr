@@ -1,4 +1,4 @@
-import { LOGO_ICON, LOGO_WORDMARK } from "../theme";
+import { APP_NAME, displayStyle, M } from "../theme";
 
 type AppLogoProps = {
   variant?: "icon" | "wordmark";
@@ -7,22 +7,25 @@ type AppLogoProps = {
   style?: React.CSSProperties;
 };
 
-export function AppLogo({ variant = "icon", size = 44, alt = "rephive", style }: AppLogoProps) {
-  const src = variant === "wordmark" ? LOGO_WORDMARK : LOGO_ICON;
+/** Typographic brand mark — ÆVNR wordmark. */
+export function AppLogo({ variant = "wordmark", size = 44, alt = APP_NAME, style }: AppLogoProps) {
+  const fontSize = variant === "icon" ? Math.round(size * 0.5) : size;
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      width={size}
-      height={variant === "wordmark" ? undefined : size}
+    <span
+      role="img"
+      aria-label={alt}
       style={{
-        display: "block",
-        width: size,
-        height: variant === "wordmark" ? "auto" : size,
-        objectFit: "contain",
+        ...displayStyle(fontSize),
+        color: M.fg,
+        display: "inline-block",
+        lineHeight: 1,
+        userSelect: "none",
+        letterSpacing: "-0.02em",
         ...style,
       }}
-    />
+    >
+      {APP_NAME}
+    </span>
   );
 }

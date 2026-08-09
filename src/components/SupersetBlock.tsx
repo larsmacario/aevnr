@@ -47,7 +47,7 @@ export function supersetLinkButtonStyle(linked: boolean): React.CSSProperties {
     fontWeight: 700,
     letterSpacing: 0.6,
     cursor: "pointer",
-    fontFamily: M.disp,
+    fontFamily: M.numeric,
     whiteSpace: "nowrap",
   };
 }

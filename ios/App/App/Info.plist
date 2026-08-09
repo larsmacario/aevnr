@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>rephive</string>
+	<string>ÆVNR</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -25,15 +25,15 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>rephive nutzt die Kamera für Fortschrittsfotos im Body Tracker.</string>
+	<string>ÆVNR nutzt die Kamera für Fortschrittsfotos im Body Tracker.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>rephive benötigt Zugriff auf deine Fotos, damit du Fortschrittsbilder im Body Tracker speichern und vergleichen kannst.</string>
+	<string>ÆVNR benötigt Zugriff auf deine Fotos, damit du Fortschrittsbilder im Body Tracker speichern und vergleichen kannst.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>rephive nutzt das Mikrofon für experimentelles Voice-Logging von Trainingssätzen (Labs).</string>
+	<string>ÆVNR nutzt das Mikrofon für experimentelles Voice-Logging von Trainingssätzen (Labs).</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>rephive wandelt gesprochene Sätze in Gewicht und Wiederholungen um (experimentelles Labs-Feature).</string>
+	<string>ÆVNR wandelt gesprochene Sätze in Gewicht und Wiederholungen um (experimentelles Labs-Feature).</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>rephive nutzt Bluetooth, um Herzfrequenz-Sensoren während des Trainings anzuzeigen.</string>
+	<string>ÆVNR nutzt Bluetooth, um Herzfrequenz-Sensoren während des Trainings anzuzeigen.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

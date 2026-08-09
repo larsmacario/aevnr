@@ -51,7 +51,7 @@ export function TrackExerciseRow({
             background: complete ? M.brand : "transparent",
             border: complete ? "none" : "2px solid " + M.mut2,
             color: complete ? M.brandInk : M.fg,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 14,
           }}

@@ -48,7 +48,7 @@ export function AvatarCropSheet({ open, imageSrc, busy = false, onClose, onSave 
       lockBodyScroll
       maxHeight="min(92dvh, 92vh)"
     >
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 14, flexShrink: 0 }}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 14, flexShrink: 0 }}>
         Profilbild zuschneiden
       </div>
 

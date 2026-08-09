@@ -162,7 +162,7 @@ export function SetMetricFields({
         </button>
         <span
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: isTime || isDist ? (compact ? 14 : useLgButtons ? 18 : 16) : fontSize,
             fontVariantNumeric: "tabular-nums",
@@ -258,7 +258,7 @@ export function SetMetricFields({
               <span
                 style={{
                   color: M.mut2,
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontSize: compact ? 14 : isLg ? 18 : 16,
                   lineHeight: 1,
                   paddingBottom: isLg ? 16 : compact ? 6 : 6,

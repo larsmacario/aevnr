@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { brandSurface, M } from "../theme";
+import { brandSurface, displayStyle, labelStyle, M } from "../theme";
 import { planDayDisplayName } from "../data";
 import {
   getCurrentCalendarWeek,
@@ -349,12 +349,8 @@ export function HomeScreen({
           ...brandSurface("hero"),
         }}
       >
-        <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.brand, fontWeight: 700 }}>
-          AKTIVES WORKOUT · {fmtUp(durationSec)}
-        </div>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 28, lineHeight: 1, marginTop: 8 }}>
-          {activeWorkout.session.name}
-        </div>
+        <div style={{ ...labelStyle(), marginBottom: 8 }}>Aktives Workout · {fmtUp(durationSec)}</div>
+        <div style={{ ...displayStyle(26), marginTop: 4 }}>{activeWorkout.session.name}</div>
         <div
           style={{
             display: "flex",
@@ -396,12 +392,8 @@ export function HomeScreen({
         ...brandSurface("hero"),
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.brand, fontWeight: 700 }}>
-        NEUE WOCHE
-      </div>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 24, lineHeight: 1.1, marginTop: 8 }}>
-        Bereit für die Woche?
-      </div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>Neue Woche</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>Bereit für die Woche?</div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.45 }}>
         Plane jetzt deine Trainingstage — ordne deine Workouts den Wochentagen zu und starte motiviert in die neue Woche.
       </div>
@@ -426,8 +418,8 @@ export function HomeScreen({
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.brand, fontWeight: 700 }}>RECOVERY</div>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, lineHeight: 1.15, marginTop: 8 }}>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>Recovery</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>
         Diese Woche: {weeklyRecoveryStats.loggedDays} von {weeklyRecoveryStats.trainingDays} Trainingstagen
       </div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.45 }}>
@@ -447,18 +439,22 @@ export function HomeScreen({
   ) : null;
 
   const todayCard = planLoading && !activePlan ? (
-    <div style={{ marginTop: 14, color: M.mut, fontSize: 14 }}>Plan wird geladen…</div>
+    <div style={{ marginTop: 16 }}>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
+      <div style={{ color: M.mut, fontSize: 14, marginTop: 4 }}>Plan wird geladen…</div>
+    </div>
   ) : !activePlan ? (
     <div
       style={{
-        marginTop: 14,
+        marginTop: 16,
         borderRadius: 20,
         padding: "18px 18px 16px",
         background: M.card,
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 24, lineHeight: 1.1 }}>Kein aktiver Plan</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>Kein aktiver Plan</div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.4 }}>
         Erstelle einen Trainingsplan und lege pro Tag deine Übungen fest.
       </div>
@@ -469,14 +465,15 @@ export function HomeScreen({
   ) : !selectedPlanDay ? (
     <div
       style={{
-        marginTop: 14,
+        marginTop: 16,
         borderRadius: 20,
         padding: "18px 18px 16px",
         background: M.card,
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 24, lineHeight: 1.1 }}>Kein Training an diesem Tag</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>Kein Training an diesem Tag</div>
       {selectedDateLabel ? (
         <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.4 }}>{selectedDateLabel}</div>
       ) : (
@@ -488,20 +485,20 @@ export function HomeScreen({
   ) : (
     <div
       style={{
-        marginTop: 14,
+        marginTop: 16,
         padding: "18px 18px 16px",
         position: "relative",
         overflow: "hidden",
         ...brandSurface("hero"),
       }}
     >
-      <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
-        {activePlan.name.toUpperCase()} · TAG {(selectedPlanDayIndex ?? 0) + 1}
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>
+        {activePlan.name} · Tag {(selectedPlanDayIndex ?? 0) + 1}
       </div>
       {selectedDateLabel ? (
-        <div style={{ fontSize: 13, color: M.mut, fontWeight: 600, marginTop: 6 }}>{selectedDateLabel}</div>
+        <div style={{ fontSize: 13, color: M.mut, fontWeight: 500, marginTop: 4 }}>{selectedDateLabel}</div>
       ) : null}
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 28, lineHeight: 1, marginTop: selectedDateLabel ? 6 : 8 }}>
+      <div style={{ ...displayStyle(24), marginTop: selectedDateLabel ? 6 : 4 }}>
         {planDayDisplayName(selectedPlanDay, weekdayLabels)}
       </div>
       <div
@@ -545,9 +542,7 @@ export function HomeScreen({
           padding: "15px 16px 14px",
         }}
       >
-        <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 12 }}>
-          DIESE WOCHE
-        </div>
+        <div style={{ ...labelStyle(), marginBottom: 12 }}>Diese Woche</div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
           {calendarWeek.map((day) => {
             const isSelected = selectedIsoWeekday === day.isoWeekday;
@@ -600,7 +595,7 @@ export function HomeScreen({
                     justifyContent: "center",
                     fontSize: 14,
                     fontWeight: 700,
-                    fontFamily: M.disp,
+                    fontFamily: M.display,
                     background: isSelected ? M.brand : "transparent",
                     color: isSelected ? M.brandInk : M.fg,
                     border: isSelected
@@ -638,8 +633,8 @@ export function HomeScreen({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>VOLUMEN / WOCHE</span>
-        <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 16, color: M.brand }}>
+        <span style={{ ...labelStyle() }}>Volumen / Woche</span>
+        <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
           {weekData.reduce((a, w) => a + w.v, 0) > 0 ? "●" : "—"}
         </span>
       </div>
@@ -692,8 +687,8 @@ export function HomeScreen({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>PROTEIN / WOCHE</span>
-          <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 16, color: M.brand }}>
+          <span style={{ ...labelStyle() }}>Protein / Woche</span>
+          <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
             {proteinLoggedTodayG}/{proteinTargetG} g
           </span>
         </div>
@@ -763,8 +758,8 @@ export function HomeScreen({
     >
       <div style={{ background: M.card, border: `1px solid ${M.line2}`, borderRadius: 18, padding: "15px 16px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>WASSER / WOCHE</span>
-          <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 16, color: M.brand }}>
+          <span style={{ ...labelStyle() }}>Wasser / Woche</span>
+          <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
             {formatWaterAmount(waterLoggedTodayMl)}/{formatWaterAmount(waterTargetMl)}
           </span>
         </div>
@@ -809,7 +804,7 @@ export function HomeScreen({
           marginBottom: 0,
         }}
       >
-        <span style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>STATISTIK</span>
+        <span style={{ ...labelStyle() }}>Statistik</span>
         <MButton type="button" onClick={onOpenStats} variant="ghost" size="sm" style={{ padding: 0, color: M.fg }}>
           Alle anzeigen
           <Icon name="chevR" size={14} color={M.fg} stroke={2.2} />
@@ -943,11 +938,11 @@ export function HomeScreen({
 
   const hydrationHint = showHydrationHint ? (
     <div style={{ marginTop: 18, padding: "18px 18px 14px", borderRadius: 20, background: M.card, border: `1px solid ${M.line2}`, flexShrink: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: M.brand, fontSize: 13, letterSpacing: 1.3, fontWeight: 700 }}>
-        <Icon name="droplet" size={17} color={M.brand} stroke={2} />
-        HYDRATION
+      <div style={{ ...labelStyle(), marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+        <Icon name="droplet" size={14} color={M.mut} stroke={2} />
+        Hydration
       </div>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, lineHeight: 1.15, marginTop: 8 }}>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>
         Heute fehlen noch {formatWaterAmount(Math.max(0, waterTargetMl - waterLoggedTodayMl))}
       </div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 8, lineHeight: 1.45 }}>
@@ -977,16 +972,7 @@ export function HomeScreen({
               <span style={{ marginLeft: 8, fontSize: 13, color: M.mut2 }}>· Offline</span>
             )}
           </div>
-          <div
-            style={{
-              fontFamily: M.disp,
-              fontWeight: 700,
-              fontSize: 30,
-              lineHeight: 1,
-              marginTop: 3,
-              whiteSpace: "nowrap",
-            }}
-          >
+          <div style={{ ...displayStyle(32), marginTop: 4, whiteSpace: "nowrap" }}>
             Hej, {displayName.split(" ")[0]}
           </div>
         </div>
@@ -996,7 +982,7 @@ export function HomeScreen({
           size="icon"
           aria-label="Profil"
           title="Profil"
-          style={{ width: 48, height: 48, borderRadius: 24, background: M.card, border: "1px solid " + M.brandBorder, padding: 0, overflow: "hidden", flexShrink: 0 }}
+          style={{ width: 48, height: 48, borderRadius: 24, background: M.bg, border: "1px solid " + M.line, padding: 0, overflow: "hidden", flexShrink: 0 }}
         >
           <UserAvatar
             size={48}
@@ -1010,31 +996,10 @@ export function HomeScreen({
       {weekStrip}
       {weekPlannerCard}
       {hydrationHint}
-      <div
-        style={{
-          marginTop: 16,
-          fontSize: 13,
-          letterSpacing: 1.5,
-          color: M.mut,
-          fontWeight: 700,
-        }}
-      >
-        HEUTE GEPLANT
-      </div>
       {todayCard}
       {activeWorkoutCard}
       {statsBlock}
-      <div
-        style={{
-          marginTop: 16,
-          fontSize: 13,
-          letterSpacing: 1.5,
-          color: M.mut,
-          fontWeight: 700,
-        }}
-      >
-        SCHNELLZUGRIFF
-      </div>
+      <div style={{ ...labelStyle(), marginTop: 16 }}>Schnellzugriff</div>
       {timerLink}
       {calculatorLink}
       {bodyTrackerLink}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { M } from "../theme";
 
 export interface RingProps {
   size?: number;
@@ -17,25 +18,17 @@ export function Ring({
   size = 240,
   stroke = 14,
   progress = 0,
-  color = "#0f0",
-  track = "rgba(255,255,255,.1)",
+  color = M.brandStrong,
+  track = M.line2,
   children,
   cap = "round",
   rotate = -90,
-  glow,
 }: RingProps) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return (
     <div style={{ position: "relative", width: size, height: size }}>
-      <svg
-        width={size}
-        height={size}
-        style={{
-          transform: `rotate(${rotate}deg)`,
-          filter: glow ? `drop-shadow(0 0 12px ${glow})` : "none",
-        }}
-      >
+      <svg width={size} height={size} style={{ transform: `rotate(${rotate}deg)` }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
         <circle
           cx={size / 2}

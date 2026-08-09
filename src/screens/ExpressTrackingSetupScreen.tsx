@@ -242,7 +242,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart }: ExpressTrackingS
               }}
             >
               <div>
-                <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: TYPE.titleSm, color: M.fg }}>Sätze pro Übung</div>
+                <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: TYPE.titleSm, color: M.fg }}>Sätze pro Übung</div>
                 <div style={{ fontSize: TYPE.bodySm, color: M.mut, marginTop: 4 }}>Standard: {preferences.defaultSets}</div>
               </div>
               <MStepper value={setCount} min={1} max={10} onChange={setSetCount} />
@@ -329,7 +329,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart }: ExpressTrackingS
                   marginTop: 12,
                   border: "1.5px dashed " + M.line,
                   color: M.fg,
-                  fontFamily: M.disp,
+                  fontFamily: M.label,
                   letterSpacing: 0.3,
                   fontSize: TYPE.bodySm,
                 }}
@@ -356,7 +356,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart }: ExpressTrackingS
             size="md"
             fullWidth
             onClick={() => setPickerOpen(true)}
-            style={{ fontFamily: M.disp, letterSpacing: 0.3 }}
+            style={{ fontFamily: M.label, letterSpacing: 0.3 }}
           >
             <Icon name="plus" size={16} stroke={2.4} /> Übungen auswählen
           </MButton>
@@ -368,7 +368,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart }: ExpressTrackingS
             fullWidth
             onClick={handleStart}
             disabled={activeTemplates.length === 0}
-            style={{ fontFamily: M.disp, fontWeight: 700, letterSpacing: 0.4 }}
+            style={{ fontFamily: M.label, fontWeight: 700, letterSpacing: 0.4 }}
           >
             Workout starten
           </MButton>

@@ -22,8 +22,8 @@ export function OneRmCalculatorSheet({
     <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label="1RM-Rechner">
       <div
         style={{
-          fontFamily: M.disp,
-          fontWeight: 700,
+          fontFamily: M.display,
+          fontWeight: 400,
           fontSize: 22,
           marginBottom: 12,
           flexShrink: 0,

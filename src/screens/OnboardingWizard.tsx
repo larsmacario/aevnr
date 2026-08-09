@@ -179,7 +179,7 @@ export function OnboardingWizard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <AppLogo size={32} />
-            <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 18, letterSpacing: 0.3, lineHeight: 1.1 }}>
+            <div style={{ fontFamily: M.label, fontWeight: 700, fontSize: 18, letterSpacing: 0.3, lineHeight: 1.1 }}>
               {APP_NAME}
             </div>
           </div>
@@ -216,11 +216,11 @@ export function OnboardingWizard() {
         {error && (
           <div
             style={{
-              background: "rgba(255,80,80,.12)",
-              border: "1px solid rgba(255,80,80,.25)",
+              background: M.dangerSoft,
+              border: "1px solid M.dangerBorder",
               borderRadius: 12,
               padding: "12px 14px",
-              color: "#ff8a8a",
+              color: M.danger,
               fontSize: 13,
               marginBottom: 20,
               textAlign: "center",
@@ -236,7 +236,7 @@ export function OnboardingWizard() {
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
               <AppLogo size={72} />
             </div>
-            <h1 style={{ fontFamily: M.disp, fontSize: 32, fontWeight: 800, margin: 0, letterSpacing: 0.5 }}>
+            <h1 style={{ fontFamily: M.numeric, fontSize: 32, fontWeight: 800, margin: 0, letterSpacing: 0.5 }}>
               Willkommen bei {APP_NAME}!
             </h1>
             <p style={{ color: M.mut, fontSize: 15, lineHeight: 1.5, margin: "0 0 8px 0" }}>
@@ -262,7 +262,7 @@ export function OnboardingWizard() {
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Persönliche Daten
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -352,7 +352,7 @@ export function OnboardingWizard() {
         {step === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Trainingsalltag
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -448,7 +448,7 @@ export function OnboardingWizard() {
                   -
                 </button>
                 <div style={{ textAlign: "center", minWidth: 80 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: M.acc, fontFamily: M.disp }}>{weeklyDays}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: M.acc, fontFamily: M.display }}>{weeklyDays}</div>
                   <div style={{ fontSize: 13, color: M.mut }}>{weeklyDays === 1 ? "Tag" : "Tage"} / Woche</div>
                 </div>
                 <button
@@ -479,7 +479,7 @@ export function OnboardingWizard() {
         {step === 3 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Körperdaten
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>

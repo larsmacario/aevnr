@@ -89,7 +89,7 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
       <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.brand, fontWeight: 700, marginBottom: 6 }}>
         WOCHENPLAN
       </div>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 24, lineHeight: 1.1, marginBottom: 8 }}>
+      <div style={{ fontFamily: M.label, fontWeight: 700, fontSize: 24, lineHeight: 1.1, marginBottom: 8 }}>
         Deine Woche planen
       </div>
       <div style={{ color: M.mut, fontSize: 14, lineHeight: 1.45, marginBottom: 16 }}>
@@ -109,8 +109,8 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
           >
             <div
               style={{
-                fontFamily: M.disp,
-                fontWeight: 700,
+                fontFamily: M.display,
+                fontWeight: 400,
                 fontSize: 18,
                 lineHeight: 1.1,
                 marginBottom: 10,
@@ -133,7 +133,7 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
       </div>
 
       {error ? (
-        <div style={{ color: "#ff8a8a", fontSize: 13, marginBottom: 12, lineHeight: 1.4 }}>{error}</div>
+        <div style={{ color: M.danger, fontSize: 13, marginBottom: 12, lineHeight: 1.4 }}>{error}</div>
       ) : null}
 
       <MButton

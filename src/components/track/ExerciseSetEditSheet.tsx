@@ -37,7 +37,7 @@ export function ExerciseSetEditSheet({
   return (
     <BottomSheet open={open} onClose={onClose} aria-label={`Sätze · ${exercise.name}`}>
       <div style={{ padding: "4px 20px 28px", maxHeight: "min(72vh, 520px)", overflowY: "auto" }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 18, color: M.fg, marginBottom: 4 }}>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 18, color: M.fg, marginBottom: 4 }}>
           {exercise.name}
         </div>
         <div style={{ fontSize: 13, color: M.mut, marginBottom: 16 }}>Sätze bearbeiten</div>

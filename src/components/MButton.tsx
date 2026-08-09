@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type CSSProperties } from "react";
+import { useMemo, useState, type ButtonHTMLAttributes, type CSSProperties } from "react";
 import {
   buttonBase,
   buttonPressStyle,
-  buttonReleaseGlowStyle,
   buttonSizes,
   brandButtonStyle,
   M,
@@ -13,8 +12,6 @@ import { prefersReducedMotion, triggerTapHaptic } from "../lib/haptics";
 
 type ButtonVariant = ButtonVariantToken;
 type ButtonSize = ButtonSizeToken;
-
-const PRIMARY_RELEASE_GLOW_MS = 180;
 
 export interface MButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "style"> {
   variant?: ButtonVariant;
@@ -30,9 +27,9 @@ const SIZE_STYLE = buttonSizes;
 
 const VARIANT_STYLE: Record<ButtonVariant, CSSProperties> = {
   primary: brandButtonStyle(),
-  secondary: { background: "transparent", color: M.fg, borderColor: M.brandBorder },
+  secondary: { background: "transparent", color: M.fg, borderColor: M.line },
   ghost: { background: "transparent", color: M.mut, borderColor: "transparent" },
-  danger: { background: "transparent", color: "#f5b4b4", borderColor: "rgba(245,180,180,.35)" },
+  danger: { background: "transparent", color: M.danger, borderColor: M.dangerBorder },
 };
 
 export function MButton({
@@ -51,65 +48,32 @@ export function MButton({
   ...props
 }: MButtonProps) {
   const [pressed, setPressed] = useState(false);
-  const [releasing, setReleasing] = useState(false);
-  const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDisabled = Boolean(disabled || loading);
   const reducedMotion = useMemo(() => prefersReducedMotion(), []);
-
-  const clearReleaseTimer = () => {
-    if (releaseTimerRef.current !== null) {
-      clearTimeout(releaseTimerRef.current);
-      releaseTimerRef.current = null;
-    }
-  };
-
-  useEffect(() => () => clearReleaseTimer(), []);
 
   const pressStyle =
     isDisabled || !pressed ? null : buttonPressStyle(variant, true, { reducedMotion });
 
-  const releaseStyle =
-    !isDisabled && releasing && variant === "primary" && !reducedMotion
-      ? buttonReleaseGlowStyle()
-      : null;
-
-  const startReleaseGlow = () => {
-    if (variant !== "primary" || reducedMotion || isDisabled) return;
-    clearReleaseTimer();
-    setReleasing(true);
-    releaseTimerRef.current = setTimeout(() => {
-      setReleasing(false);
-      releaseTimerRef.current = null;
-    }, PRIMARY_RELEASE_GLOW_MS);
-  };
-
   const handlePointerDown: MButtonProps["onPointerDown"] = async (event) => {
     onPointerDown?.(event);
     if (isDisabled) return;
-    clearReleaseTimer();
-    setReleasing(false);
     setPressed(true);
     if (haptic && variant === "primary") void triggerTapHaptic();
   };
 
   const handlePointerUp: MButtonProps["onPointerUp"] = (event) => {
     onPointerUp?.(event);
-    if (pressed) startReleaseGlow();
     setPressed(false);
   };
 
   const handlePointerCancel: MButtonProps["onPointerCancel"] = (event) => {
     onPointerCancel?.(event);
     setPressed(false);
-    setReleasing(false);
-    clearReleaseTimer();
   };
 
   const handlePointerLeave: MButtonProps["onPointerLeave"] = (event) => {
     onPointerLeave?.(event);
     setPressed(false);
-    setReleasing(false);
-    clearReleaseTimer();
   };
 
   const handleClick: MButtonProps["onClick"] = (event) => {
@@ -132,9 +96,8 @@ export function MButton({
         ...VARIANT_STYLE[variant],
         ...(fullWidth ? { width: "100%" } : null),
         ...(isDisabled
-          ? { opacity: 0.45, cursor: loading ? "wait" : "not-allowed", boxShadow: "none" }
+          ? { opacity: 0.45, cursor: loading ? "wait" : "not-allowed" }
           : null),
-        ...(releaseStyle ?? null),
         ...(pressStyle ?? null),
         ...style,
       }}

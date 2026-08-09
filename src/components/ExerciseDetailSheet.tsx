@@ -70,8 +70,8 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
               >
                 <div
                   style={{
-                    fontFamily: M.disp,
-                    fontWeight: 700,
+                    fontFamily: M.display,
+                    fontWeight: 400,
                     fontSize: 24,
                     lineHeight: 1.15,
                     color: M.fg,

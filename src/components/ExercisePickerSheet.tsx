@@ -89,7 +89,7 @@ export function ExercisePickerSheet({
 
   const headerBlock = (
     <>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 12, flexShrink: 0 }}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 12, flexShrink: 0 }}>
         {title}
       </div>
 
@@ -120,8 +120,8 @@ export function ExercisePickerSheet({
               border: "none",
               background: M.acc,
               color: M.accInk,
-              fontFamily: M.disp,
-              fontWeight: 700,
+              fontFamily: M.display,
+              fontWeight: 400,
               fontSize: 15,
               cursor: freeText.trim() ? "pointer" : "not-allowed",
               opacity: freeText.trim() ? 1 : 0.5,
@@ -267,7 +267,7 @@ export function ExercisePickerSheet({
                 fullWidth
                 disabled={selectedIds.length === 0}
                 onClick={confirmMulti}
-                style={{ fontFamily: M.disp, fontWeight: 700, letterSpacing: 0.3 }}
+                style={{ fontFamily: M.label, fontWeight: 700, letterSpacing: 0.3 }}
               >
                 Weiter ({selectedIds.length})
               </MButton>

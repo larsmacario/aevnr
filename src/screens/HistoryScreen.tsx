@@ -28,7 +28,7 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "4px 22px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Verlauf</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Verlauf</div>
           <MButton type="button" onClick={onOpenStats} variant="secondary" size="sm" style={{ flexShrink: 0, color: M.fg }}>
             Statistik
             <Icon name="chevR" size={12} color={M.mut} stroke={2.2} />
@@ -53,7 +53,7 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
         }}
       >
         {loading && <div style={{ color: M.mut, fontSize: 14 }}>Verlauf wird geladen…</div>}
-        {error && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && list.length === 0 && (
           <div
             style={{
@@ -95,7 +95,7 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <div
                   style={{
-                    fontFamily: M.disp,
+                    fontFamily: M.label,
                     fontWeight: 700,
                     fontSize: 20,
                     lineHeight: 1.1,

@@ -58,7 +58,7 @@ export function DeleteConfirmDialog({
       wrapScroll={false}
       aria-label={displayTitle}
     >
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 8, flexShrink: 0 }}>{displayTitle}</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 8, flexShrink: 0 }}>{displayTitle}</div>
       <div style={{ color: M.mut, fontSize: 14, marginBottom: 18, lineHeight: 1.45, flexShrink: 0 }}>{displayMessage}</div>
       <MButton
         type="button"
@@ -67,7 +67,7 @@ export function DeleteConfirmDialog({
         variant={isFinalStep ? "danger" : "secondary"}
         size="md"
         fullWidth
-        style={{ marginBottom: 10, flexShrink: 0, background: isFinalStep ? "rgba(245,180,180,.08)" : undefined }}
+        style={{ marginBottom: 10, flexShrink: 0, background: isFinalStep ? M.dangerSoft : undefined }}
       >
         {busy && isFinalStep ? "…" : isFinalStep ? "Löschen" : "Weiter"}
       </MButton>

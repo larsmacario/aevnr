@@ -82,11 +82,11 @@ export function SessionDetailScreen({
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader onBack={onBack} title="SESSION" />
 
-      {actionError && <div style={{ padding: "0 22px 8px", color: "#ff8a8a", fontSize: 13 }}>{actionError}</div>}
+      {actionError && <div style={{ padding: "0 22px 8px", color: M.danger, fontSize: 13 }}>{actionError}</div>}
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 22px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{session.name}</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{session.name}</div>
           {session.pr && <MTag>PR</MTag>}
         </div>
         <div style={{ fontSize: 13, color: M.mut, marginTop: 8, fontWeight: 600 }}>{formatPerformedAt(session.performedAt)}</div>
@@ -210,7 +210,7 @@ export function SessionDetailScreen({
                                     }}
                                   >
                                     <span>Satz {si + 1}</span>
-                                    <span style={{ fontFamily: M.disp, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{ fontFamily: M.display, fontWeight: 400, display: "inline-flex", alignItems: "center", gap: 6 }}>
                                       {s.kg} kg × {s.reps}
                                       {s.done && <Icon name="check" size={14} stroke={2.6} color={M.acc} />}
                                     </span>

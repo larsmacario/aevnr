@@ -15,8 +15,8 @@ export function MetricCategorySheet({ open, value, onChange, onClose }: MetricCa
     <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label="Kategorie">
       <div
         style={{
-          fontFamily: M.disp,
-          fontWeight: 700,
+          fontFamily: M.display,
+          fontWeight: 400,
           fontSize: 20,
           textAlign: "center",
           marginBottom: 12,

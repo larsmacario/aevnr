@@ -48,7 +48,7 @@ export function SyncStatusSheet({ open, onClose, pendingCount, onSynced }: SyncS
   return (
     <BottomSheet open={open} onClose={onClose} aria-label="Synchronisation">
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, color: M.fg }}>Synchronisation</div>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, color: M.fg }}>Synchronisation</div>
         <p style={{ margin: 0, color: M.mut, fontSize: 13, lineHeight: 1.45 }}>
           {isOnline
             ? "Änderungen werden an Supabase gesendet, sobald du online bist oder auf Sync tippst."
@@ -73,7 +73,7 @@ export function SyncStatusSheet({ open, onClose, pendingCount, onSynced }: SyncS
               >
                 <div style={{ fontWeight: 600 }}>{entry.op.replace(/_/g, " ")}</div>
                 {entry.lastError && (
-                  <div style={{ color: "#ff8a8a", marginTop: 4 }}>{entry.lastError}</div>
+                  <div style={{ color: M.danger, marginTop: 4 }}>{entry.lastError}</div>
                 )}
               </div>
             ))}

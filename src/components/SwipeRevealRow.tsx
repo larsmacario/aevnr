@@ -157,7 +157,7 @@ export function SwipeRevealRow({
           style={{
             width: "100%",
             border: "none",
-            background: "#ef4444",
+            background: M.danger,
             color: "#fff",
             cursor: "pointer",
             display: "flex",

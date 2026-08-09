@@ -45,7 +45,7 @@ export function OneRmPercentInfoCard({ compact = false, style, defaultOpen = fal
           <Icon name="calculator" size={18} color={M.acc} stroke={2} />
           <span
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: compact ? 14 : 15,
               letterSpacing: 0.3,

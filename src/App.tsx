@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { M } from "./theme";
+import { APP_NAME, M } from "./theme";
 import { PhoneApp } from "./PhoneApp";
 import { useAuth } from "./lib/auth";
 import { ResponsiveProvider } from "./lib/responsive";
@@ -22,7 +22,7 @@ function Splash() {
         padding: "0 24px",
       }}
     >
-      <AppLogo size={96} alt="rephive" />
+      <AppLogo size={96} alt={APP_NAME} />
     </div>
   );
 }

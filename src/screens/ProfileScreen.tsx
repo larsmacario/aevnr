@@ -27,7 +27,7 @@ const rowLabelStyle: React.CSSProperties = {
 const rowValueStyle: React.CSSProperties = {
   fontSize: 30,
   color: M.fg,
-  fontFamily: M.disp,
+  fontFamily: M.numeric,
   fontWeight: 700,
   lineHeight: 1.1,
   textAlign: "right",
@@ -53,7 +53,7 @@ const smallOutlineBtn: React.CSSProperties = {
   border: "1px solid " + M.line,
   background: "transparent",
   color: M.fg,
-  fontFamily: M.disp,
+  fontFamily: M.label,
   fontSize: 13,
   letterSpacing: 0.6,
   fontWeight: 700,
@@ -349,11 +349,11 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
         {error && (
           <div
             style={{
-              background: "rgba(255,80,80,.12)",
-              border: "1px solid rgba(255,80,80,.25)",
+              background: M.dangerSoft,
+              border: "1px solid M.dangerBorder",
               borderRadius: 12,
               padding: "12px 14px",
-              color: "#ff8a8a",
+              color: M.danger,
               fontSize: 13,
               marginBottom: 14,
             }}

@@ -70,7 +70,7 @@ export function SetModeToggle({
             border: "none",
             background: setMode === mode ? M.accSoft : "transparent",
             color: setMode === mode ? M.acc : M.mut,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 13,
             letterSpacing: 0.4,
@@ -161,7 +161,7 @@ export function ExerciseSetConfigurator({
                   <span
                     style={{
                       color: M.mut2,
-                      fontFamily: M.disp,
+                      fontFamily: M.numeric,
                       fontSize: 14,
                       lineHeight: 1,
                       paddingBottom: 6,
@@ -268,7 +268,7 @@ function UniformStepper({
         </button>
         <span
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: isLg ? 26 : 18,
             minWidth: isLg ? 28 : 22,

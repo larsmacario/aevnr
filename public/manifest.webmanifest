@@ -1,6 +1,6 @@
 {
-  "name": "rephive",
-  "short_name": "rephive",
+  "name": "ÆVNR",
+  "short_name": "ÆVNR",
   "description": "Workouts erstellen, live tracken und Interval-Timer (EMOM / AMRAP / TABATA / For Time).",
   "lang": "de",
   "dir": "ltr",
@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#141414",
-  "theme_color": "#141414",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "./favicon/favicon-96x96.png",

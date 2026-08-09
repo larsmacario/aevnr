@@ -29,7 +29,7 @@ export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: 
             <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700 }}>VIDEO</div>
             <div
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.label,
                 fontWeight: 700,
                 fontSize: 20,
                 lineHeight: 1.15,

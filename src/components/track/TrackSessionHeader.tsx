@@ -92,7 +92,7 @@ export function TrackSessionHeader({
         >
           <span
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: 26,
               fontVariantNumeric: "tabular-nums",
@@ -142,7 +142,7 @@ export function TrackSessionHeader({
             onChange={(e) => onSessionNameChange?.(e.target.value)}
             style={{
               width: "100%",
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: 16,
               lineHeight: 1.2,
@@ -158,7 +158,7 @@ export function TrackSessionHeader({
         ) : (
           <div
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: 16,
               lineHeight: 1.2,

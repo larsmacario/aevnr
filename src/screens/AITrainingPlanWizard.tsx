@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { brandSelectionStyle, M } from "../theme";
+import { APP_NAME, brandSelectionStyle, M } from "../theme";
 import { useAuth } from "../lib/auth";
 import { usePreferences } from "../lib/preferences";
 import { Icon } from "../components/Icon";
@@ -671,11 +671,11 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {error && (
           <div
             style={{
-              background: "rgba(255,80,80,.12)",
-              border: "1px solid rgba(255,80,80,.25)",
+              background: M.dangerSoft,
+              border: "1px solid M.dangerBorder",
               borderRadius: 12,
               padding: "12px 14px",
-              color: "#ff8a8a",
+              color: M.danger,
               fontSize: 13,
               marginBottom: 20,
               textAlign: "center",
@@ -705,7 +705,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   <Icon name="sparkles" size={28} color={M.brand} />
                 </div>
               </div>
-              <h1 style={{ fontFamily: M.disp, fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: 0.5, lineHeight: 1.1 }}>
+              <h1 style={{ fontFamily: M.numeric, fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: 0.5, lineHeight: 1.1 }}>
                 DEIN KI-TRAININGSPLAN
               </h1>
               <p style={{ color: M.mut, fontSize: 16, lineHeight: 1.5, margin: "12px 0 0 0" }}>
@@ -756,13 +756,13 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               style={{
                 padding: "12px 14px",
                 borderRadius: 12,
-                background: "rgba(255,255,255,0.03)",
+                background: "M.line2",
                 border: "1px solid " + M.line2,
                 textAlign: "left",
               }}
             >
               <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.45, margin: 0 }}>
-                Deine Angaben werden in deinem rephive-Konto gespeichert. Für die Plan-Erstellung werden relevante Daten an
+                Deine Angaben werden in deinem {APP_NAME}-Konto gespeichert. Für die Plan-Erstellung werden relevante Daten an
                 <strong> Anthropic</strong> übermittelt — dazu holen wir vor der Generierung eine separate Einwilligung ein
                 (kein automatisches Opt-in). Es erfolgt keine Weitergabe zu Werbezwecken.{" "}
                 <button
@@ -791,7 +791,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Profil
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -825,7 +825,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Körperwerte
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -892,7 +892,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     fontWeight: 700,
                     fontSize: 13,
                     cursor: "pointer",
-                    fontFamily: M.disp,
+                    fontFamily: M.display,
                   }}
                 >
                   KÖRPERFETT (KFA)
@@ -910,7 +910,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     fontWeight: 700,
                     fontSize: 13,
                     cursor: "pointer",
-                    fontFamily: M.disp,
+                    fontFamily: M.display,
                   }}
                 >
                   HÜFT-TAILLE (HTV)
@@ -999,7 +999,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                         <div style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                           Berechnetes HTV / WHR
                         </div>
-                        <div style={{ fontSize: 32, fontFamily: M.disp, fontWeight: 800, color: M.fg }}>
+                        <div style={{ fontSize: 32, fontFamily: M.numeric, fontWeight: 800, color: M.fg }}>
                           {ratio.toFixed(2)}
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: classification.color }}>
@@ -1019,7 +1019,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 3 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Ziel & Erfahrung
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1100,7 +1100,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 4 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Muskelgruppen-Priorität
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1140,7 +1140,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 5 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Ernährung
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1209,7 +1209,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 6 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Trainingsort
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1290,7 +1290,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 7 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Trainingsstruktur
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1363,7 +1363,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 8 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Tage & Zeit
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1432,7 +1432,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 9 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Schmerzen & Einschränkungen
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1491,7 +1491,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 10 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Alltag & Regeneration
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1549,7 +1549,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   -
                 </button>
                 <div style={{ textAlign: "center", minWidth: 80 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.disp }}>{formatSleepHours(sleepHours)}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.display }}>{formatSleepHours(sleepHours)}</div>
                   <div style={{ fontSize: 13, color: M.mut }}>pro Nacht</div>
                 </div>
                 <button
@@ -1577,7 +1577,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   -
                 </button>
                 <div style={{ textAlign: "center", minWidth: 80 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.disp }}>{stressLevel}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.display }}>{stressLevel}</div>
                   <div style={{ fontSize: 13, color: M.mut }}>von 10</div>
                 </div>
                 <button
@@ -1597,7 +1597,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         {step === 11 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <h2 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Andere Sportarten
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
@@ -1635,7 +1635,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     color: M.brandInk,
                     border: "none",
                     fontWeight: 700,
-                    fontFamily: M.disp,
+                    fontFamily: M.display,
                     cursor: "pointer",
                   }}
                 >
@@ -1699,7 +1699,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                       <button
                         type="button"
                         onClick={() => removeSport(idx)}
-                        style={{ background: "none", border: "none", color: "#ff8a8a", cursor: "pointer", padding: 4 }}
+                        style={{ background: "none", border: "none", color: M.danger, cursor: "pointer", padding: 4 }}
                       >
                         Entfernen
                       </button>
@@ -1751,7 +1751,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   }
                 `}</style>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <h3 style={{ fontFamily: M.disp, fontSize: 24, fontWeight: 700, margin: 0 }}>
+                  <h3 style={{ fontFamily: M.display, fontSize: 24, fontWeight: 400, margin: 0 }}>
                     DEIN PLAN WIRD GENERIERT
                   </h3>
                   <p style={{ color: M.brand, fontWeight: 700, fontSize: 16, margin: 0 }}>
@@ -1779,7 +1779,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   <Icon name="check" size={44} color={M.brandInk} stroke={3} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <h3 style={{ fontFamily: M.disp, fontSize: 28, fontWeight: 800, margin: 0 }}>
+                  <h3 style={{ fontFamily: M.display, fontSize: 28, fontWeight: 400, margin: 0 }}>
                     PLAN ERFOLGREICH GENERIERT!
                   </h3>
                   <p style={{ color: M.mut, fontSize: 15, lineHeight: 1.5, margin: 0 }}>
@@ -1801,7 +1801,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               </>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ color: "#ff8a8a", fontWeight: 600 }}>Generierung fehlgeschlagen.</p>
+                <p style={{ color: M.danger, fontWeight: 600 }}>Generierung fehlgeschlagen.</p>
                 <MButton type="button" onClick={() => void runGeneration(true)} variant="primary" size="md">
                   Erneut versuchen
                 </MButton>

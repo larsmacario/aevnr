@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { M, Z } from "../theme";
+import { APP_NAME, displayStyle, M, Z } from "../theme";
 import { CONTENT_HORIZONTAL_PADDING } from "../lib/responsive";
 import { Icon } from "./Icon";
 
@@ -58,12 +58,9 @@ const tabButtonFocus: CSSProperties = {
   outline: "none",
 };
 
-const floatNavGlass: CSSProperties = {
-  background: "rgba(255,255,255,.08)",
-  backdropFilter: "blur(24px) saturate(1.25)",
-  WebkitBackdropFilter: "blur(24px) saturate(1.25)",
-  border: "1px solid rgba(255,255,255,.12)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,.08)",
+const floatNavBar: CSSProperties = {
+  background: M.bg,
+  border: `1px solid ${M.line}`,
 };
 
 /** Content inset so scroll areas clear the fixed nav on mobile/tablet. */
@@ -74,7 +71,7 @@ export function floatNavContentInset(placement: "bottom" | "left"): string {
   return `calc(${FLOAT_NAV_LEFT_WIDTH}px + ${FLOAT_NAV_EDGE_MARGIN}px + env(safe-area-inset-left, 0px))`;
 }
 
-/** Bottom scrim — dims scroll content under the glass nav (mobile/tablet only). */
+/** Bottom fade — subtle content edge above nav (mobile/tablet only). */
 export function FloatNavContentFade() {
   return (
     <div
@@ -87,7 +84,7 @@ export function FloatNavContentFade() {
         height: floatNavContentInset("bottom"),
         pointerEvents: "none",
         zIndex: Z.nav - 1,
-        background: `linear-gradient(to top, ${M.bg} 0%, rgba(20,20,20,.65) 50%, transparent 100%)`,
+        background: `linear-gradient(to top, ${M.bg} 0%, transparent 100%)`,
       }}
     />
   );
@@ -104,7 +101,7 @@ function NavTabButton({
   horizontal: boolean;
   onSelect: (id: NavTabId) => void;
 }) {
-  const color = active ? M.brand : M.mut;
+  const color = active ? M.fg : M.mut;
 
   return (
     <button
@@ -166,13 +163,12 @@ function ExpressFab({ onExpressTracking }: { onExpressTracking: () => void }) {
         border: "none",
         borderRadius: "50%",
         cursor: "pointer",
-        background: M.brandButtonGradient,
-        boxShadow: M.brandButtonGlow,
-        color: M.brandInk,
-        transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        background: M.acc,
+        color: M.accInk,
+        transition: "transform 0.15s ease, opacity 0.15s ease",
       }}
     >
-      <Icon name="plus" size={24} stroke={2.5} color={M.brandInk} />
+      <Icon name="plus" size={24} stroke={2.5} color={M.accInk} />
     </button>
   );
 }
@@ -227,7 +223,7 @@ export function FloatNav({
             alignItems: horizontal ? "flex-end" : "stretch",
             padding: `${FLOAT_NAV_PADDING_Y}px ${FLOAT_NAV_PADDING_X}px`,
             borderRadius: horizontal ? 22 : 20,
-            ...floatNavGlass,
+            ...floatNavBar,
           }}
         >
           <div
@@ -324,5 +320,21 @@ export function FloatNav({
         </div>
       </div>
     </nav>
+  );
+}
+
+/** Typographic wordmark for nav / auth surfaces. */
+export function Wordmark({ size = 28 }: { size?: number }) {
+  return (
+    <span
+      style={{
+        ...displayStyle(size),
+        color: M.fg,
+        userSelect: "none",
+      }}
+      aria-label={APP_NAME}
+    >
+      {APP_NAME}
+    </span>
   );
 }

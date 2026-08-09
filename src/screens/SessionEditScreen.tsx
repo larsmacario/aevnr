@@ -147,14 +147,14 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
             variant="ghost"
             size="sm"
             loading={saving}
-            style={{ fontFamily: M.disp, color: M.fg, letterSpacing: 0.4 }}
+            style={{ fontFamily: M.label, color: M.fg, letterSpacing: 0.4 }}
           >
             Speichern
           </MButton>
         }
       />
 
-      {saveError && <div style={{ padding: "0 22px 8px", color: "#ff8a8a", fontSize: 13 }}>{saveError}</div>}
+      {saveError && <div style={{ padding: "0 22px 8px", color: M.danger, fontSize: 13 }}>{saveError}</div>}
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `0 22px ${SCROLL_BOTTOM_PADDING}px`, display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
@@ -215,7 +215,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
             color: M.fg,
           }}
         >
-          <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 15 }}>Personal Record (PR)</span>
+          <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 15 }}>Personal Record (PR)</span>
           <span
             style={{
               fontSize: 13,

@@ -48,7 +48,7 @@ export function WaterQuickAmountsSheet({ open, amountsMl, onClose, onSave }: Wat
 
   return (
     <BottomSheet open={open} onClose={onClose} aria-label="Schnellmengen anpassen">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Schnellmengen</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Schnellmengen</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
         Lege die drei Mengen fest, die du mit einem Tap hinzufügen kannst.
       </p>

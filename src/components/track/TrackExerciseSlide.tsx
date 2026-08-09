@@ -109,7 +109,7 @@ export function TrackExerciseSlide({
             justifyContent: "center",
             flexShrink: 0,
             color: blockAccent,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 24,
             lineHeight: 1,
@@ -123,7 +123,7 @@ export function TrackExerciseSlide({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontWeight: 700,
                   fontSize: 20,
                   lineHeight: 1.15,

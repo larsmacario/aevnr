@@ -34,7 +34,7 @@ function menuItemStyle(disabled: boolean, danger = false): CSSProperties {
     border: "none",
     borderRadius: 8,
     cursor: disabled ? "not-allowed" : "pointer",
-    color: disabled ? M.mut2 : danger ? "#f5b4b4" : M.fg,
+    color: disabled ? M.mut2 : danger ? M.danger : M.fg,
     fontSize: 14,
     fontWeight: 600,
     textAlign: "left",
@@ -152,7 +152,7 @@ export function InlineDisclosureMenu({
                 borderRadius: 12,
                 border: "1px solid " + M.line2,
                 background: M.cardHi,
-                boxShadow: "0 12px 32px rgba(0,0,0,.45)",
+                boxShadow: "0 12px 32px M.overlay",
                 zIndex: MENU_Z,
               }}
             >
@@ -193,7 +193,7 @@ export function InlineDisclosureMenu({
                     }}
                     style={menuItemStyle(deleteDisabled, true)}
                   >
-                    <Icon name="trash" size={16} stroke={2} color={deleteDisabled ? M.mut2 : "#f5b4b4"} />
+                    <Icon name="trash" size={16} stroke={2} color={deleteDisabled ? M.mut2 : M.danger} />
                     Löschen
                   </button>
                 </>

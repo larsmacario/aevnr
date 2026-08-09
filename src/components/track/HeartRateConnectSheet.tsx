@@ -1,4 +1,4 @@
-import { M } from "../../theme";
+import { APP_NAME, M } from "../../theme";
 import { BottomSheet } from "../BottomSheet";
 import { MButton } from "../MButton";
 import { Icon } from "../Icon";
@@ -31,7 +31,7 @@ export function HeartRateConnectSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={40} aria-label="Herzfrequenz-Sensor">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, color: M.fg, marginBottom: 8 }}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, marginBottom: 8 }}>
         Herzfrequenz-Sensor
       </div>
       <p style={{ color: M.mut, fontSize: 14, lineHeight: 1.45, margin: "0 0 18px" }}>
@@ -51,7 +51,7 @@ export function HeartRateConnectSheet({
             marginBottom: 16,
           }}
         >
-          Bluetooth-Herzfrequenz ist in Safari nicht verfügbar. Nutze die rephive iOS-App oder Chrome mit Web Bluetooth.
+          Bluetooth-Herzfrequenz ist in Safari nicht verfügbar. Nutze die {APP_NAME} iOS-App oder Chrome mit Web Bluetooth.
         </div>
       ) : connected ? (
         <div

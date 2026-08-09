@@ -119,9 +119,9 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
             <p
               style={{
                 margin: "16px 0 8px",
-                fontFamily: M.disp,
+                fontFamily: M.display,
                 fontSize: 24,
-                fontWeight: 700,
+                fontWeight: 400,
                 color: M.fg,
               }}
             >
@@ -206,7 +206,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
               </div>
 
               {error ? (
-                <p style={{ margin: "0 0 12px", fontSize: 14, color: "#f87171" }}>{error}</p>
+                <p style={{ margin: "0 0 12px", fontSize: 14, color: M.danger }}>{error}</p>
               ) : null}
 
               <MButton type="submit" disabled={submitting} variant="primary" size="md" fullWidth loading={submitting}>

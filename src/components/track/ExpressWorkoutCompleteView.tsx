@@ -81,7 +81,7 @@ export function ExpressWorkoutCompleteView({
         </MButton>
         <span
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 20,
             fontVariantNumeric: "tabular-nums",
@@ -118,7 +118,7 @@ export function ExpressWorkoutCompleteView({
             <Icon name="check" size={22} stroke={2.6} color={M.brand} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, color: M.fg, lineHeight: 1.15 }}>
+            <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, lineHeight: 1.15 }}>
               Workout abgeschlossen
             </div>
             <div

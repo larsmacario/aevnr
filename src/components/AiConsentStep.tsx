@@ -49,7 +49,7 @@ export function AiConsentStep({
         </div>
         <h2
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.label,
             fontSize: 24,
             fontWeight: 700,
             margin: "0 0 6px 0",

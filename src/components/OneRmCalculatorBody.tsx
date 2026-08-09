@@ -72,7 +72,7 @@ function CalculatorStepper({ label, value, displayValue, step, min, max, onChang
         >
           <span
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.numeric,
               fontWeight: 700,
               fontSize: 20,
               color: M.fg,
@@ -163,25 +163,24 @@ export function OneRmCalculatorBody({
         style={{
           borderRadius: 20,
           padding: compact ? "16px 14px" : "20px 18px",
-          background:
-            "linear-gradient(160deg, color-mix(in oklab, var(--mom-acc, oklch(0.87 0.21 143)) 18%, #151915), #121512)",
+          background: M.panel,
           border: "1px solid " + M.line,
           marginBottom: blockGap,
           textAlign: "center",
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.acc, fontWeight: 700 }}>
+        <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 600 }}>
           GESCHÄTZTES MAXIMUM (1RM)
         </div>
         <div
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: heroFontSize,
             lineHeight: 1,
             marginTop: 10,
-            color: M.acc,
+            color: M.fg,
           }}
         >
           {estimates.epley} <span style={{ fontSize: compact ? 20 : 24, fontWeight: 600 }}>kg</span>
@@ -303,7 +302,7 @@ export function OneRmCalculatorBody({
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
                   <span
                     style={{
-                      fontFamily: M.disp,
+                      fontFamily: M.numeric,
                       fontWeight: 700,
                       fontSize: 17,
                       color: accent,
@@ -316,7 +315,7 @@ export function OneRmCalculatorBody({
                 <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
                   <div
                     style={{
-                      fontFamily: M.disp,
+                      fontFamily: M.numeric,
                       fontWeight: 700,
                       fontSize: 18,
                       color: accent,

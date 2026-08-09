@@ -1,4 +1,5 @@
-import { M } from "../theme";
+import { APP_NAME, M } from "../theme";
+import { AppLogo } from "../components/AppLogo";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
 import {
@@ -61,7 +62,7 @@ const EFFICIENCY_TIPS = [
 export function AboutScreen({ onBack }: AboutScreenProps) {
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title="UEBER REPHIVE" />
+      <ScreenBackHeader onBack={onBack} title={`UEBER ${APP_NAME.toUpperCase()}`} />
 
       <div
         style={{
@@ -72,17 +73,13 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <img
-            src="/rehive_with_bee.svg"
-            alt="rephive"
-            style={{ width: 120, height: "auto", margin: "0 auto 16px", display: "block" }}
-          />
+          <AppLogo variant="wordmark" size={48} style={{ margin: "0 auto 16px", justifyContent: "center" }} />
           <p
             style={{
               margin: 0,
-              fontFamily: M.disp,
+              fontFamily: M.display,
               fontSize: 28,
-              fontWeight: 800,
+              fontWeight: 400,
               lineHeight: 1.1,
               color: M.fg,
             }}
@@ -111,10 +108,10 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
               marginBottom: 10,
             }}
           >
-            WARUM REPHIVE?
+            WARUM {APP_NAME.toUpperCase()}?
           </div>
           <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.6, color: M.mut }}>
-            Training soll wirken, nicht Zeit fressen. rephive bündelt Plan, Live-Tracking, Timer und Fortschritt
+            Training soll wirken, nicht Zeit fressen. {APP_NAME} bündelt Plan, Live-Tracking, Timer und Fortschritt
             an einem Ort — ohne jedes Mal neu zu planen. Mit{" "}
             <strong style={{ color: M.fg }}>ExpressTracking</strong> startest du über den Plus-Button in Sekunden:
             letztes Workout wiederholen oder Übungen aus der Bibliothek — auch ohne festen Plan.
@@ -125,7 +122,7 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
             bestätigst nur.
           </p>
           <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: M.mut }}>
-            rephive ist im <strong style={{ color: M.fg }}>Early Access</strong> und wächst noch. Feedback hilft,
+            {APP_NAME} ist im <strong style={{ color: M.fg }}>Early Access</strong> und wächst noch. Feedback hilft,
             das Richtige als Nächstes zu bauen.
           </p>
         </div>
@@ -168,8 +165,8 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
                       justifyContent: "center",
                       background: M.brandSoft,
                       color: M.brand,
-                      fontFamily: M.disp,
-                      fontWeight: 700,
+                      fontFamily: M.display,
+                      fontWeight: 400,
                       fontSize: 14,
                     }}
                     aria-hidden

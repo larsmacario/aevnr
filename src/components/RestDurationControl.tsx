@@ -133,7 +133,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
                 borderRadius: 14,
                 border: "1px solid " + M.line2,
                 background: M.cardHi,
-                boxShadow: "0 12px 32px rgba(0,0,0,.45)",
+                boxShadow: "0 12px 32px M.overlay",
                 zIndex: PANEL_Z,
               }}
             >

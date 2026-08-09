@@ -44,7 +44,7 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
           </div>
           <div
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.label,
               fontWeight: 700,
               fontSize: 24,
               color: M.fg,
@@ -85,7 +85,7 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
         )}
 
         {error && (
-          <div style={{ color: "#ff8a8a", fontSize: 14, textAlign: "center", padding: "24px 0" }}>
+          <div style={{ color: M.danger, fontSize: 14, textAlign: "center", padding: "24px 0" }}>
             Fehler beim Laden des Verlaufs: {error}
           </div>
         )}
@@ -156,7 +156,7 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
                     <div
                       key={sIdx}
                       style={{
-                        background: set.done ? M.accSoft : "rgba(255,255,255,0.03)",
+                        background: set.done ? M.accSoft : "M.line2",
                         border: "1px solid " + (set.done ? M.acc : M.line2),
                         borderRadius: 10,
                         padding: "6px 10px",
@@ -168,7 +168,7 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
                       }}
                     >
                       <span style={{ color: set.done ? M.acc : M.mut, fontSize: 12 }}>S{sIdx + 1}</span>
-                      <span style={{ color: M.fg, fontFamily: M.disp, fontWeight: 700, fontSize: 14 }}>
+                      <span style={{ color: M.fg, fontFamily: M.display, fontWeight: 400, fontSize: 14 }}>
                         {line}
                       </span>
                     </div>

@@ -7,29 +7,28 @@ export interface TimerModeColors {
   border: string;
 }
 
-/** GET READY countdown — always yellow, independent of timer mode. */
-export const TIMER_PREP_COLOR = "#facc15";
+export const TIMER_PREP_COLOR = "#A1A1AA";
 
 export const TIMER_MODE_COLORS: Record<TimerMode, TimerModeColors> = {
   emom: {
-    accent: M.brandStrong,
-    soft: "rgba(126,246,123,.14)",
-    border: "rgba(126,246,123,.32)",
+    accent: M.fg,
+    soft: M.accSoft,
+    border: M.line,
   },
   amrap: {
-    accent: "#f59e0b",
-    soft: "rgba(245,158,11,.14)",
-    border: "rgba(245,158,11,.32)",
+    accent: "#52525B",
+    soft: "rgba(82,82,91,0.08)",
+    border: "rgba(82,82,91,0.18)",
   },
   tabata: {
-    accent: "#ef4444",
-    soft: "rgba(239,68,68,.14)",
-    border: "rgba(239,68,68,.32)",
+    accent: M.fg,
+    soft: M.accSoft,
+    border: M.line,
   },
   fortime: {
-    accent: "#3b82f6",
-    soft: "rgba(59,130,246,.14)",
-    border: "rgba(59,130,246,.32)",
+    accent: "#71717A",
+    soft: "rgba(113,113,122,0.08)",
+    border: "rgba(113,113,122,0.18)",
   },
 };
 
@@ -40,6 +39,6 @@ export function timerModeAccent(mode: TimerMode): string {
 export function timerPhaseColor(kind: SegmentKind, modeAccent: string, done: boolean): string {
   if (done || kind === "done") return M.mut2;
   if (kind === "prep") return TIMER_PREP_COLOR;
-  if (kind === "rest") return M.fg;
+  if (kind === "rest") return M.mut;
   return modeAccent;
 }

@@ -9,8 +9,8 @@ import {
 } from "recharts";
 import { M } from "../theme";
 
-const ACCENT_FALLBACK = "#fafafa";
-const BRAND_FALLBACK = "#7ef67b";
+const ACCENT_FALLBACK = M.fg;
+const BRAND_FALLBACK = M.brand;
 
 export interface TrendLineChartPoint {
   label: string;
@@ -26,13 +26,13 @@ export interface TrendLineChartProps {
 
 function resolveAccentColor(): string {
   if (typeof document === "undefined") return ACCENT_FALLBACK;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue("--mom-acc").trim();
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--rh-acc").trim();
   return raw || ACCENT_FALLBACK;
 }
 
 function resolveBrandColor(): string {
   if (typeof document === "undefined") return BRAND_FALLBACK;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue("--mom-brand").trim();
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--rh-brand").trim();
   return raw || BRAND_FALLBACK;
 }
 
@@ -87,7 +87,7 @@ export function TrendLineChart({
           />
           <YAxis hide domain={yDomain} />
           <Tooltip
-            cursor={{ stroke: "rgba(255,255,255,.12)", strokeWidth: 1 }}
+            cursor={{ stroke: "M.line", strokeWidth: 1 }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
               const row = payload[0].payload as ChartRow;
@@ -103,7 +103,7 @@ export function TrendLineChart({
                   }}
                 >
                   <div style={{ color: M.mut, fontSize: 13, marginBottom: 2 }}>{row.label}</div>
-                  <div style={{ fontFamily: M.disp, fontWeight: 700, color: accent }}>
+                  <div style={{ fontFamily: M.numeric, fontWeight: 700, color: accent }}>
                     {valueFormatter(row.value)}
                     {unit ? ` ${unit}` : ""}
                   </div>

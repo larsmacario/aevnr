@@ -68,13 +68,13 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
 
   return (
     <BottomSheet open={open} onClose={onClose} aria-label="Protein tracken">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Protein tracken</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Protein tracken</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
         Nährwert vom Etikett eingeben — Protein wird aus Menge berechnet.
       </p>
 
       {error ? (
-        <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12, lineHeight: 1.45 }}>{error}</div>
+        <div style={{ color: M.danger, fontSize: 13, marginBottom: 12, lineHeight: 1.45 }}>{error}</div>
       ) : null}
 
       <NutritionStepperStack

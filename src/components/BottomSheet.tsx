@@ -73,8 +73,7 @@ export function BottomSheet({
   const overlayStyle: CSSProperties = {
     position,
     inset: 0,
-    background: "rgba(20,20,20,.72)",
-    backdropFilter: "blur(4px)",
+    background: M.overlay,
     zIndex,
     display: "flex",
     flexDirection: "column",

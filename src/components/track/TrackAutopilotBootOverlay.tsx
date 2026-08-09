@@ -28,8 +28,8 @@ export function TrackAutopilotBootOverlay() {
       />
       <div
         style={{
-          fontFamily: M.disp,
-          fontWeight: 700,
+          fontFamily: M.display,
+          fontWeight: 400,
           fontSize: 18,
           color: M.fg,
           lineHeight: 1.25,

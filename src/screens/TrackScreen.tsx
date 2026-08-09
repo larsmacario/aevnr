@@ -622,7 +622,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 0.8,
-            color: "#f97316",
+            color: M.mut,
             textTransform: "uppercase",
           }}
         >
@@ -650,7 +650,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             size="sm"
             fullWidth
             onClick={() => setView("metcon")}
-            style={{ fontFamily: M.disp, letterSpacing: 0.4, marginTop: 4 }}
+            style={{ fontFamily: M.label, letterSpacing: 0.4, marginTop: 4 }}
           >
             MetCon starten
           </MButton>
@@ -778,7 +778,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             color: M.brand,
             fontSize: 13,
             fontWeight: 700,
-            fontFamily: M.disp,
+            fontFamily: M.display,
             whiteSpace: "nowrap",
             pointerEvents: "none",
           }}
@@ -843,7 +843,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                   >
                     <Icon name="dumbbell" size={26} stroke={2} />
                   </div>
-                  <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, color: M.fg }}>
+                  <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, color: M.fg }}>
                     Noch keine Übungen
                   </div>
                   <div style={{ fontSize: 14, marginTop: 8, lineHeight: 1.45, maxWidth: 260 }}>
@@ -908,7 +908,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                                 marginTop: 8,
                                 border: "1.5px dashed " + M.line,
                                 color: M.fg,
-                                fontFamily: M.disp,
+                                fontFamily: M.label,
                                 letterSpacing: 0.3,
                                 fontSize: 13,
                               }}
@@ -1061,7 +1061,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>PAUSE</span>
             <span
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: 30,
                 fontVariantNumeric: "tabular-nums",
@@ -1073,7 +1073,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
               onClick={W.stopRest}
               variant="secondary"
               size="sm"
-              style={{ borderColor: "rgba(10,26,10,.25)", color: M.brandInk, background: "transparent" }}
+              style={{ borderColor: M.mut2, color: M.brandInk, background: "transparent" }}
             >
               Skip
             </MButton>
@@ -1087,7 +1087,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             fullWidth
             onClick={() => openExercisePicker()}
             style={{
-              fontFamily: M.disp,
+              fontFamily: M.label,
               letterSpacing: 0.4,
               border: "1.5px dashed " + M.line,
               color: M.fg,
@@ -1105,7 +1105,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             disabled={finishing}
             loading={finishing}
             onClick={() => setFinishSheet(true)}
-            style={{ fontFamily: M.disp, letterSpacing: 0.5, fontWeight: 700 }}
+            style={{ fontFamily: M.label, letterSpacing: 0.5, fontWeight: 700 }}
           >
             Workout beenden
           </MButton>

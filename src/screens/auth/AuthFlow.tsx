@@ -135,16 +135,16 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           <AppLogo size={52} />
         </div>
 
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 26, marginBottom: 18 }}>{titles[step]}</div>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 26, marginBottom: 18 }}>{titles[step]}</div>
 
         {error && (
           <div
             style={{
-              background: "rgba(255,80,80,.12)",
-              border: "1px solid rgba(255,80,80,.25)",
+              background: M.dangerSoft,
+              border: "1px solid M.dangerBorder",
               borderRadius: 12,
               padding: "12px 14px",
-              color: "#ff8a8a",
+              color: M.danger,
               fontSize: 13,
               marginBottom: 14,
             }}

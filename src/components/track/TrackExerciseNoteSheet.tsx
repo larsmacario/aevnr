@@ -27,7 +27,7 @@ export function TrackExerciseNoteSheet({
   return (
     <BottomSheet open={open} onClose={onClose} aria-label={`Notizen · ${exerciseName}`} fitContent>
       <div style={{ padding: "4px 20px 24px" }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 18, color: M.fg, marginBottom: 12 }}>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 18, color: M.fg, marginBottom: 12 }}>
           Notizen
         </div>
         <textarea
@@ -59,7 +59,7 @@ export function TrackExerciseNoteSheet({
             onSave(draft);
             onClose();
           }}
-          style={{ marginTop: 14, fontFamily: M.disp, letterSpacing: 0.4 }}
+          style={{ marginTop: 14, fontFamily: M.label, letterSpacing: 0.4 }}
         >
           Speichern
         </MButton>

@@ -30,7 +30,7 @@ import { usePreferences } from "../lib/preferences";
 import { RECOVERY_FOOD_PRESETS, type RecoveryFoodPreset } from "../lib/recoveryEngine";
 import { useRecoveryTargets } from "../lib/recoveryTarget";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
-import { M } from "../theme";
+import { APP_NAME, M } from "../theme";
 
 export type RecoverySection = "protein" | "water";
 
@@ -99,7 +99,7 @@ function ProgressRing({
           pointerEvents: "none",
         }}
       >
-        <div style={{ fontFamily: M.disp, fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{valueLabel}</div>
+        <div style={{ fontFamily: M.numeric, fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{valueLabel}</div>
         <div style={{ fontSize: 13, color: M.mut, fontWeight: 600, marginTop: 4 }}>
           von {targetLabel}
         </div>
@@ -233,7 +233,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
         {selectedLoading ? (
           <div style={{ color: M.mut, fontSize: 14, padding: "24px 0" }}>Laden…</div>
         ) : selectedError ? (
-          <div style={{ color: "#ef4444", fontSize: 14, padding: "24px 0" }}>{selectedError}</div>
+          <div style={{ color: M.danger, fontSize: 14, padding: "24px 0" }}>{selectedError}</div>
         ) : section === "protein" ? (
           <>
             <div style={{ padding: "8px 0 20px", display: "flex", justifyContent: "center" }}>
@@ -262,7 +262,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
             <SectionLabel>HEUTE</SectionLabel>
             {!proteinQuery.data?.length ? (
               <div style={{ padding: 16, borderRadius: 14, background: M.card, border: `1px solid ${M.line2}`, fontSize: 14, color: M.mut, lineHeight: 1.5 }}>
-                Noch nichts geloggt — nach dem Training erinnert dich RepHive.
+                Noch nichts geloggt — nach dem Training erinnert dich {APP_NAME}.
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

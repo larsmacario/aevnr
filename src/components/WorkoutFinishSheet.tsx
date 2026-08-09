@@ -38,7 +38,7 @@ const uniqueExercises = (exercises: string[]) => Array.from(new Set(exercises));
 const FEEDBACK_LEGEND = [
   { rating: "like" as const, icon: "like" as const, label: "Gefällt mir", color: M.brand },
   { rating: "dislike" as const, icon: "dislike" as const, label: "Ersetzen", color: M.mut },
-  { rating: "pain" as const, icon: "alertCircle" as const, label: "Schmerzen", color: "#ef4444" },
+  { rating: "pain" as const, icon: "alertCircle" as const, label: "Schmerzen", color: M.danger },
 ];
 
 function FeedbackLegend() {
@@ -69,7 +69,7 @@ function FeedbackLegend() {
               height: 26,
               borderRadius: 7,
               border: "1px solid " + M.line2,
-              background: "rgba(255,255,255,.02)",
+              background: "M.line2",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -179,7 +179,7 @@ export function WorkoutFinishSheet({
       aria-label="Workout beenden"
     >
       <div style={{ flexShrink: 0 }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Workout beenden?</div>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 6 }}>Workout beenden?</div>
         <div
           style={{
             color: M.mut,
@@ -260,7 +260,7 @@ export function WorkoutFinishSheet({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      background: "rgba(255,255,255,.015)",
+                      background: "M.line2",
                       border: "1px solid " + M.line2,
                       borderRadius: 12,
                       padding: "8px 12px",
@@ -309,7 +309,7 @@ export function WorkoutFinishSheet({
                           height: 32,
                           borderRadius: 8,
                           border: "none",
-                          background: current?.rating === "dislike" ? "rgba(255,255,255,.06)" : "transparent",
+                          background: current?.rating === "dislike" ? "M.line2" : "transparent",
                           color: current?.rating === "dislike" ? M.fg : M.mut,
                           cursor: "pointer",
                           display: "flex",
@@ -328,8 +328,8 @@ export function WorkoutFinishSheet({
                           height: 32,
                           borderRadius: 8,
                           border: "none",
-                          background: current?.rating === "pain" ? "rgba(239, 68, 68, 0.15)" : "transparent",
-                          color: current?.rating === "pain" ? "#ef4444" : M.mut,
+                          background: current?.rating === "pain" ? M.dangerSoft : "transparent",
+                          color: current?.rating === "pain" ? M.danger : M.mut,
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
@@ -337,7 +337,7 @@ export function WorkoutFinishSheet({
                           transition: "all 0.15s ease",
                         }}
                       >
-                        <Icon name="alertCircle" size={16} color={current?.rating === "pain" ? "#ef4444" : M.mut} />
+                        <Icon name="alertCircle" size={16} color={current?.rating === "pain" ? M.danger : M.mut} />
                       </button>
                     </div>
                   </div>
@@ -470,8 +470,8 @@ export function WorkoutFinishSheet({
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              fontFamily: M.disp,
-              fontWeight: 700,
+              fontFamily: M.display,
+              fontWeight: 400,
               fontSize: 15,
               opacity: busy ? 0.45 : 1,
             }}

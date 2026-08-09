@@ -12,7 +12,7 @@ export interface AvatarActionSheetProps {
 export function AvatarActionSheet({ open, onClose, onChoosePhoto, onRemovePhoto }: AvatarActionSheetProps) {
   return (
     <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={30} aria-label="Profilbild-Aktionen">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 14 }}>Profilbild</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 14 }}>Profilbild</div>
       <MButton
         type="button"
         onClick={() => {
@@ -35,7 +35,7 @@ export function AvatarActionSheet({ open, onClose, onChoosePhoto, onRemovePhoto 
         variant="ghost"
         size="md"
         fullWidth
-        style={{ color: "#ff8a8a" }}
+        style={{ color: M.danger }}
       >
         Profilbild entfernen
       </MButton>

@@ -58,9 +58,8 @@ export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTim
               border: "none",
               padding: 0,
               cursor: "pointer",
-              background: "rgba(5,7,5,.6)",
-              backdropFilter: "blur(4px)",
-            }}
+              background: M.overlay,
+              }}
           />
         )}
       </AnimatePresence>
@@ -123,8 +122,8 @@ export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTim
         >
           <div
             style={{
-              fontFamily: M.disp,
-              fontWeight: 700,
+              fontFamily: M.display,
+              fontWeight: 400,
               fontSize: 20,
               color: M.fg,
               marginBottom: 4,

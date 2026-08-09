@@ -2,13 +2,13 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.larsmacario.rephive',
-  appName: 'rephive',
+  appName: 'ÆVNR',
   webDir: 'dist',
-  backgroundColor: '#0a0a0a',
+  backgroundColor: '#FFFFFF',
   ios: {
     scrollEnabled: true,
     contentInset: 'never',
-    backgroundColor: '#0a0a0a'
+    backgroundColor: '#FFFFFF'
   }
 };
 

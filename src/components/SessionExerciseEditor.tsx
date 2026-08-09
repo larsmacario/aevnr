@@ -152,7 +152,7 @@ export function SessionExerciseEditor({
                     justifyContent: "center",
                     background: complete ? M.acc : M.accSoft,
                     color: complete ? M.accInk : M.acc,
-                    fontFamily: M.disp,
+                    fontFamily: M.numeric,
                     fontWeight: 700,
                     fontSize: 16,
                   }}
@@ -251,7 +251,7 @@ export function SessionExerciseEditor({
           border: "1px dashed " + M.line,
           background: "transparent",
           color: M.acc,
-          fontFamily: M.disp,
+          fontFamily: M.numeric,
           fontWeight: 700,
           fontSize: 14,
           cursor: "pointer",

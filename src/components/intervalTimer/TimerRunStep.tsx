@@ -74,7 +74,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           size="md"
           fullWidth
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             letterSpacing: 0.6,
             background: T.running ? M.accSoft : M.card,
             color: T.running ? M.fg : M.mut2,
@@ -91,7 +91,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           size="md"
           fullWidth
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             letterSpacing: 0.6,
             ...(T.running ? null : { background: M.card, color: M.mut2 }),
           }}
@@ -141,7 +141,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
 
   const header = (
     <div style={{ textAlign: "center", flexShrink: 0, marginBottom: isCompact ? 8 : 12 }}>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, letterSpacing: 1, color: M.fg }}>
+      <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 20, letterSpacing: 1, color: M.fg }}>
         {modeMeta.name}
       </div>
       <div
@@ -167,7 +167,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
             marginBottom: 12,
             fontSize: 13,
             fontWeight: 600,
-            color: saveStatus === "saved" ? M.acc : "#ff8a8a",
+            color: saveStatus === "saved" ? M.acc : M.danger,
           }}
         >
           {saveStatus === "saved" ? "Im Verlauf gespeichert" : saveError}
@@ -187,7 +187,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           style={{
             display: "block",
             minHeight: isCompact ? 24 : 28,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: labelFontSize,
             letterSpacing: 4,
@@ -209,7 +209,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           style={{
             minHeight: metaSlotMinHeight,
             marginTop: metaSlotMarginTop,
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: metaFontSize,
             letterSpacing: mode === "amrap" ? 1.5 : 2,

@@ -36,8 +36,7 @@ export function PhoneShell({ children, reserveBottomSafeArea = true }: PhoneShel
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 90% 50% at 50% 0%, color-mix(in oklab, var(--mom-brand, #7ef67b) 10%, transparent), transparent 62%)",
+          background: M.bg,
           zIndex: 0,
         }}
       />

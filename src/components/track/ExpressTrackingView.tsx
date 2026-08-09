@@ -153,7 +153,7 @@ export function ExpressTrackingView({
 
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 18px" }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, color: M.fg }}>Fertig</div>
+        <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 22, color: M.fg }}>Fertig</div>
         <div style={{ color: M.mut, marginTop: 8, fontSize: 14 }}>Alle Sätze erledigt.</div>
       </div>
     );
@@ -190,7 +190,7 @@ export function ExpressTrackingView({
 
   const displayColor = isSuggested ? M.brand : M.fg;
   const displayTypography = {
-    fontFamily: M.disp,
+    fontFamily: M.numeric,
     fontWeight: 800,
     fontSize: 52,
     lineHeight: 1.05,
@@ -226,7 +226,7 @@ export function ExpressTrackingView({
           style={{
             flex: 1,
             textAlign: "center",
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 20,
             fontVariantNumeric: "tabular-nums",
@@ -273,9 +273,7 @@ export function ExpressTrackingView({
               borderRadius: 16,
               border: "1px solid " + (exerciseSwitchActive ? M.brandBorder : "transparent"),
               background: exerciseSwitchActive ? M.brandSoft : "transparent",
-              boxShadow: exerciseSwitchActive ? M.brandGlow : "none",
-              transition: reducedMotion ? "none" : "border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease",
-              animation: animateExerciseSwitch ? "expressExerciseSwitchPanel 1s ease" : undefined,
+              transition: reducedMotion ? "none" : "border-color 0.3s ease, background 0.3s ease",
             }}
           >
             <div
@@ -301,7 +299,7 @@ export function ExpressTrackingView({
 
             <div
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: 26,
                 color: exerciseSwitchActive ? M.brand : M.fg,
@@ -430,7 +428,7 @@ export function ExpressTrackingView({
               </div>
               <div
                 style={{
-                  fontFamily: M.disp,
+                  fontFamily: M.numeric,
                   fontWeight: 700,
                   fontSize: 16,
                   color: M.fg,
@@ -452,17 +450,6 @@ export function ExpressTrackingView({
       </div>
 
       <style>{`
-        @keyframes expressExerciseSwitchPanel {
-          0% {
-            box-shadow: 0 0 0 rgba(126, 246, 123, 0);
-          }
-          35% {
-            box-shadow: 0 0 32px rgba(126, 246, 123, 0.35);
-          }
-          100% {
-            box-shadow: 0 0 20px rgba(126, 246, 123, 0.22);
-          }
-        }
         @keyframes expressExerciseSwitchTitle {
           0% {
             opacity: 0.35;
@@ -503,7 +490,7 @@ export function ExpressTrackingView({
             <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>PAUSE</span>
             <span
               style={{
-                fontFamily: M.disp,
+                fontFamily: M.numeric,
                 fontWeight: 700,
                 fontSize: 30,
                 fontVariantNumeric: "tabular-nums",
@@ -516,7 +503,7 @@ export function ExpressTrackingView({
               onClick={onSkipRest}
               variant="secondary"
               size="sm"
-              style={{ borderColor: "rgba(10,26,10,.25)", color: M.brandInk, background: "transparent" }}
+              style={{ borderColor: M.mut2, color: M.brandInk, background: "transparent" }}
             >
               Skip
             </MButton>
@@ -529,7 +516,7 @@ export function ExpressTrackingView({
             variant="primary"
             size="md"
             onClick={handleConfirm}
-            style={{ flex: 1, minHeight: 52, fontFamily: M.disp, fontWeight: 700, letterSpacing: 0.3 }}
+            style={{ flex: 1, minHeight: 52, fontFamily: M.numeric, fontWeight: 700, letterSpacing: 0.3 }}
           >
             <Icon name="check" size={18} stroke={2.6} /> Satz loggen
           </MButton>
@@ -603,7 +590,7 @@ function ExpressSetValueInput({
         }
       }}
       style={{
-        fontFamily: M.disp,
+        fontFamily: M.numeric,
         fontWeight: 800,
         fontSize: 52,
         lineHeight: 1.05,
@@ -651,7 +638,7 @@ function ExpressSetStepButton({
         border: "1px solid " + M.line2,
         background: M.cardHi,
         color: M.mut,
-        fontFamily: M.disp,
+        fontFamily: M.numeric,
         fontWeight: 700,
         fontSize: 20,
         lineHeight: 1,
@@ -678,7 +665,7 @@ function ExpressBumpButton({ label, onClick }: { label: string; onClick: () => v
         border: "1px solid " + M.line2,
         background: M.cardHi,
         color: M.fg,
-        fontFamily: M.disp,
+        fontFamily: M.numeric,
         fontWeight: 700,
         fontSize: 15,
         cursor: "pointer",

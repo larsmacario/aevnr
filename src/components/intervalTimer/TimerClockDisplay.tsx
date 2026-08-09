@@ -22,7 +22,7 @@ export function TimerClockDisplay({
   const ariaLabel = `${minutes}:${secs}`;
 
   const digitStyle = {
-    fontFamily: M.disp,
+    fontFamily: M.numeric,
     fontWeight: 700,
     fontSize,
     lineHeight: 0.82,

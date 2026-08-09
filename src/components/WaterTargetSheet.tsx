@@ -39,7 +39,7 @@ export function WaterTargetSheet({ open, targetMl, onClose, onSave }: WaterTarge
 
   return (
     <BottomSheet open={open} onClose={onClose} aria-label="Wasserziel anpassen">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Tagesziel</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Tagesziel</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
         Persönliches Ziel festlegen oder wieder automatisch aus Plan und Profil bestimmen lassen.
       </p>

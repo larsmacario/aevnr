@@ -62,7 +62,7 @@ export function TimerSoundPackPicker({
                   padding: "10px 12px",
                   borderRadius: 12,
                   border: "1px solid " + (selected ? M.acc : M.line2),
-                  background: selected ? "rgba(212,255,0,0.06)" : M.panel,
+                  background: selected ? M.brandSoft : M.panel,
                 }}
               >
                 <MButton

@@ -118,7 +118,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{plan.name}</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{plan.name}</div>
           {plan.isActive && <MTag>Aktiv</MTag>}
         </div>
         {plan.sub && <div style={{ fontSize: 13, color: M.mut, marginTop: 8, fontWeight: 600 }}>{plan.sub}</div>}
@@ -257,7 +257,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
       <ScreenBackHeader onBack={onBack} title="PLAN" />
 
       {actionError && (
-        <div style={{ padding: `0 ${CONTENT_HORIZONTAL_PADDING}px 8px`, color: "#ff8a8a", fontSize: 13 }}>
+        <div style={{ padding: `0 ${CONTENT_HORIZONTAL_PADDING}px 8px`, color: M.danger, fontSize: 13 }}>
           {actionError}
         </div>
       )}

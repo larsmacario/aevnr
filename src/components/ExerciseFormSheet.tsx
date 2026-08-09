@@ -148,7 +148,7 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
     <>
     <BottomSheet open={open} onClose={onClose} zIndex={25} aria-label={formTitle}>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 22, marginBottom: 16, flexShrink: 0 }}>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 16, flexShrink: 0 }}>
           {formTitle}
         </div>
         <label style={{ display: "block", marginBottom: 14, flexShrink: 0 }}>
@@ -273,7 +273,7 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
           onClose={() => setMetricSheetOpen(false)}
         />
         {error && (
-          <div style={{ color: "#ff8a8a", fontSize: 13, marginBottom: 12, flexShrink: 0 }}>{error}</div>
+          <div style={{ color: M.danger, fontSize: 13, marginBottom: 12, flexShrink: 0 }}>{error}</div>
         )}
         <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
           <MButton

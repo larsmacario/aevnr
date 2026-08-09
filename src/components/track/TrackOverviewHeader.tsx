@@ -46,7 +46,7 @@ export function TrackOverviewHeader({
         <div
           style={{
             textAlign: "center",
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 22,
             fontVariantNumeric: "tabular-nums",
@@ -64,7 +64,7 @@ export function TrackOverviewHeader({
           onChange={(e) => onSessionNameChange?.(e.target.value)}
           style={{
             width: "100%",
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 18,
             lineHeight: 1.2,
@@ -80,7 +80,7 @@ export function TrackOverviewHeader({
       ) : (
         <div
           style={{
-            fontFamily: M.disp,
+            fontFamily: M.numeric,
             fontWeight: 700,
             fontSize: 18,
             lineHeight: 1.2,

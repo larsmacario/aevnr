@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { PhoneShell } from "../components/PhoneShell";
 import { AppLogo } from "../components/AppLogo";
 import { WelcomeHero } from "../components/WelcomeHero";
-import { M } from "../theme";
+import { APP_NAME, displayStyle, M } from "../theme";
 import { MButton } from "../components/MButton";
 
 export type WelcomeExit = "signup" | "login";
@@ -18,69 +18,26 @@ type WelcomeScreenProps = {
   onContinue: (target: WelcomeExit) => void;
 };
 
-function HoneycombBackdrop() {
-  return (
-    <svg
-      aria-hidden
-      style={{
-        position: "absolute",
-        inset: -20,
-        width: "calc(100% + 40px)",
-        height: "calc(100% + 40px)",
-        opacity: 0.5,
-        pointerEvents: "none",
-        maskImage: "radial-gradient(ellipse 70% 55% at 50% 42%, #000 35%, transparent 78%)",
-        WebkitMaskImage: "radial-gradient(ellipse 70% 55% at 50% 42%, #000 35%, transparent 78%)",
-      }}
-      preserveAspectRatio="xMidYMid slice"
-      viewBox="0 0 400 800"
-    >
-      <defs>
-        <pattern id="welcomeHex" width="52" height="60" patternUnits="userSpaceOnUse">
-          <path
-            d="M26 2 L48 15 L48 41 L26 54 L4 41 L4 15 Z"
-            fill="none"
-            stroke="rgba(126,246,123,.10)"
-            strokeWidth="1.2"
-          />
-        </pattern>
-      </defs>
-      <rect width="400" height="800" fill="url(#welcomeHex)" />
-    </svg>
-  );
-}
-
 function SlideBrand() {
   return (
     <>
       <WelcomeHero size={220} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginTop: 8 }}>
-        <div
+        <div style={{ ...displayStyle(56), color: M.fg, textAlign: "center", letterSpacing: "-0.02em" }}>{APP_NAME}</div>
+        <p
           style={{
-            fontFamily: M.disp,
-            fontWeight: 800,
-            fontSize: "clamp(52px, 13vw, 80px)",
-            lineHeight: 0.82,
-            letterSpacing: -1,
-            display: "flex",
-          }}
-        >
-          <span style={{ color: M.fg }}>rep</span>
-          <span style={{ color: M.acc }}>hive</span>
-        </div>
-        <div
-          style={{
-            fontFamily: M.disp,
-            fontWeight: 600,
-            fontSize: "clamp(18px, 4.5vw, 24px)",
-            letterSpacing: 0.5,
-            textTransform: "uppercase",
+            margin: 0,
+            fontFamily: M.body,
+            fontWeight: 500,
+            fontSize: 16,
             color: M.mut,
             textAlign: "center",
+            maxWidth: 280,
+            lineHeight: 1.45,
           }}
         >
-          Every <span style={{ color: M.fg, fontWeight: 800 }}>rep</span> counts.
-        </div>
+          Dein Begleiter für Training, Erholung und langfristige Gesundheit.
+        </p>
       </div>
     </>
   );
@@ -102,13 +59,9 @@ function SlideFeature({
         <h2
           style={{
             margin: 0,
-            fontFamily: M.disp,
-            fontWeight: 800,
-            fontSize: "clamp(28px, 7vw, 36px)",
-            letterSpacing: 0.5,
-            textTransform: "uppercase",
+            ...displayStyle(32),
             color: M.fg,
-            lineHeight: 1.05,
+            lineHeight: 1.1,
           }}
         >
           {title}
@@ -195,32 +148,18 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
           flexDirection: "column",
           position: "relative",
           overflow: "hidden",
-          background: `radial-gradient(ellipse 90% 50% at 50% 28%, color-mix(in oklab, var(--mom-brand, #7ef67b) 10%, transparent), transparent 62%),
-            radial-gradient(ellipse 70% 40% at 50% 100%, color-mix(in oklab, #9ca3af 10%, transparent), transparent 60%),
-            linear-gradient(180deg, #1c1c1c 0%, ${M.bg} 38%, #101010 100%)`,
+          background: M.bg,
         }}
       >
-        <HoneycombBackdrop />
         <div
           aria-hidden
           style={{
             position: "absolute",
             inset: 0,
-            opacity: 0.45,
-            mixBlendMode: "soft-light",
+            opacity: 0.35,
+            mixBlendMode: "multiply",
             pointerEvents: "none",
             backgroundImage: grainBg,
-            zIndex: 1,
-          }}
-        />
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            background:
-              "radial-gradient(ellipse 55% 40% at 50% 38%, color-mix(in oklab, var(--mom-brand, #7ef67b) 14%, transparent), transparent 60%)",
             zIndex: 1,
           }}
         />
@@ -228,7 +167,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
         <div
           role="region"
           aria-roledescription="Karussell"
-          aria-label="Willkommen bei rephive"
+          aria-label={`Willkommen bei ${APP_NAME}`}
           style={{
             flex: 1,
             minHeight: 0,

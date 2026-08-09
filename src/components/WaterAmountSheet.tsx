@@ -42,11 +42,11 @@ export function WaterAmountSheet({ open, userId, onClose, onSaved }: WaterAmount
 
   return (
     <BottomSheet open={open} onClose={onClose} aria-label="Wassermenge eingeben">
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Wasser eintragen</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Wasser eintragen</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
         Menge in 50-ml-Schritten anpassen.
       </p>
-      {error ? <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{error}</div> : null}
+      {error ? <div style={{ color: M.danger, fontSize: 13, marginBottom: 12 }}>{error}</div> : null}
       <NutritionStepperStack
         fields={[
           {

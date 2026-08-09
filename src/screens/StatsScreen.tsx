@@ -107,7 +107,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
         }}
       >
         {loading && <div style={{ color: M.mut, fontSize: 14 }}>Statistiken werden geladen…</div>}
-        {error && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
 
         {!loading && !error && data && (
           <>
@@ -139,7 +139,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                 <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
                   {data.chartTitle}
                 </span>
-                <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 16, color: M.acc }}>
+                <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.acc }}>
                   {chart.reduce((a, w) => a + w.v, 0) > 0 ? "●" : "—"}
                 </span>
               </div>
@@ -197,7 +197,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                       <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
                         {cfg.label} (LETZTE 10)
                       </span>
-                      <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 16, color: M.acc }}>
+                      <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.acc }}>
                         {latestVal.toFixed(1)} {cfg.unit}
                       </span>
                     </div>
@@ -251,8 +251,8 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                     >
                       <span
                         style={{
-                          fontFamily: M.disp,
-                          fontWeight: 700,
+                          fontFamily: M.display,
+                          fontWeight: 400,
                           fontSize: 18,
                           color: M.mut2,
                           minWidth: 22,
@@ -266,7 +266,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                           in {ex.sessionCount} Session{ex.sessionCount === 1 ? "" : "s"}
                         </div>
                       </div>
-                      <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 18, color: M.acc }}>
+                      <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 18, color: M.acc }}>
                         {ex.volumeT}t
                       </span>
                     </div>

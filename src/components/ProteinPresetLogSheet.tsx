@@ -80,13 +80,13 @@ export function ProteinPresetLogSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose} aria-label={`${preset.label} loggen`}>
-      <div style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 20, marginBottom: 8 }}>{preset.label}</div>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>{preset.label}</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
         Schätzwert — Nährwert und Portion anpassen. Protein wird berechnet.
       </p>
 
       {error ? (
-        <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12, lineHeight: 1.45 }}>{error}</div>
+        <div style={{ color: M.danger, fontSize: 13, marginBottom: 12, lineHeight: 1.45 }}>{error}</div>
       ) : null}
 
       <NutritionStepperStack

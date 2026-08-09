@@ -126,7 +126,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     if (gender === "male") {
       if (liveWHR >= 1.00) {
         label = "Hoch";
-        color = "#ff5e5e";
+        color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.90) {
         label = "Erhöht";
@@ -136,7 +136,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     } else if (gender === "female") {
       if (liveWHR >= 0.85) {
         label = "Hoch";
-        color = "#ff5e5e";
+        color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.80) {
         label = "Erhöht";
@@ -146,7 +146,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     } else if (gender === "other") {
       if (liveWHR >= 0.92) {
         label = "Hoch";
-        color = "#ff5e5e";
+        color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.85) {
         label = "Erhöht";
@@ -495,7 +495,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             onClick={() => setActiveTab("werte")}
             variant={activeTab === "werte" ? "primary" : "ghost"}
             size="sm"
-            style={{ flex: 1, fontFamily: M.disp, letterSpacing: 0.3, ...(activeTab === "werte" ? null : { color: M.mut }) }}
+            style={{ flex: 1, fontFamily: M.label, letterSpacing: 0.3, ...(activeTab === "werte" ? null : { color: M.mut }) }}
           >
             Werte
           </MButton>
@@ -504,7 +504,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             onClick={() => setActiveTab("fotos")}
             variant={activeTab === "fotos" ? "primary" : "ghost"}
             size="sm"
-            style={{ flex: 1, fontFamily: M.disp, letterSpacing: 0.3, ...(activeTab === "fotos" ? null : { color: M.mut }) }}
+            style={{ flex: 1, fontFamily: M.label, letterSpacing: 0.3, ...(activeTab === "fotos" ? null : { color: M.mut }) }}
           >
             Fotos
           </MButton>
@@ -531,12 +531,12 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             gap: 10,
             padding: "12px 16px",
             background: M.card,
-            border: !preferences.gender ? "1px solid #ff5e5e" : "1px solid " + M.line2,
+            border: !preferences.gender ? "1px solid M.danger" : "1px solid " + M.line2,
             borderRadius: 14,
             marginBottom: 12,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: !preferences.gender ? "#ff8a8a" : M.mut, letterSpacing: 0.5 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: !preferences.gender ? M.danger : M.mut, letterSpacing: 0.5 }}>
             GESCHLECHT {!preferences.gender && "*"}
           </span>
           <div
@@ -655,8 +655,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     border: "1px solid " + M.line,
                     borderRadius: 10,
                     color: M.fg,
-                    fontFamily: M.disp,
-                    fontWeight: 700,
+                    fontFamily: M.display,
+                    fontWeight: 400,
                     fontSize: 18,
                     textAlign: "center",
                     outline: "none",
@@ -681,8 +681,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     border: "1px solid " + M.line,
                     borderRadius: 10,
                     color: M.fg,
-                    fontFamily: M.disp,
-                    fontWeight: 700,
+                    fontFamily: M.display,
+                    fontWeight: 400,
                     fontSize: 18,
                     textAlign: "center",
                     outline: "none",
@@ -710,8 +710,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     border: "1px solid " + M.line,
                     borderRadius: 10,
                     color: M.fg,
-                    fontFamily: M.disp,
-                    fontWeight: 700,
+                    fontFamily: M.display,
+                    fontWeight: 400,
                     fontSize: 18,
                     textAlign: "center",
                     outline: "none",
@@ -736,8 +736,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     border: "1px solid " + M.line,
                     borderRadius: 10,
                     color: M.fg,
-                    fontFamily: M.disp,
-                    fontWeight: 700,
+                    fontFamily: M.display,
+                    fontWeight: 400,
                     fontSize: 18,
                     textAlign: "center",
                     outline: "none",
@@ -767,7 +767,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontFamily: M.disp, fontSize: 26, fontWeight: 700, color: M.fg }}>
+                  <span style={{ fontFamily: M.display, fontSize: 26, fontWeight: 400, color: M.fg }}>
                     {whrEvaluation.ratio.toFixed(2)}
                   </span>
                   <span
@@ -825,7 +825,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                             background: "none",
                             border: "none",
                             cursor: "pointer",
-                            color: "#ff5e5e",
+                            color: M.danger,
                             fontSize: 14,
                             padding: "0 2px",
                             display: "flex",
@@ -848,8 +848,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           border: "1px solid " + M.line,
                           borderRadius: 10,
                           color: M.fg,
-                          fontFamily: M.disp,
-                          fontWeight: 700,
+                          fontFamily: M.display,
+                          fontWeight: 400,
                           fontSize: 18,
                           textAlign: "center",
                           outline: "none",
@@ -973,7 +973,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
                 GEWICHTSVERLAUF (LETZTE 10)
               </span>
-              <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 15, color: M.acc }}>
+              <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 15, color: M.acc }}>
                 {weightChartPoints.length > 0
                   ? `${weightChartPoints[weightChartPoints.length - 1].value.toFixed(1)} kg`
                   : ""}
@@ -991,7 +991,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
           </div>
 
           {loading && <div style={{ color: M.mut, fontSize: 14 }}>Werte werden geladen…</div>}
-          {error && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{error}</div>}
+          {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
 
           {!loading && !error && measurements && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1065,11 +1065,11 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                       {/* Weight & KFA & WHR */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                          <span style={{ fontFamily: M.disp, fontWeight: 700, fontSize: 24, color: M.fg }}>
+                          <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 24, color: M.fg }}>
                             {m.weightKg.toFixed(1)} <span style={{ fontSize: 13, fontWeight: 600, color: M.mut }}>kg</span>
                           </span>
                           {m.bodyFatPct !== undefined && (
-                            <span style={{ fontSize: 14, color: M.acc, fontWeight: 700, fontFamily: M.disp }}>
+                            <span style={{ fontSize: 14, color: M.acc, fontWeight: 700, fontFamily: M.display }}>
                               {m.bodyFatPct.toFixed(1)}% KFA
                             </span>
                           )}
@@ -1086,7 +1086,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                             if (gender === "male") {
                               if (ratio >= 1.00) {
                                 label = "Hoch";
-                                color = "#ff5e5e";
+                                color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.90) {
                                 label = "Erhöht";
@@ -1096,7 +1096,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                             } else if (gender === "female") {
                               if (ratio >= 0.85) {
                                 label = "Hoch";
-                                color = "#ff5e5e";
+                                color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.80) {
                                 label = "Erhöht";
@@ -1106,7 +1106,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                             } else if (gender === "other") {
                               if (ratio >= 0.92) {
                                 label = "Hoch";
-                                color = "#ff5e5e";
+                                color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.85) {
                                 label = "Erhöht";
@@ -1118,7 +1118,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                             return (
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 <span style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>WHR:</span>
-                                <span style={{ fontFamily: M.disp, fontSize: 16, fontWeight: 700, color: M.fg }}>
+                                <span style={{ fontFamily: M.display, fontSize: 16, fontWeight: 400, color: M.fg }}>
                                   {ratio.toFixed(2)}
                                 </span>
                                 <span
@@ -1310,8 +1310,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                       border: "1px solid " + M.line,
                       borderRadius: 10,
                       color: M.fg,
-                      fontFamily: M.disp,
-                      fontWeight: 700,
+                      fontFamily: M.display,
+                      fontWeight: 400,
                       fontSize: 18,
                       textAlign: "center",
                       outline: "none",
@@ -1437,7 +1437,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#ff5e5e",
+                    color: M.danger,
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: "pointer",
@@ -1496,8 +1496,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                       border: "none",
                       background: on ? M.acc : "transparent",
                       color: on ? M.accInk : M.mut,
-                      fontFamily: M.disp,
-                      fontWeight: 700,
+                      fontFamily: M.display,
+                      fontWeight: 400,
                       fontSize: 13,
                       cursor: "pointer",
                     }}
@@ -1509,7 +1509,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             </div>
 
             {loadingPhotos && <div style={{ color: M.mut, fontSize: 14 }}>Fotos werden geladen…</div>}
-            {errorPhotos && <div style={{ color: "#ff8a8a", fontSize: 14 }}>{errorPhotos}</div>}
+            {errorPhotos && <div style={{ color: M.danger, fontSize: 14 }}>{errorPhotos}</div>}
 
             {!loadingPhotos && !errorPhotos && photos && (
               (() => {
@@ -1622,7 +1622,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#ff5e5e",
+                                color: M.danger,
                               }}
                             >
                               <Icon name="trash" size={14} stroke={2} />

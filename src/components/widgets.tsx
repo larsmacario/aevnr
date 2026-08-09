@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { M } from "../theme";
+import { labelStyle, M, numericStyle } from "../theme";
 import { Icon } from "./Icon";
 
 export interface MStepperProps {
@@ -57,7 +57,7 @@ export function MStepper({
       {btn(-step)}
       <span
         style={{
-          fontFamily: M.disp,
+          fontFamily: M.numeric,
           fontWeight: 700,
           fontSize: valueFontSize,
           minWidth: valueMinWidth,
@@ -93,14 +93,14 @@ export function MSwitch({ checked, onChange, disabled }: MSwitchProps) {
         height: 26,
         borderRadius: 13,
         border: "1px solid " + (checked ? "transparent" : M.line),
-        background: checked ? M.brand : M.card,
+        background: checked ? M.acc : M.line2,
         cursor: disabled ? "default" : "pointer",
         position: "relative",
         padding: 0,
         flex: "0 0 auto",
         opacity: disabled ? 0.5 : 1,
         transition: "background .15s",
-        ...(checked ? { boxShadow: M.brandGlow } : null),
+        ...(checked ? { boxShadow: "" } : null),
       }}
     >
       <span
@@ -111,7 +111,7 @@ export function MSwitch({ checked, onChange, disabled }: MSwitchProps) {
           width: 20,
           height: 20,
           borderRadius: 10,
-          background: checked ? M.brandInk : M.fg,
+          background: checked ? M.accInk : M.bg,
           transition: "left .15s",
         }}
       />
@@ -126,13 +126,13 @@ export function MTag({ children, on }: { children: ReactNode; on?: boolean }) {
       style={{
         fontSize: 13,
         fontWeight: 600,
-        color: on ? M.brandInk : M.mut,
+        color: on ? M.accInk : M.mut,
         padding: "6px 12px",
-        borderRadius: 9,
-        background: on ? M.brand : M.card,
+        borderRadius: 9999,
+        background: on ? M.acc : M.bg,
         border: "1px solid " + (on ? "transparent" : M.line2),
         whiteSpace: "nowrap",
-        ...(on ? { boxShadow: M.brandGlow } : null),
+        ...(on ? { boxShadow: "" } : null),
       }}
     >
       {children}
@@ -154,31 +154,18 @@ export function MStat({
     <div
       style={{
         flex: 1,
-        background: M.card,
+        background: M.bg,
         border: "1px solid " + M.line2,
         borderRadius: 14,
-        padding: "12px 13px",
+        padding: "14px 14px 12px",
       }}
     >
+      <div style={{ ...labelStyle(), lineHeight: 1.25 }}>{label}</div>
       <div
         style={{
-          fontSize: 13,
-          letterSpacing: 1.4,
-          color: M.brand,
-          fontWeight: 700,
-          lineHeight: 1.25,
-          minHeight: "2.5em",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: M.disp,
-          fontWeight: 700,
-          fontSize: 26,
-          marginTop: 2,
-          letterSpacing: 0.3,
+          ...numericStyle({ fontSize: 26, fontWeight: 600 }),
+          marginTop: 4,
+          letterSpacing: -0.02,
           lineHeight: 1,
         }}
       >

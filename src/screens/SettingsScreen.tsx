@@ -235,7 +235,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
                 size="sm"
                 style={{
                   flex: 1,
-                  fontFamily: M.disp,
+                  fontFamily: M.label,
                   fontSize: 13,
                   letterSpacing: 0.3,
                   ...(timerMode === m.id ? null : { color: M.mut }),
