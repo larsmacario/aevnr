@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import type React from "react";
 import { brandSurface, displayStyle, labelStyle, M } from "../theme";
 import { planDayDisplayName } from "../data";
 import {
@@ -22,7 +21,6 @@ import {
   sumProteinToday,
   sumWaterToday,
   useActivePlan,
-  useBodyMeasurements,
   useHomeStats,
   useProteinLogsSince,
   useProteinLogsToday,
@@ -30,6 +28,10 @@ import {
   useWaterLogsLastSevenDays,
   useWaterLogsToday,
   useWeeklyVolume,
+  saveDailyCheckin,
+  fetchSessionsSinceWithExercises,
+  generateDailyAiHealthspanRecommendation,
+  useDailyCheckins,
 } from "../lib/db";
 import { computeRecoveryContext, computeWeeklyRecoveryStats, aggregateProteinByWeekday, getWeekStartMonday } from "../lib/recoveryEngine";
 import { useRecoveryTargets } from "../lib/recoveryTarget";
@@ -37,13 +39,16 @@ import { aggregateWaterLastSevenDays, formatWaterAmount, shouldShowHydrationHint
 import { useNetwork } from "../lib/offline/networkStatus";
 import { Icon } from "../components/Icon";
 import { ScreenScroll } from "../components/ScreenScroll";
-import { usePreferences } from "../lib/preferences";
+import { hasAiConsent, usePreferences } from "../lib/preferences";
 import { WorkoutFinishSheet } from "../components/WorkoutFinishSheet";
 import { MStat } from "../components/widgets";
 import { MButton } from "../components/MButton";
 import { UserAvatar } from "../components/UserAvatar";
 import { WeekPlannerSheet } from "../components/WeekPlannerSheet";
 import { AlertSheet } from "../components/AlertSheet";
+import { DailyCheckinSheet } from "../components/DailyCheckinSheet";
+import { HealthspanDashboard } from "../components/HealthspanDashboard";
+import { buildHealthspanDomains, checkinFingerprint, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
 
 export interface HomeScreenProps {
   onStart: (planDayId: string, planId?: string) => void;
@@ -57,7 +62,8 @@ export interface HomeScreenProps {
   onOpenStats: () => void;
   onOpenCalculator: () => void;
   onOpenBodyTracker: () => void;
-  onOpenRecovery: (section?: "protein" | "water") => void;
+  onOpenRecovery: (section?: "protein" | "water" | "checkin") => void;
+  onOpenExpress: () => void;
   refreshKey?: number;
   trackLoading?: boolean;
 }
@@ -75,6 +81,7 @@ export function HomeScreen({
   onOpenCalculator,
   onOpenBodyTracker,
   onOpenRecovery,
+  onOpenExpress,
   refreshKey = 0,
   trackLoading,
 }: HomeScreenProps) {
@@ -84,7 +91,6 @@ export function HomeScreen({
   const { data: activePlan, loading: planLoading, reload: reloadPlan, isStale: planStale } = useActivePlan();
   const { data: week, reload: reloadWeek } = useWeeklyVolume();
   const { data: stats, reload: reloadStats } = useHomeStats();
-  const { data: measurements, reload: reloadMeasurements } = useBodyMeasurements(refreshKey);
   const { data: proteinLogsToday, reload: reloadProteinLogs } = useProteinLogsToday(refreshKey);
   const [waterRefreshKey, setWaterRefreshKey] = useState(0);
   const {
@@ -98,6 +104,7 @@ export function HomeScreen({
   const weekStartMonday = useMemo(() => getWeekStartMonday(), []);
   const { data: proteinLogsWeek } = useProteinLogsSince(weekStartMonday, refreshKey);
   const { data: sessions } = useSessions();
+  const { data: dailyCheckins, reload: reloadDailyCheckins } = useDailyCheckins(weekStartMonday.toISOString().slice(0, 10), refreshKey);
   const [finishSheet, setFinishSheet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
@@ -107,9 +114,13 @@ export function HomeScreen({
   const [durationSec, setDurationSec] = useState(0);
   const [selectedIsoWeekday, setSelectedIsoWeekday] = useState(() => getTodayIsoWeekday());
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
+  const [aiRecommendationBusy, setAiRecommendationBusy] = useState(false);
   const [hydrationBusy, setHydrationBusy] = useState(false);
   const [hydrationAlert, setHydrationAlert] = useState<string | null>(null);
   const [hydrationNow, setHydrationNow] = useState(() => new Date());
+  const [checkinOpen, setCheckinOpen] = useState(false);
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const [checkinAlert, setCheckinAlert] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeWorkout) return;
@@ -130,11 +141,11 @@ export function HomeScreen({
     reloadPlan();
     reloadWeek();
     reloadStats();
-    reloadMeasurements();
     reloadProteinLogs();
     reloadWaterLogs();
     reloadWaterWeek();
-  }, [refreshKey, reloadPlan, reloadWeek, reloadStats, reloadMeasurements, reloadProteinLogs, reloadWaterLogs, reloadWaterWeek]);
+    reloadDailyCheckins();
+  }, [refreshKey, reloadPlan, reloadWeek, reloadStats, reloadProteinLogs, reloadWaterLogs, reloadWaterWeek, reloadDailyCheckins]);
 
   useEffect(() => {
     if (finishSheet) {
@@ -147,11 +158,6 @@ export function HomeScreen({
   useEffect(() => {
     setSelectedIsoWeekday(getTodayIsoWeekday());
   }, [activePlan?.id]);
-
-  const latestMeasurement = useMemo(() => {
-    if (!measurements || measurements.length === 0) return null;
-    return measurements[0];
-  }, [measurements]);
 
   const displayName = profile?.display_name ?? "Athlet";
   const todayLabel = useMemo(
@@ -218,6 +224,59 @@ export function HomeScreen({
         })
       : null;
   const currentWeekKey = useMemo(() => getCurrentWeekKey(), []);
+  const healthspan = useMemo(() => {
+    const inCurrentWeek = (sessions ?? []).filter((session) => new Date(session.performedAt) >= weekStartMonday);
+    const zone2Sessions = inCurrentWeek.filter((session) => /zone\s*2|grundlage/i.test(`${session.name} ${session.tags.join(" ")}`));
+    const strengthSessions = inCurrentWeek.filter((session) => !zone2Sessions.includes(session));
+    const input = {
+      completedStrengthDays: new Set(strengthSessions.map((session) => toLocalDateKey(new Date(session.performedAt)))).size,
+      strengthTargetDays: Math.max(1, activePlan?.days.length ?? 3),
+      zone2Minutes: zone2Sessions.reduce((sum, session) => sum + session.dur, 0),
+      proteinG: sumProteinToday(proteinLogsToday ?? []), proteinTargetG,
+      waterMl: sumWaterToday(waterLogsToday ?? []), waterTargetMl,
+      checkins: dailyCheckins ?? [],
+      primaryFocus: preferences.primaryFocus,
+      secondaryFocus: preferences.secondaryFocus,
+    };
+    return { input, domains: buildHealthspanDomains(input), recommendation: recommendHealthspanAction(input) };
+  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, dailyCheckins, preferences.primaryFocus, preferences.secondaryFocus]);
+
+  const cachedRecommendation = useMemo(() => {
+    const latest = dailyCheckins?.[0];
+    const cached = preferences.dailyHealthspanRecommendation;
+    if (!latest || !cached || cached.checkinDate !== latest.checkinDate) return null;
+    return cached.checkinFingerprint === checkinFingerprint(latest) ? cached : null;
+  }, [dailyCheckins, preferences.dailyHealthspanRecommendation]);
+
+  const handleSaveDailyCheckin = async (input: import("../lib/healthspan").DailyCheckinInput) => {
+    if (!user) return;
+    setCheckinBusy(true);
+    try {
+      const normalized = normalizeDailyCheckin(input);
+      await saveDailyCheckin(user.id, normalized);
+      setCheckinOpen(false);
+      reloadDailyCheckins();
+      if (isOnline && hasAiConsent(preferences)) {
+        setAiRecommendationBusy(true);
+        void (async () => {
+          try {
+            const since = new Date(); since.setDate(since.getDate() - 30);
+            const recommendation = await generateDailyAiHealthspanRecommendation({
+              checkin: normalized,
+              week: { ...healthspan.input, zone2TargetMinutes: 150 },
+              history: await fetchSessionsSinceWithExercises(since),
+              activePlan: activePlan ? { name: activePlan.name, dayNames: activePlan.days.map((day) => planDayDisplayName(day, weekdayLabels)) } : null,
+            });
+            await updatePreferences({ dailyHealthspanRecommendation: { ...recommendation, version: 1, checkinDate: normalized.checkinDate!, checkinFingerprint: checkinFingerprint(normalized), createdAt: new Date().toISOString() } }, true);
+          } catch {
+            // Die erklärbare Regel-Empfehlung bleibt sichtbar.
+          } finally { setAiRecommendationBusy(false); }
+        })();
+      }
+    }
+    catch (cause) { setCheckinAlert(cause instanceof Error ? cause.message : "Check-in konnte nicht gespeichert werden."); }
+    finally { setCheckinBusy(false); }
+  };
   const isSunday = getTodayIsoWeekday() === 6;
   const weekPlannerDismissed = preferences.weekPlannerDismissedWeek === currentWeekKey;
   const showWeekPlannerCard = !!activePlan && isSunday && !weekPlannerDismissed;
@@ -531,88 +590,96 @@ export function HomeScreen({
     </div>
   );
 
-  const weekStrip =
-    activePlan ? (
-      <div
-        style={{
-          marginTop: 14,
-          background: M.card,
-          border: "1px solid " + M.line2,
-          borderRadius: 18,
-          padding: "15px 16px 14px",
-        }}
-      >
-        <div style={{ ...labelStyle(), marginBottom: 12 }}>Diese Woche</div>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
-          {calendarWeek.map((day) => {
-            const isSelected = selectedIsoWeekday === day.isoWeekday;
-            return (
-              <MButton
-                key={day.isoWeekday}
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedIsoWeekday(day.isoWeekday)}
-                aria-label={`${day.weekdayLabel}, ${day.dateNumber}.`}
-                aria-pressed={isSelected}
+  const weekStrip = (
+    <div
+      style={{
+        marginTop: 14,
+        background: M.card,
+        border: "1px solid " + M.line2,
+        borderRadius: 18,
+        padding: "15px 16px 14px",
+      }}
+    >
+      <div style={{ ...labelStyle(), marginBottom: 12 }}>Diese Woche</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
+        {calendarWeek.map((day) => {
+          const isSelected = selectedIsoWeekday === day.isoWeekday;
+          return (
+            <MButton
+              key={day.isoWeekday}
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIsoWeekday(day.isoWeekday)}
+              aria-label={`${day.weekdayLabel}, ${day.dateNumber}.`}
+              aria-pressed={isSelected}
+              style={{
+                flex: 1,
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                minWidth: 0,
+                height: "auto",
+                minHeight: 0,
+                padding: "4px 0",
+              }}
+            >
+              <div
                 style={{
-                  flex: 1,
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 6,
-                  minWidth: 0,
-                  height: "auto",
-                  minHeight: 0,
-                  padding: "4px 0",
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: hasTrainingWeekdays && day.isTrainingDay ? M.brand : "transparent",
+                }}
+                aria-hidden
+              />
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isSelected ? M.brand : day.isToday ? M.brand : M.mut2,
+                  letterSpacing: 0.2,
                 }}
               >
-                <div
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: hasTrainingWeekdays && day.isTrainingDay ? M.brand : "transparent",
-                  }}
-                  aria-hidden
-                />
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: isSelected ? M.brand : day.isToday ? M.brand : M.mut2,
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  {day.weekdayLabel}
-                </span>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    fontFamily: M.display,
-                    background: isSelected ? M.brand : "transparent",
-                    color: isSelected ? M.brandInk : M.fg,
-                    border: isSelected
-                      ? "none"
-                      : day.isToday
-                        ? "1px solid " + M.brand
-                        : "1px solid " + M.line2,
-                  }}
-                >
-                  {day.dateNumber}
-                </div>
-              </MButton>
-            );
-          })}
-        </div>
+                {day.weekdayLabel}
+              </span>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: M.display,
+                  background: isSelected ? M.brand : "transparent",
+                  color: isSelected ? M.brandInk : M.fg,
+                  border: isSelected
+                    ? "none"
+                    : day.isToday
+                      ? "1px solid " + M.brand
+                      : "1px solid " + M.line2,
+                }}
+              >
+                {day.dateNumber}
+              </div>
+            </MButton>
+          );
+        })}
       </div>
-    ) : null;
+      {!activePlan ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 14 }}>
+          <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>Kein aktiver Plan</span>
+          <MButton type="button" variant="ghost" size="sm" onClick={onOpenPlans} style={{ padding: 0, color: M.fg }}>
+            Plan erstellen
+            <Icon name="chevR" size={14} color={M.fg} stroke={2.2} />
+          </MButton>
+        </div>
+      ) : null}
+    </div>
+  );
 
   const statsRow = (
     <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
@@ -817,26 +884,27 @@ export function HomeScreen({
     </div>
   );
 
-  const homeCardLinkStyle: React.CSSProperties = {
+  const quickAccessTileStyle = {
     width: "100%",
-    marginTop: 14,
-    padding: "12px 14px",
-    borderRadius: 12,
-    justifyContent: "flex-start",
-    textAlign: "left",
-    background: M.card,
-    gap: 12,
-    minHeight: 56,
+    minHeight: 58,
     height: "auto",
+    padding: "10px",
+    borderRadius: 12,
+    flexDirection: "row" as const,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    textAlign: "left" as const,
+    background: M.card,
+    gap: 8,
   };
 
   const timerLink = (
-    <MButton onClick={onOpenTimer} variant="secondary" size="md" fullWidth style={homeCardLinkStyle}>
+    <MButton onClick={onOpenTimer} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
           background: M.brandSoft,
           color: M.brand,
           display: "flex",
@@ -845,23 +913,19 @@ export function HomeScreen({
           flex: "0 0 auto",
         }}
       >
-        <Icon name="timer" size={18} stroke={2} />
+        <Icon name="timer" size={16} stroke={2} />
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: M.fg, fontWeight: 600, fontSize: 14 }}>Interval-Timer</div>
-        <div style={{ color: M.mut, fontSize: 13, marginTop: 1 }}>EMOM · AMRAP · TABATA · For Time</div>
-      </div>
-      <Icon name="chevR" size={16} color={M.mut2} stroke={2.2} />
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Interval-Timer</div>
     </MButton>
   );
 
   const calculatorLink = (
-    <MButton onClick={onOpenCalculator} variant="secondary" size="md" fullWidth style={homeCardLinkStyle}>
+    <MButton onClick={onOpenCalculator} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
           background: M.brandSoft,
           color: M.brand,
           display: "flex",
@@ -870,23 +934,19 @@ export function HomeScreen({
           flex: "0 0 auto",
         }}
       >
-        <Icon name="calculator" size={18} stroke={2} />
+        <Icon name="calculator" size={16} stroke={2} />
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: M.fg, fontWeight: 600, fontSize: 14 }}>1RM-Rechner</div>
-        <div style={{ color: M.mut, fontSize: 13, marginTop: 1 }}>One Rep Max kalkulieren</div>
-      </div>
-      <Icon name="chevR" size={16} color={M.mut2} stroke={2.2} />
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>1RM-Rechner</div>
     </MButton>
   );
 
   const bodyTrackerLink = (
-    <MButton onClick={onOpenBodyTracker} variant="secondary" size="md" fullWidth style={homeCardLinkStyle}>
+    <MButton onClick={onOpenBodyTracker} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
           background: M.brandSoft,
           color: M.brand,
           display: "flex",
@@ -895,29 +955,19 @@ export function HomeScreen({
           flex: "0 0 auto",
         }}
       >
-        <Icon name="scale" size={18} stroke={2} />
+        <Icon name="scale" size={16} stroke={2} />
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: M.fg, fontWeight: 600, fontSize: 14 }}>Körperwerte</div>
-        <div style={{ color: M.mut, fontSize: 13, marginTop: 1 }}>
-          {latestMeasurement
-            ? `${latestMeasurement.weightKg} kg ${latestMeasurement.bodyFatPct ? `· ${latestMeasurement.bodyFatPct}% KFA` : ""}`
-            : "Gewicht & Fettanteil tracken"}
-        </div>
-      </div>
-      <Icon name="chevR" size={16} color={M.mut2} stroke={2.2} />
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Körperwerte</div>
     </MButton>
   );
 
-  const recoverySubtitle = `Protein ${proteinLoggedTodayG} g · Wasser ${formatWaterAmount(waterLoggedTodayMl)}`;
-
   const recoveryLink = (
-    <MButton onClick={() => onOpenRecovery("protein")} variant="secondary" size="md" fullWidth style={homeCardLinkStyle}>
+    <MButton onClick={() => onOpenRecovery("protein")} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
           background: M.brandSoft,
           color: M.brand,
           display: "flex",
@@ -926,13 +976,9 @@ export function HomeScreen({
           flex: "0 0 auto",
         }}
       >
-        <Icon name="heart" size={18} stroke={2} />
+        <Icon name="heart" size={16} stroke={2} />
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: M.fg, fontWeight: 600, fontSize: 14 }}>Recovery</div>
-        <div style={{ color: M.mut, fontSize: 13, marginTop: 1 }}>{recoverySubtitle}</div>
-      </div>
-      <Icon name="chevR" size={16} color={M.mut2} stroke={2.2} />
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Recovery</div>
     </MButton>
   );
 
@@ -994,16 +1040,18 @@ export function HomeScreen({
       </div>
 
       {weekStrip}
+      <HealthspanDashboard domains={healthspan.domains} recommendation={cachedRecommendation ?? healthspan.recommendation} generating={aiRecommendationBusy} onCheckin={() => setCheckinOpen(true)} onOpenTimer={onOpenTimer} onOpenRecovery={onOpenRecovery} onOpenExpress={onOpenExpress} onStartStrength={selectedPlanDay && activePlan ? () => onStart(selectedPlanDay.id, activePlan.id) : undefined} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>
+        {bodyTrackerLink}
+        {recoveryLink}
+        {timerLink}
+        {calculatorLink}
+      </div>
       {weekPlannerCard}
       {hydrationHint}
       {todayCard}
       {activeWorkoutCard}
       {statsBlock}
-      <div style={{ ...labelStyle(), marginTop: 16 }}>Schnellzugriff</div>
-      {timerLink}
-      {calculatorLink}
-      {bodyTrackerLink}
-      {recoveryLink}
       {recoveryWeekCard}
       <WorkoutFinishSheet
         open={finishSheet && !!activeWorkout && !!activeMetrics}
@@ -1032,6 +1080,8 @@ export function HomeScreen({
         message={hydrationAlert ?? ""}
         onClose={() => setHydrationAlert(null)}
       />
+      <AlertSheet open={!!checkinAlert} title="Check-in nicht gespeichert" message={checkinAlert ?? ""} onClose={() => setCheckinAlert(null)} />
+      <DailyCheckinSheet open={checkinOpen} current={dailyCheckins?.[0]} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={handleSaveDailyCheckin} />
     </ScreenScroll>
   );
 }

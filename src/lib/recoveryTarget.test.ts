@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LibraryPlan } from "../data";
 import { DEFAULT_PREFERENCES } from "./preferences";
-import { resolveWaterTargetMl } from "./recoveryTarget";
+import { resolveProteinTargetG, resolveWaterTargetMl } from "./recoveryTarget";
 
 function planWithWater(waterMl: number): LibraryPlan {
   return {
@@ -46,5 +46,41 @@ describe("resolveWaterTargetMl", () => {
         latestMeasurement: null,
       }),
     ).toEqual({ waterTargetMl: 2500, waterSource: "fallback", waterNeedsWeightHint: true });
+  });
+});
+
+describe("resolveProteinTargetG", () => {
+  const bodyPreferences = {
+    ...DEFAULT_PREFERENCES,
+    proteinTargetMode: "body" as const,
+    heightCm: 180,
+    fitnessGoal: "strength" as const,
+  };
+
+  it("verwendet im Plan-Modus das Ziel des aktiven Plans", () => {
+    const result = resolveProteinTargetG({
+      activePlan: { summary: { nutrition: { protein_g: 180 } } } as LibraryPlan,
+      preferences: DEFAULT_PREFERENCES,
+      latestMeasurement: { weightKg: 80 } as never,
+    });
+    expect(result).toMatchObject({ proteinTargetG: 180, source: "plan" });
+  });
+
+  it("ignoriert im Körperwerte-Modus den Plan", () => {
+    const result = resolveProteinTargetG({
+      activePlan: { summary: { nutrition: { protein_g: 180 } } } as LibraryPlan,
+      preferences: bodyPreferences,
+      latestMeasurement: { weightKg: 80 } as never,
+    });
+    expect(result).toMatchObject({ proteinTargetG: 160, source: "profile" });
+  });
+
+  it("verwendet im manuellen Modus die eigene Vorgabe", () => {
+    const result = resolveProteinTargetG({
+      activePlan: { summary: { nutrition: { protein_g: 180 } } } as LibraryPlan,
+      preferences: { ...DEFAULT_PREFERENCES, proteinTargetMode: "manual", proteinTargetG: 155 },
+      latestMeasurement: { weightKg: 80 } as never,
+    });
+    expect(result).toMatchObject({ proteinTargetG: 155, source: "manual" });
   });
 });

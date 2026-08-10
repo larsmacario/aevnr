@@ -1,13 +1,17 @@
 import { CONTENT_HORIZONTAL_PADDING, useContentColumnStyle } from "../lib/responsive";
 import type { SaveSessionInput } from "../lib/db";
+import type { TimerCfg, TimerMode } from "../lib/engine";
 import { IntervalTimerWizard } from "../components/intervalTimer/IntervalTimerWizard";
 
 export interface TimerScreenProps {
   onSaveSession: (input: SaveSessionInput) => Promise<void>;
   onBack: () => void;
+  initialMode?: TimerMode;
+  initialConfig?: TimerCfg;
+  sessionTags?: string[];
 }
 
-export function TimerScreen({ onSaveSession, onBack }: TimerScreenProps) {
+export function TimerScreen({ onSaveSession, onBack, initialMode, initialConfig, sessionTags }: TimerScreenProps) {
   const columnStyle = useContentColumnStyle();
 
   return (
@@ -27,6 +31,9 @@ export function TimerScreen({ onSaveSession, onBack }: TimerScreenProps) {
         onSaveSession={onSaveSession}
         onExit={onBack}
         showHeader
+        initialMode={initialMode}
+        initialConfig={initialConfig}
+        sessionTags={sessionTags}
       />
     </div>
   );

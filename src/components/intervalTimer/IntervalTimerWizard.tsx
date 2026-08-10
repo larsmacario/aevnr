@@ -20,6 +20,9 @@ export interface IntervalTimerWizardProps {
   variant?: "screen" | "sheet";
   onExit?: () => void;
   showHeader?: boolean;
+  initialMode?: import("../../lib/engine").TimerMode;
+  initialConfig?: import("../../lib/engine").TimerCfg;
+  sessionTags?: string[];
 }
 
 export function IntervalTimerWizard({
@@ -27,9 +30,12 @@ export function IntervalTimerWizard({
   variant = "screen",
   onExit,
   showHeader = false,
+  initialMode,
+  initialConfig,
+  sessionTags = [],
 }: IntervalTimerWizardProps) {
-  const [step, setStep] = useState<WizardStep>("type");
-  const session = useIntervalTimerSession({ onSaveSession });
+  const [step, setStep] = useState<WizardStep>(initialMode ? "settings" : "type");
+  const session = useIntervalTimerSession({ onSaveSession: (input) => onSaveSession({ ...input, tags: [...input.tags, ...sessionTags] }), initialMode, initialConfig });
   const {
     mode,
     setMode,

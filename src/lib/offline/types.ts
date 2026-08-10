@@ -1,6 +1,7 @@
 import type { LibraryExercise, LibraryPlan } from "../../data";
 
 export type SyncOpType =
+  | "UPSERT_DAILY_CHECKIN"
   | "SAVE_SESSION"
   | "ADVANCE_PLAN"
   | "CREATE_PLAN"
@@ -41,4 +42,16 @@ export interface CachedExercisesRow {
 export interface MetaRow {
   userId: string;
   lastFullSyncAt: number;
+}
+
+export interface CachedDailyCheckinRow {
+  id: string;
+  userId: string;
+  checkinDate: string;
+  sleepHours: number;
+  sleepQuality: number;
+  stressLevel: number;
+  energyLevel: number;
+  note?: string;
+  updatedAt: number;
 }

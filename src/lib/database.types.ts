@@ -129,6 +129,45 @@ export type Database = {
           }
         ]
       }
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          created_at: string
+          energy_level: number
+          id: string
+          note: string | null
+          sleep_hours: number
+          sleep_quality: number
+          stress_level: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checkin_date?: string
+          created_at?: string
+          energy_level: number
+          id?: string
+          note?: string | null
+          sleep_hours: number
+          sleep_quality: number
+          stress_level: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checkin_date?: string
+          created_at?: string
+          energy_level?: number
+          id?: string
+          note?: string | null
+          sleep_hours?: number
+          sleep_quality?: number
+          stress_level?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       food_products: {
         Row: {
           basis: string

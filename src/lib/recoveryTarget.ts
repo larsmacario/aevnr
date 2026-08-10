@@ -4,13 +4,14 @@ import type { BodyMeasurement } from "./db";
 import { useActivePlan, useBodyMeasurements } from "./db";
 import { buildNutrition, calcWaterMl } from "./nutrition";
 import { clampWaterTargetMl } from "./hydration";
+import { clampProteinTargetG } from "./proteinTarget";
 import type { UserPreferences } from "./preferences";
 import { usePreferences } from "./preferences";
 import { useAuth } from "./auth";
 
 export interface RecoveryTargetResult {
   proteinTargetG: number;
-  source: "plan" | "profile" | "fallback";
+  source: "plan" | "profile" | "manual" | "fallback";
   needsWeightHint: boolean;
 }
 
@@ -30,8 +31,12 @@ export function resolveProteinTargetG(params: {
   latestMeasurement: BodyMeasurement | null | undefined;
   birthDate?: string | null;
 }): RecoveryTargetResult {
+  if (params.preferences.proteinTargetMode === "manual" && typeof params.preferences.proteinTargetG === "number") {
+    return { proteinTargetG: clampProteinTargetG(params.preferences.proteinTargetG), source: "manual", needsWeightHint: false };
+  }
+
   const planProtein = params.activePlan?.summary?.nutrition?.protein_g;
-  if (typeof planProtein === "number" && planProtein > 0) {
+  if (params.preferences.proteinTargetMode === "plan" && typeof planProtein === "number" && planProtein > 0) {
     return { proteinTargetG: planProtein, source: "plan", needsWeightHint: false };
   }
 

@@ -30,6 +30,8 @@ export interface ExpressTrackingExerciseTemplate {
   note?: string;
   templateKg?: number;
   templateReps?: number;
+  /** Optionaler KI-/Review-Wert; überschreibt den globalen Standard für diese Übung. */
+  setCount?: number;
 }
 
 export interface ExpressTrackingImportResult {
@@ -188,6 +190,7 @@ export function buildExpressTrackingWorkout(input: {
   const exercises: Exercise[] = input.templates.map((t) => {
     const reps = t.templateReps ?? defaultReps;
     const kg = t.templateKg ?? 0;
+    const exerciseSetCount = Math.max(1, t.setCount ?? setCount);
     return {
       id: crypto.randomUUID(),
       name: t.name,
@@ -195,7 +198,7 @@ export function buildExpressTrackingWorkout(input: {
       catalogExerciseId: t.catalogExerciseId,
       metric: "weight_reps",
       blockFormat: "straight_sets",
-      sets: buildUniformTrackedSets(setCount, reps, kg, false, "weight_reps"),
+      sets: buildUniformTrackedSets(exerciseSetCount, reps, kg, false, "weight_reps"),
     };
   });
 
@@ -204,6 +207,11 @@ export function buildExpressTrackingWorkout(input: {
     sub: "",
     exercises,
   };
+}
+
+/** Healthspan-Alternative: jede Übung behält mindestens einen Arbeitssatz. */
+export function reducedExpressSetCount(setCount: number): number {
+  return Math.max(1, Math.floor(setCount) - 1);
 }
 
 export function countSkippedExpressImport(result: ExpressTrackingImportResult): number {

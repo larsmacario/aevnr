@@ -6,6 +6,7 @@ import {
   groupExpressTemplatesByMuscleGroup,
   isExpressTrackingExercise,
   isExpressTrackingSessionTag,
+  reducedExpressSetCount,
   sessionExercisesToExpressTemplates,
 } from "./expressTracking";
 
@@ -72,6 +73,25 @@ describe("buildExpressTrackingWorkout", () => {
     expect(wo.exercises[0]?.sets[0]?.kg).toBe(100);
     expect(wo.exercises[0]?.sets[0]?.reps).toBe(5);
     expect(wo.exercises[0]?.sets.every((s) => !s.done)).toBe(true);
+  });
+
+  it("respects an individual set count from a KI review", () => {
+    const wo = buildExpressTrackingWorkout({
+      templates: [
+        { name: "Kniebeuge", setCount: 2 },
+        { name: "Rudern", setCount: 4 },
+      ],
+      setCount: 3,
+    });
+    expect(wo.exercises[0]?.sets).toHaveLength(2);
+    expect(wo.exercises[1]?.sets).toHaveLength(4);
+  });
+});
+
+describe("reducedExpressSetCount", () => {
+  it("reduziert jeden Express-Plan um einen Satz, aber nie unter einen", () => {
+    expect(reducedExpressSetCount(4)).toBe(3);
+    expect(reducedExpressSetCount(1)).toBe(1);
   });
 });
 

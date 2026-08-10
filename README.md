@@ -1,13 +1,13 @@
-# rephive
+# ÆVNR
 
-Mobile-first Workout-Tracker (dark, Lime-Akzent). Workouts planen,
-live tracken und Interval-Timer (EMOM · AMRAP · TABATA · For Time).
+Mobile-first Healthspan-Coach für präventiv orientierte Nutzer. ÆVNR verbindet
+Krafttraining, Ausdauer, Ernährung & Körper sowie Erholung – ohne medizinische Diagnosen.
 
 ## Stack
 
-- **Vite + React 18 + TypeScript** — reine Client-App
-- Inline-Style-Theme (`src/theme.ts`), Fonts: _Saira Condensed_ (Display) + _Archivo_ (Body)
-- PWA-Manifest, `base: "./"` → später per **Capacitor** als native iOS/Android-App wrappbar
+- **Vite + React 18 + TypeScript**; Supabase für Auth, Postgres, Storage und Edge Functions
+- Local-first für Pläne, Übungen und tägliche Healthspan-Check-ins via Dexie-Outbox
+- Capacitor-iOS-Wrapper; Körperfotos liegen in privatem Storage und werden über Signed URLs geladen
 
 ## Befehle
 
@@ -24,23 +24,18 @@ npm run lint     # nur Typecheck (tsc --noEmit)
 ```
 src/
   theme.ts            Design-Tokens (M) + Helfer
-  data.ts             Workouts, Verlauf, Übungs-Library (Mock)
-  lib/engine.ts       Timer-Engine (useTimer) + Tracking (useWorkout)
-  components/         Icon, Ring, PhoneShell, Widgets, BottomNav
-  screens/            Home, Library, Timer, History, Track, Builder
-  PhoneApp.tsx        Tab-/Push-Router der App
-  DesktopBuilder.tsx  Breiter Workout-Builder (Desktop)
-  App.tsx             Responsive Shell (mobil Vollbild · Desktop zentriert)
+  lib/healthspan.ts   Erklärbare Bereiche und Tagesempfehlungen
+  lib/db.ts           Supabase-Queries, Check-ins und Offline-Sync-Registrierung
+  components/         Mobile UI, Check-in-Sheet und Healthspan-Dashboard
+  screens/            Dashboard, Tracking, Pläne, Timer, Körper & Recovery
+  PhoneApp.tsx        Tab-/Push-Router
 ```
 
 ## Funktionen
 
-- **Start** — Dashboard mit heutigem Workout, Wochen-Statistiken & Volumen-Chart; Link zu **Statistik**
-- **Statistik** — Push-Ansicht mit Zeitraum (Woche/Monat/Gesamt), Volumen-Chart, Top-Übungen & PRs
-- **Workouts** — Bibliothek; ▶ startet Live-Tracking, „+" öffnet den Builder
-- **Timer** — EMOM / AMRAP / TABATA / For Time, live mit Vorbereitung & Runden-Anzeige
-- **Verlauf** — vergangene Sessions mit Dauer, Volumen, Sätzen & PR-Badges
-- **Live-Tracking** — Sätze abhaken (startet Pausen-Timer), Gewicht/Wdh anpassen
-- **Desktop-Builder** — Übungsbibliothek mit Suche, Plan-Tabelle mit Steppern
+- **Healthspan-Dashboard** — Wochenfortschritt für Kraft, Ausdauer, Ernährung & Körper sowie Erholung
+- **Tages-Check-in** — Schlaf, Qualität, Stress, Energie und optionale Notiz; Empfehlungen sind nachvollziehbar und nie automatisch
+- **Training & Timer** — Pläne, Live-/Express-Tracking, Cardio-Metriken, HF-Zonen und EMOM / AMRAP / TABATA / For Time
+- **Recovery & Körper** — Protein, Wasser, Gewicht, Maße und private Vorher-/Nachher-Fotos
 
-> Hinweis: Daten sind aktuell statischer Mock (keine Persistenz). Siehe `.agents/memory/current.md` für nächste Schritte.
+> Hinweis: ÆVNR ist ein Lifestyle- und Präventionsprodukt. Es erstellt keine Diagnosen und ersetzt keine medizinische Beratung.

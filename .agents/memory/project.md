@@ -1,7 +1,7 @@
 # Projekt: rephive
 
 ## Ziel
-Workout-Tracker für Gym-/Bodybuilding-Nutzer: Workouts planen, live tracken, Interval-Timer.
+ÆVNR ist ein Healthspan-Coach für präventiv orientierte 40+-Nutzer. Krafttraining, Pläne und Timer bleiben Kernfunktionen neben Ausdauer, Ernährung/Körper und Erholung.
 Mobile-first; iOS über Capacitor (gleiche React-App).
 
 ## Tech-Stack
@@ -28,6 +28,7 @@ Mobile-first; iOS über Capacitor (gleiche React-App).
 - `src/lib/superset.ts` — Supersatz-Blöcke, Verknüpfen/Lösen, `shouldStartRestAfterSet` (flexible Satzanzahl pro Übung)
 - `src/lib/oneRepMax.ts` — 1RM-Formeln, Prozent-Tabelle, `getOneRmPrefillFromExercise` (Track-Sheet-Vorausfüllung)
 - `src/lib/db.ts` — DB-Queries + Hooks (`usePlans`, `useActivePlan`, `useExercises` via `useCachedAsync`); Remote-Wrapper + Sync-Queue; `updatePlanTrainingWeekdays` (nur `plans.summary`); KI-Invoke mit 150 s Timeout
+- **Healthspan:** `daily_checkins` ist local-first synchronisiert; `healthspan.ts` erzeugt erklärbare Fallbacks. KI-Tagesempfehlungen und KI-Express-Sessions sind über einwilligungsgeschützte Supabase Edge Functions verfügbar; Ergebnis-Caches sowie freiwillige Express-Startwerte liegen in `profiles.preferences`.
 - `src/lib/offline/` — Local-First: `localDb` (Dexie), `planStore`/`exerciseStore`, `syncQueue`/`syncEngine`, `networkStatus`, `useCachedAsync`, `planBuilder`
 - `src/components/OfflineBanner.tsx` + `SyncStatusSheet.tsx` — Offline-/Sync-Status in der App
 - `src/lib/ai-plan-volume.ts` — `exerciseCountBounds` / Hinweistext für Wizard (Logik spiegelt Edge Function)
@@ -119,3 +120,4 @@ Mobile-first; iOS über Capacitor (gleiche React-App).
 - **Profilbild:** Bucket `avatars`, Pfad `{userId}/avatar.webp`, Spalte `profiles.avatar_path`; Crop → WebP (~512px); Bearbeitung nur auf Profil-Screen; Anzeige auch Home-Menü-Button.
 - KI-Trainingspläne: Wizard → `generate-training-plan` liefert pro Tag **`blocks[]`** (warmup/skill/strength/metcon) + `enabledBlocks` + MetCon **`config`**; warmup-Baustein nur leichtes Cardio (kein Mobilitäts-Block im Prompt); Client mappt in `db.ts`. Deploy: `./scripts/deploy-training-plan.sh`.
 - Rollen: `profiles.role` enum `athlet` | `coach` | `owner`; nur `isAppOwner` für globale Übungen. **Coaching** bewusst zurückgestellt (wird später neu gebaut).
+- **Healthspan-KI:** Keine Diagnose, Therapie oder stillen Planänderungen. Check-in-Signale steuern nur begründete, bestätigungspflichtige Optionen; bei Offline, Fehler oder fehlender Anthropic-Einwilligung bleibt der personalisierte Regel-Fallback sichtbar.

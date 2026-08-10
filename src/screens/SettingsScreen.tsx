@@ -10,6 +10,7 @@ import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
 import { BottomSheet } from "../components/BottomSheet";
 import { AiConsentStep } from "../components/AiConsentStep";
+import { ExpressPerformanceBaselineForm } from "../components/ExpressPerformanceBaselineForm";
 import { OwnerLabsSection } from "../components/settings/OwnerLabsSection";
 import { useAuth } from "../lib/auth";
 import { isOwnerLabsVisible } from "../lib/ownerLabs";
@@ -83,6 +84,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const { preferences, updatePreferences, saving } = usePreferences();
   const [timerMode, setTimerMode] = useState<TimerMode>("emom");
   const [aiConsentSheetOpen, setAiConsentSheetOpen] = useState(false);
+  const [baselineSheetOpen, setBaselineSheetOpen] = useState(false);
 
   const legalBaseUrl = (import.meta.env.VITE_LEGAL_BASE_URL ?? "https://rephive.app").replace(/\/$/, "");
   const openDatenschutz = () => {
@@ -196,10 +198,17 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           <SettingRow
             label="KI-Datennutzung für Trainingspläne"
             hint="Einwilligung zur Übermittlung deiner Trainingsdaten an Anthropic für KI-Pläne. Widerruf stoppt neue Generierungen; bestehende Pläne bleiben erhalten."
-            last
           >
             <MSwitch checked={aiConsentGranted} onChange={handleAiConsentToggle} />
           </SettingRow>
+          <SettingRow
+            label="Startwerte für KI-Express"
+            hint={preferences.expressPerformanceBaseline ? `Zuletzt aktualisiert: ${new Date(preferences.expressPerformanceBaseline.updatedAt).toLocaleDateString("de-DE")}` : "Freiwillige Leistungsorientierung für deine erste KI-Express-Session."}
+            last
+          >
+            <MButton type="button" variant="secondary" size="sm" onClick={() => setBaselineSheetOpen(true)}>Bearbeiten</MButton>
+          </SettingRow>
+          {preferences.expressPerformanceBaseline ? <MButton type="button" variant="ghost" size="sm" fullWidth onClick={() => updatePreferences({ expressPerformanceBaseline: null }, true)} style={{ marginTop: 8, color: M.danger }}>Startwerte löschen</MButton> : null}
         </Section>
 
         {showOwnerLabs ? (
@@ -276,6 +285,9 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           showActions
           saving={saving}
         />
+      </BottomSheet>
+      <BottomSheet open={baselineSheetOpen} onClose={() => setBaselineSheetOpen(false)} position="absolute" zIndex={40} aria-label="Startwerte für KI-Express">
+        <ExpressPerformanceBaselineForm baseline={preferences.expressPerformanceBaseline} onSave={async (baseline) => { await updatePreferences({ expressPerformanceBaseline: baseline }, true); setBaselineSheetOpen(false); }} onCancel={() => setBaselineSheetOpen(false)} saving={saving} />
       </BottomSheet>
     </div>
   );

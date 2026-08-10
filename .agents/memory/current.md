@@ -1,19 +1,18 @@
 # Aktueller Stand
 
 ## Letzte Änderungen
-- **Arbeitstitel:** App heißt **ÆVNR** (Domain vorläufig noch `aevos.life`).
-- Favicon/Splash/iOS AppIcon auf **Æ** / **ÆVNR** umgestellt; Wordmark ohne forced lowercase.
-- HomeScreen: einheitliche Karten-Überschriften (`labelStyle` + `displayStyle(24)`).
-- Monochromes Premium-Design (Superpower-Pivot).
+- Healthspan-Pivot umgesetzt: Dashboard, tägliche Check-ins (Schlaf/Stress/Energie), Recovery-Trends, Zone-2-Flow und private Körperfoto-URLs.
+- Express Tracking besitzt regelbasierten Coach sowie freiwillige KI-Tages-Sessions mit 30-Tage-Historie, Präferenzen, Startwerten und editierbarer Review.
+- KI-Tagesempfehlung wird nach dem Check-in erzeugt, im Preferences-Cache gespeichert und fällt ohne Einwilligung/Netz/Fehler auf einen individuellen Regel-Fallback zurück.
+- Supabase Edge Functions `generate-daily-express-session` (v2) und `generate-daily-healthspan-recommendation` (v1) sind aktiv; Tests zuletzt: 88 erfolgreich.
 
 ## Fokus
-- Visuell auf Gerät prüfen — wirkt es jetzt wie Superpower?
-- Domain/Marketing bei Bedarf von `aevos.life` auf ÆVNR-Domain migrieren.
+- Healthspan-UX auf Gerät testen, insbesondere KI-Check-in-Empfehlung und Express-Startwerte.
 
 ## Nächste Schritte
-- `npm run dev` → Branding + Home prüfen.
-- iOS: `npm run build && npx cap sync ios` für Display Name + Icons.
+- Bei Web-Änderungen vor iOS-Test: `npm run build && npx cap sync ios`.
+- Rechtliches, Domain und App-Bundle-ID auf ÆVNR ausrichten.
 
 ## Offene Punkte
-- Bundle ID bleibt `com.larsmacario.rephive`; Legal-Links zeigen noch auf `rephive.app`.
-- Landingpage separat.
+- KI-Empfehlungen sind Lifestyle-/Präventionshilfe ohne medizinische Bewertung; Apple Health/Wearables folgen später.
+- Worktree enthält die laufenden, noch nicht committeten Healthspan-Änderungen.

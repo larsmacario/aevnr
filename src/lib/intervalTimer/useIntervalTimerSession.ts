@@ -14,9 +14,11 @@ export type TimerLeaveAction = { kind: "back" } | { kind: "reset" };
 
 export interface UseIntervalTimerSessionOptions {
   onSaveSession: (input: SaveSessionInput) => Promise<void>;
+  initialMode?: TimerMode;
+  initialConfig?: Partial<TimerCfg>;
 }
 
-export function useIntervalTimerSession({ onSaveSession }: UseIntervalTimerSessionOptions) {
+export function useIntervalTimerSession({ onSaveSession, initialMode = "emom", initialConfig }: UseIntervalTimerSessionOptions) {
   const { profile } = useAuth();
   const { preferences, updatePreferences } = usePreferences();
   const heartRate = useHeartRateMonitor();
@@ -24,11 +26,14 @@ export function useIntervalTimerSession({ onSaveSession }: UseIntervalTimerSessi
   const [hrSamples, setHrSamples] = useState<HeartRateSample[]>([]);
   const lastSampleKeyRef = useRef<string | null>(null);
   const maxHr = maxHrFromBirthDate(profile?.birth_date);
-  const [mode, setMode] = useState<TimerMode>("emom");
+  const [mode, setMode] = useState<TimerMode>(initialMode);
+  const [presetConfig, setPresetConfig] = useState<Partial<TimerCfg>>(initialConfig ?? {});
   const cfgs = preferences.timerDefaults;
-  const cfg = cfgs[mode];
+  const cfg = mode === initialMode ? { ...cfgs[mode], ...presetConfig } : cfgs[mode];
   const setCfg = (p: Partial<TimerCfg>) =>
-    updatePreferences({
+    mode === initialMode
+      ? setPresetConfig((current) => ({ ...current, ...p }))
+      : updatePreferences({
       timerDefaults: {
         [mode]: { ...cfgs[mode], ...p },
       },

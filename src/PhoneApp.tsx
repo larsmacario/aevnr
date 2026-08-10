@@ -51,10 +51,11 @@ import { RecoveryScreen, type RecoverySection } from "./screens/RecoveryScreen";
 import { AboutScreen } from "./screens/AboutScreen";
 import { SupportScreen } from "./screens/SupportScreen";
 import { ActiveTimerProvider, useActiveTimer } from "./lib/activeTimer";
-import { usePreferences } from "./lib/preferences";
+import { hasCurrentOnboarding, usePreferences } from "./lib/preferences";
 import { OnboardingWizard } from "./screens/OnboardingWizard";
 import { AITrainingPlanWizard } from "./screens/AITrainingPlanWizard";
 import { ExpressTrackingSetupScreen } from "./screens/ExpressTrackingSetupScreen";
+import { Zone2SetupScreen } from "./screens/Zone2SetupScreen";
 type Route =
   | {
       kind: "tracking";
@@ -66,6 +67,8 @@ type Route =
       expressTracking?: boolean;
     }
   | { kind: "expressTrackingSetup" }
+  | { kind: "zone2Setup"; suggestion?: { durationMin: number; device?: string; rationale?: string } }
+  | { kind: "zone2Timer"; durationMin: number; device?: string; aiSuggested?: boolean }
   | { kind: "planBuilder"; planId?: string }
   | { kind: "exercises" }
   | { kind: "sessionDetail"; sessionId: string }
@@ -115,7 +118,7 @@ function buildPayloadFromDraft(draft: ActiveWorkoutDraft): FinishPayload {
   const isCustom = !draft.planDayId;
   return {
     name: draft.session.name,
-    tags: draft.expressTracking ? [EXPRESS_TRACKING_TAG] : isCustom ? [EXPRESS_TRACKING_TAG] : draft.tags,
+    tags: draft.expressTracking ? draft.tags : isCustom ? [EXPRESS_TRACKING_TAG] : draft.tags,
     durationMin: Math.max(1, Math.round(getActiveDurationSec(draft.startedAt) / 60)),
     volumeKg,
     setCount: doneSets,
@@ -234,15 +237,17 @@ function PhoneAppInner() {
     });
   };
 
-  const startExpressTracking = (session: Workout) => {
+  const startExpressTracking = (session: Workout, healthspanMode?: "reduced" | "ai") => {
     setRoute({
       kind: "tracking",
       session: normalizeWorkout(JSON.parse(JSON.stringify(session)) as Workout),
       startedAt: Date.now(),
-      tags: [EXPRESS_TRACKING_TAG],
+      tags: healthspanMode === "reduced" ? [EXPRESS_TRACKING_TAG, "Healthspan · reduziert"] : healthspanMode === "ai" ? [EXPRESS_TRACKING_TAG, "KI-Express", "Healthspan"] : [EXPRESS_TRACKING_TAG],
       expressTracking: true,
     });
   };
+
+  const startZone2Timer = (durationMin: number, device?: string, aiSuggested?: boolean) => setRoute({ kind: "zone2Timer", durationMin, device, aiSuggested });
 
   const resumeActiveWorkout = () => {
     if (!activeWorkout) return;
@@ -370,9 +375,16 @@ function PhoneAppInner() {
     body = (
       <ExpressTrackingSetupScreen
         onBack={() => close("home")}
-        onStart={(workout) => startExpressTracking(workout)}
+        onStart={startExpressTracking}
+        onStartZone2={(suggestion) => setRoute({ kind: "zone2Setup", suggestion })}
       />
     );
+    showNav = false;
+  } else if (route?.kind === "zone2Setup") {
+    body = <Zone2SetupScreen onBack={() => setRoute({ kind: "expressTrackingSetup" })} onStart={startZone2Timer} suggestion={route.suggestion} />;
+    showNav = false;
+  } else if (route?.kind === "zone2Timer") {
+    body = <TimerScreen onSaveSession={handleSaveTimerSession} onBack={() => close("home")} initialMode="fortime" initialConfig={{ cap: route.durationMin * 60, prep: 5 }} sessionTags={["Zone 2", "Healthspan", ...(route.aiSuggested ? ["KI-Zone 2"] : []), ...(route.device ? [`Cardio · ${route.device}`] : [])]} />;
     showNav = false;
   } else if (route?.kind === "exercises") {
     body = (
@@ -484,6 +496,7 @@ function PhoneAppInner() {
         onOpenCalculator={goCalculator}
         onOpenBodyTracker={goBodyTracker}
         onOpenRecovery={goRecovery}
+        onOpenExpress={goExpressTrackingSetup}
         trackLoading={trackLoading}
       />
     );
@@ -506,10 +519,16 @@ function PhoneAppInner() {
     );
   }
 
-  if (!preferences.onboarded) {
+  if (!hasCurrentOnboarding(preferences)) {
     return (
       <PhoneShell reserveBottomSafeArea={false}>
-        <OnboardingWizard />
+        <OnboardingWizard
+          onComplete={(action) => {
+            if (action === "strength") setRoute({ kind: "expressTrackingSetup" });
+            else if (action === "endurance") setRoute({ kind: "zone2Setup" });
+            else setRoute({ kind: "recovery", section: action === "nutrition" ? "protein" : "checkin" });
+          }}
+        />
       </PhoneShell>
     );
   }

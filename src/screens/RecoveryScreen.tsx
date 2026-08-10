@@ -4,6 +4,7 @@ import { DeleteConfirmDialog } from "../components/DeleteConfirmDialog";
 import { Icon } from "../components/Icon";
 import { MButton } from "../components/MButton";
 import { ManualProteinLogSheet } from "../components/ManualProteinLogSheet";
+import { ProteinTargetSheet } from "../components/ProteinTargetSheet";
 import { ProteinPresetLogSheet } from "../components/ProteinPresetLogSheet";
 import { ScreenBackHeader } from "../components/ScreenScroll";
 import { WaterAmountSheet } from "../components/WaterAmountSheet";
@@ -29,10 +30,11 @@ import {
 import { usePreferences } from "../lib/preferences";
 import { RECOVERY_FOOD_PRESETS, type RecoveryFoodPreset } from "../lib/recoveryEngine";
 import { useRecoveryTargets } from "../lib/recoveryTarget";
+import { useDailyCheckins } from "../lib/db";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { APP_NAME, M } from "../theme";
 
-export type RecoverySection = "protein" | "water";
+export type RecoverySection = "protein" | "water" | "checkin";
 
 export interface RecoveryScreenProps {
   onBack: () => void;
@@ -125,6 +127,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
   const proteinQuery = useProteinLogsToday(proteinRefreshKey);
   const waterTodayQuery = useWaterLogsToday(waterRefreshKey);
   const waterWeekQuery = useWaterLogsLastSevenDays(waterRefreshKey);
+  const checkinQuery = useDailyCheckins(undefined, proteinRefreshKey + waterRefreshKey);
   const targets = useRecoveryTargets();
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -132,6 +135,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
   const [alertSheet, setAlertSheet] = useState<{ title: string; message: string } | null>(null);
   const [activePreset, setActivePreset] = useState<RecoveryFoodPreset | null>(null);
   const [manualProteinOpen, setManualProteinOpen] = useState(false);
+  const [proteinTargetOpen, setProteinTargetOpen] = useState(false);
   const [manualWaterOpen, setManualWaterOpen] = useState(false);
   const [waterTargetOpen, setWaterTargetOpen] = useState(false);
   const [quickAmountsOpen, setQuickAmountsOpen] = useState(false);
@@ -194,8 +198,8 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
 
   const selectedLoading =
     targets.loading ||
-    (section === "protein" ? proteinQuery.loading : waterTodayQuery.loading || waterWeekQuery.loading);
-  const selectedError = section === "protein" ? proteinQuery.error : waterTodayQuery.error || waterWeekQuery.error;
+    (section === "protein" ? proteinQuery.loading : section === "water" ? waterTodayQuery.loading || waterWeekQuery.loading : checkinQuery.loading);
+  const selectedError = section === "protein" ? proteinQuery.error : section === "water" ? waterTodayQuery.error || waterWeekQuery.error : checkinQuery.error;
   const proteinRemaining = Math.max(0, targets.proteinTargetG - proteinToday);
   const waterRemaining = Math.max(0, targets.waterTargetMl - waterToday);
   const maxWaterChart = Math.max(targets.waterTargetMl, ...waterDays.map((day) => day.amountMl), 1);
@@ -211,7 +215,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
       <ScreenBackHeader onBack={onBack} title="RECOVERY" />
       <div style={{ padding: "0 22px 16px", flexShrink: 0 }}>
         <div role="tablist" aria-label="Recovery-Bereich" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 14, background: M.card }}>
-          {(["protein", "water"] as const).map((item) => (
+          {(["protein", "water", "checkin"] as const).map((item) => (
             <MButton
               key={item}
               type="button"
@@ -222,8 +226,8 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
               onClick={() => setSection(item)}
               style={{ flex: 1, borderRadius: 10 }}
             >
-              <Icon name={item === "protein" ? "flame" : "droplet"} size={15} stroke={2} />
-              {item === "protein" ? "Protein" : "Wasser"}
+              <Icon name={item === "protein" ? "flame" : item === "water" ? "droplet" : "heart"} size={15} stroke={2} />
+              {item === "protein" ? "Protein" : item === "water" ? "Wasser" : "Check-in"}
             </MButton>
           ))}
         </div>
@@ -239,10 +243,14 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
             <div style={{ padding: "8px 0 20px", display: "flex", justifyContent: "center" }}>
               <ProgressRing logged={proteinToday} target={targets.proteinTargetG} valueLabel={String(proteinToday)} targetLabel={`${targets.proteinTargetG} g`} />
             </div>
-            <p style={{ margin: "0 0 16px", fontSize: 14, color: M.mut, textAlign: "center", lineHeight: 1.5 }}>
-              Dein Ziel: ~{targets.proteinTargetG} g Protein pro Tag
-              {proteinRemaining > 0 ? ` · noch ~${proteinRemaining} g offen` : " · Ziel erreicht"}
-            </p>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, marginBottom: 16 }}>
+              <span style={{ fontSize: 14, color: M.mut, textAlign: "center", lineHeight: 1.5 }}>
+                Dein Ziel: ~{targets.proteinTargetG} g pro Tag{proteinRemaining > 0 ? ` · noch ~${proteinRemaining} g offen` : " · Ziel erreicht"}
+              </span>
+              <MButton type="button" variant="ghost" size="sm" onClick={() => setProteinTargetOpen(true)} style={{ padding: "4px 7px", color: M.brand, flexShrink: 0 }}>
+                Ziel ändern
+              </MButton>
+            </div>
             {targets.needsWeightHint ? (
               <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut2, textAlign: "center" }}>
                 Tipp: Gewicht in Körperwerten eintragen für ein genaueres Ziel.
@@ -280,7 +288,7 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
               </div>
             )}
           </>
-        ) : (
+        ) : section === "water" ? (
           <>
             <div style={{ padding: "8px 0 20px", display: "flex", justifyContent: "center" }}>
               <ProgressRing logged={waterToday} target={targets.waterTargetMl} valueLabel={formatWaterAmount(waterToday)} targetLabel={formatWaterAmount(targets.waterTargetMl)} />
@@ -354,6 +362,11 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
               </div>
             )}
           </>
+        ) : (
+          <>
+            <p style={{ margin: "8px 0 18px", fontSize: 14, color: M.mut, lineHeight: 1.5 }}>Deine täglichen Signale helfen dir, Belastung und Erholung einzuordnen. Sie sind keine medizinische Bewertung.</p>
+            {!checkinQuery.data?.length ? <div style={{ padding: 16, borderRadius: 14, background: M.card, border: `1px solid ${M.line2}`, color: M.mut, fontSize: 14 }}>Noch kein Check-in vorhanden. Öffne ihn über die Startseite.</div> : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{checkinQuery.data.slice(0, 7).map((entry) => <div key={entry.id} style={{ padding: "14px", borderRadius: 14, background: M.card, border: `1px solid ${M.line2}` }}><div style={{ color: M.fg, fontWeight: 650, fontSize: 14, marginBottom: 11 }}>{new Date(`${entry.checkinDate}T12:00:00`).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "short" })}</div><div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}><div style={{ padding: "9px 8px", borderRadius: 10, background: M.cardHi }}><div style={{ color: M.mut, fontSize: 10, fontWeight: 700, letterSpacing: 0.8 }}>SCHLAF</div><div style={{ marginTop: 3, color: M.fg, fontFamily: M.numeric, fontWeight: 700, fontSize: 17 }}>{entry.sleepHours.toFixed(1)} <span style={{ fontFamily: M.body, fontSize: 11 }}>h</span></div></div><div style={{ padding: "9px 8px", borderRadius: 10, background: M.cardHi }}><div style={{ color: M.mut, fontSize: 10, fontWeight: 700, letterSpacing: 0.8 }}>STRESS</div><div style={{ marginTop: 3, color: M.fg, fontFamily: M.numeric, fontWeight: 700, fontSize: 17 }}>{entry.stressLevel}<span style={{ fontFamily: M.body, fontSize: 11, color: M.mut }}> /10</span></div></div><div style={{ padding: "9px 8px", borderRadius: 10, background: M.cardHi }}><div style={{ color: M.mut, fontSize: 10, fontWeight: 700, letterSpacing: 0.8 }}>ENERGIE</div><div style={{ marginTop: 3, color: M.fg, fontFamily: M.numeric, fontWeight: 700, fontSize: 17 }}>{entry.energyLevel}<span style={{ fontFamily: M.body, fontSize: 11, color: M.mut }}> /10</span></div></div></div>{entry.note ? <div style={{ color: M.mut2, fontSize: 13, lineHeight: 1.4, marginTop: 11 }}>{entry.note}</div> : null}</div>)}</div>}
+          </>
         )}
       </div>
 
@@ -363,6 +376,13 @@ export function RecoveryScreen({ onBack, initialSection = "protein" }: RecoveryS
         <>
           <ProteinPresetLogSheet open={!!activePreset} preset={activePreset} onClose={() => setActivePreset(null)} onSaved={reloadProtein} userId={user.id} logSource="quick" />
           <ManualProteinLogSheet open={manualProteinOpen} onClose={() => setManualProteinOpen(false)} onSaved={reloadProtein} userId={user.id} />
+          <ProteinTargetSheet
+            open={proteinTargetOpen}
+            mode={preferences.proteinTargetMode}
+            targetG={preferences.proteinTargetG ?? targets.proteinTargetG}
+            onClose={() => setProteinTargetOpen(false)}
+            onSave={(proteinTarget) => updatePreferences(proteinTarget, true)}
+          />
           <WaterAmountSheet open={manualWaterOpen} onClose={() => setManualWaterOpen(false)} onSaved={reloadWater} userId={user.id} />
           <WaterTargetSheet
             open={waterTargetOpen}

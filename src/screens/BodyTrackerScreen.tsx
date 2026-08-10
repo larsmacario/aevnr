@@ -19,7 +19,7 @@ import {
   useBodyPhotos,
   uploadBodyPhoto,
   deleteBodyPhoto,
-  getBodyPhotoPublicUrl,
+  createBodyPhotoSignedUrl,
   type BodyPhoto,
 } from "../lib/db";
 import { SplitImageSlider } from "../components/SplitImageSlider";
@@ -72,6 +72,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
   // Photo states
   const [refreshPhotosKey, setRefreshPhotosKey] = useState(0);
   const { data: photos, loading: loadingPhotos, error: errorPhotos, reload: reloadPhotos } = useBodyPhotos(refreshPhotosKey);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoOrientation, setPhotoOrientation] = useState<"front" | "back" | "side">("front");
@@ -86,6 +87,15 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
   const [deletePhotoBusy, setDeletePhotoBusy] = useState(false);
   // Dynamic visible fields for advanced metrics
   const [visibleFields, setVisibleFields] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    if (!photos?.length) { setPhotoUrls({}); return; }
+    void Promise.all(photos.map(async (photo) => [photo.id, await createBodyPhotoSignedUrl(photo.photoPath)] as const))
+      .then((entries) => { if (active) setPhotoUrls(Object.fromEntries(entries)); })
+      .catch((cause) => { if (active) setAlertSheet({ title: "Fotos nicht verfügbar", message: cause instanceof Error ? cause.message : "Private Foto-Links konnten nicht geladen werden." }); });
+    return () => { active = false; };
+  }, [photos]);
 
   // Compact states
   const [weight, setWeight] = useState<string>("80.0");
@@ -1447,8 +1457,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 </button>
               </div>
               <SplitImageSlider
-                beforeUrl={getBodyPhotoPublicUrl(selectedBeforePhoto.photoPath)}
-                afterUrl={getBodyPhotoPublicUrl(selectedAfterPhoto.photoPath)}
+                beforeUrl={photoUrls[selectedBeforePhoto.id] ?? ""}
+                afterUrl={photoUrls[selectedAfterPhoto.id] ?? ""}
                 beforeDate={formatDateDe(selectedBeforePhoto.performedAt)}
                 afterDate={formatDateDe(selectedAfterPhoto.performedAt)}
                 beforeWeight={selectedBeforePhoto.weightKg?.toFixed(1)}
@@ -1536,7 +1546,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 return (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     {filteredPhotos.map((p) => {
-                      const url = getBodyPhotoPublicUrl(p.photoPath);
+                      const url = photoUrls[p.id];
                       const isBefore = selectedBeforePhoto?.id === p.id;
                       const isAfter = selectedAfterPhoto?.id === p.id;
 

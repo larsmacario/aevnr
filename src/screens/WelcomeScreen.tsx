@@ -123,14 +123,14 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
   const slides = [
     <SlideBrand key="brand" />,
     <SlideFeature
-      key="track"
-      title="Workouts tracken"
-      body="Erfasse Sätze, Gewichte und Wiederholungen. Nutze den Timer und behalte deinen Verlauf im Blick."
+      key="foundation"
+      title="Deine Basis stärken"
+      body="Baue Kraft und Ausdauer auf – in einem Rhythmus, der zu deinem Alltag passt."
     />,
     <SlideFeature
-      key="plan"
-      title="Kostenfrei nutzen"
-      body="Kein Abo, keine versteckten Kosten. KI-Pläne kannst du bei Bedarf einzeln und ohne Abonnement dazubuchen."
+      key="decision"
+      title="Heute passend entscheiden"
+      body="ÆVNR verbindet Training, Erholung und Gewohnheiten zu einem klaren nächsten Schritt für deinen Tag."
     />,
   ];
 

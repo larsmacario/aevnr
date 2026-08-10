@@ -42,7 +42,7 @@ import type {
   SessionExercise,
 } from "../data";
 import { planDayDisplayName } from "../data";
-import type { AnamnesisData } from "./preferences";
+import type { AnamnesisData, ExpressPerformanceBaseline } from "./preferences";
 import { hasAiConsent, mergePreferences, normalizeStressLevel } from "./preferences";
 import {
   extractTrainingWeekdaysFromSummaryJson,
@@ -53,6 +53,9 @@ import {
 } from "./trainingWeekdays";
 import { activityFactor, ageFromBirthDate } from "./nutrition";
 import { getLocalDayBounds, getRollingSevenDayStart, sumWaterLogs } from "./hydration";
+import { normalizeDailyCheckin, type DailyCheckin, type DailyCheckinInput } from "./healthspan";
+import type { CoachRecommendation } from "./healthspan";
+import { localDb } from "./offline/localDb";
 
 /** Entfernt KI-typische Präfixe wie „Tag 1 – …“ aus Workout-Namen. */
 export function sanitizeAiWorkoutName(name: string): string {
@@ -95,6 +98,7 @@ type DbSession = Tables<"sessions">;
 type DbPlan = Tables<"plans">;
 type DbSessionExercise = Tables<"session_exercises">;
 type DbBodyMeasurement = Tables<"body_measurements">;
+type DbDailyCheckin = Tables<"daily_checkins">;
 type DbPlanDay = Tables<"plan_days">;
 type DbPlanDayBlock = Tables<"plan_day_blocks">;
 type DbPlanDayExercise = Tables<"plan_day_exercises">;
@@ -1701,6 +1705,83 @@ export function useBodyMeasurements(refreshKey = 0) {
   }, [user?.id, refreshKey]);
 }
 
+function mapDailyCheckinRow(row: DbDailyCheckin): DailyCheckin {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    checkinDate: row.checkin_date,
+    sleepHours: Number(row.sleep_hours),
+    sleepQuality: row.sleep_quality,
+    stressLevel: row.stress_level,
+    energyLevel: row.energy_level,
+    note: row.note ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function writeDailyCheckinsCache(userId: string, checkins: DailyCheckin[]): Promise<void> {
+  await localDb.dailyCheckins.bulkPut(checkins.map((item) => ({
+    id: item.id, userId, checkinDate: item.checkinDate, sleepHours: item.sleepHours,
+    sleepQuality: item.sleepQuality, stressLevel: item.stressLevel, energyLevel: item.energyLevel,
+    note: item.note, updatedAt: new Date(item.updatedAt).getTime() || Date.now(),
+  })));
+}
+
+function cachedDailyCheckinToModel(row: import("./offline/types").CachedDailyCheckinRow): DailyCheckin {
+  return { id: row.id, userId: row.userId, checkinDate: row.checkinDate, sleepHours: row.sleepHours, sleepQuality: row.sleepQuality, stressLevel: row.stressLevel, energyLevel: row.energyLevel, note: row.note, createdAt: new Date(row.updatedAt).toISOString(), updatedAt: new Date(row.updatedAt).toISOString() };
+}
+
+export async function fetchDailyCheckins(userId: string, since?: string): Promise<DailyCheckin[]> {
+  let query = supabase.from("daily_checkins").select("*").eq("user_id", userId).order("checkin_date", { ascending: false });
+  if (since) query = query.gte("checkin_date", since);
+  const { data, error } = await query;
+  if (error) throw error;
+  const checkins = (data ?? []).map(mapDailyCheckinRow);
+  await writeDailyCheckinsCache(userId, checkins);
+  return checkins;
+}
+
+export async function upsertDailyCheckinRemote(userId: string, rawInput: DailyCheckinInput): Promise<void> {
+  const input = normalizeDailyCheckin(rawInput);
+  const { error } = await supabase.from("daily_checkins").upsert({
+    user_id: userId, checkin_date: input.checkinDate!, sleep_hours: input.sleepHours,
+    sleep_quality: input.sleepQuality, stress_level: input.stressLevel, energy_level: input.energyLevel,
+    note: input.note ?? null, updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id,checkin_date" });
+  if (error) throw error;
+}
+
+export async function saveDailyCheckin(userId: string, rawInput: DailyCheckinInput): Promise<void> {
+  const input = normalizeDailyCheckin(rawInput);
+  const cached = { id: `${userId}:${input.checkinDate}`, userId, checkinDate: input.checkinDate!, sleepHours: input.sleepHours, sleepQuality: input.sleepQuality, stressLevel: input.stressLevel, energyLevel: input.energyLevel, note: input.note, updatedAt: Date.now() };
+  const existing = await localDb.dailyCheckins.where("[userId+checkinDate]").equals([userId, input.checkinDate!]).first();
+  await localDb.dailyCheckins.put({ ...cached, id: existing?.id ?? cached.id });
+  if (getIsOnlineSync()) {
+    try {
+      await upsertDailyCheckinRemote(userId, input);
+    } catch {
+      await enqueueMutation(userId, "UPSERT_DAILY_CHECKIN", { input });
+    }
+  } else {
+    await enqueueMutation(userId, "UPSERT_DAILY_CHECKIN", { input });
+  }
+}
+
+export function useDailyCheckins(since?: string, refreshKey = 0) {
+  const { user } = useAuth();
+  return useCachedAsync({
+    cacheLoader: async () => {
+      if (!user) return null;
+      const rows = await localDb.dailyCheckins.where("userId").equals(user.id).toArray();
+      const filtered = since ? rows.filter((row) => row.checkinDate >= since) : rows;
+      return filtered.sort((a, b) => b.checkinDate.localeCompare(a.checkinDate)).map(cachedDailyCheckinToModel);
+    },
+    networkLoader: async () => user ? fetchDailyCheckins(user.id, since) : [],
+    enabled: !!user,
+  }, [user?.id, since, refreshKey]);
+}
+
 export type ProteinLogSource = "quick" | "manual" | "post_workout" | "barcode" | "photo";
 
 export interface ProteinLog {
@@ -2171,9 +2252,10 @@ export function useBodyPhotos(refreshKey = 0) {
   }, [user?.id, refreshKey]);
 }
 
-export function getBodyPhotoPublicUrl(photoPath: string): string {
-  const { data } = supabase.storage.from("body-photos").getPublicUrl(photoPath);
-  return data.publicUrl;
+export async function createBodyPhotoSignedUrl(photoPath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from("body-photos").createSignedUrl(photoPath, 60 * 60);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 
@@ -2636,6 +2718,43 @@ export async function fetchRecentSessionsWithExercises(limit = 5): Promise<Histo
   return sessionRows.map((row) => mapSessionRow(row, exercisesMap.get(row.id) ?? []));
 }
 
+export async function fetchSessionsSinceWithExercises(since: Date): Promise<HistoryEntry[]> {
+  const { data: rows, error } = await supabase.from("sessions").select("*").gte("performed_at", since.toISOString()).order("performed_at", { ascending: false });
+  if (error) throw error;
+  const exercises = await fetchSessionExercisesBatch((rows ?? []).map((row) => row.id));
+  return (rows ?? []).map((row) => mapSessionRow(row, exercises.get(row.id) ?? []));
+}
+
+export type DailyAiSession = { mode: "strength"; rationale: string; exercises: { catalogExerciseId: string; sets: number; reps: number }[] } | { mode: "zone2"; rationale: string; durationMin: number; device?: string };
+
+export type DailyAiHealthspanRecommendation = Pick<CoachRecommendation, "action" | "title" | "detail" | "trainingAlternative">;
+
+export async function generateDailyAiHealthspanRecommendation(input: {
+  checkin: DailyCheckinInput;
+  week: { completedStrengthDays: number; strengthTargetDays: number; zone2Minutes: number; zone2TargetMinutes: number; proteinG: number; proteinTargetG: number; waterMl: number; waterTargetMl: number };
+  history: HistoryEntry[];
+  activePlan?: { name: string; dayNames: string[] } | null;
+}): Promise<DailyAiHealthspanRecommendation> {
+  const { data, error } = await supabase.functions.invoke("generate-daily-healthspan-recommendation", { body: input, timeout: 60_000 });
+  if (error) throw new Error(error.message || "KI-Tagesempfehlung fehlgeschlagen.");
+  if (!data || !["recover", "reduce", "endurance", "nutrition", "strength", "maintain"].includes(data.action) || typeof data.title !== "string" || typeof data.detail !== "string") throw new Error("Ungültige KI-Tagesempfehlung.");
+  return data as DailyAiHealthspanRecommendation;
+}
+
+export async function generateDailyAiSession(input: {
+  readiness: "ready" | "reduce";
+  preferences: string[];
+  history: HistoryEntry[];
+  exercises: LibraryExercise[];
+  profileContext?: { birthDate?: string | null; anamnesis?: AnamnesisData | null };
+  performanceBaseline?: ExpressPerformanceBaseline | null;
+}): Promise<DailyAiSession> {
+  const { data, error } = await supabase.functions.invoke("generate-daily-express-session", { body: input, timeout: 60_000 });
+  if (error) throw new Error(error.message || "KI-Tages-Session fehlgeschlagen.");
+  if (!data || (data.mode !== "strength" && data.mode !== "zone2")) throw new Error("Ungültige KI-Tages-Session.");
+  return data as DailyAiSession;
+}
+
 export async function fetchRecentExpressTrackingSessions(limit = 10): Promise<HistoryEntry[]> {
   const fetchLimit = Math.max(limit * 4, 20);
   const { data: sessionRows, error } = await supabase
@@ -2678,6 +2797,7 @@ registerSyncHandlers({
   createExerciseRemote,
   updateExerciseRemote,
   deleteExerciseRemote,
+  upsertDailyCheckinRemote,
   refreshPlansRemote: fetchPlansRemote,
   refreshExercisesRemote: fetchExercisesRemote,
 });

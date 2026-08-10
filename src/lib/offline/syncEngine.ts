@@ -32,6 +32,7 @@ export interface SyncHandlers {
   createExerciseRemote: (userId: string, input: ExerciseInput, exerciseId: string) => Promise<string>;
   updateExerciseRemote: (exerciseId: string, input: ExerciseInput) => Promise<void>;
   deleteExerciseRemote: (exerciseId: string) => Promise<void>;
+  upsertDailyCheckinRemote: (userId: string, input: import("../healthspan").DailyCheckinInput) => Promise<void>;
   refreshPlansRemote: (userId: string) => Promise<LibraryPlan[]>;
   refreshExercisesRemote: (userId: string) => Promise<import("../../data").LibraryExercise[]>;
 }
@@ -64,6 +65,9 @@ async function executeEntry(entry: SyncQueueEntry): Promise<void> {
   const p = entry.payload;
 
   switch (entry.op) {
+    case "UPSERT_DAILY_CHECKIN":
+      await handlers.upsertDailyCheckinRemote(entry.userId, p.input as import("../healthspan").DailyCheckinInput);
+      break;
     case "SAVE_SESSION": {
       const input = p.input as SaveSessionInput;
       const advancePlanId = p.advancePlanId as string | undefined;
