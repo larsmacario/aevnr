@@ -43,6 +43,9 @@ export function TimerClockDisplay({
         justifyContent: "center",
         minHeight,
         marginTop,
+        maxWidth: "100%",
+        minWidth: 0,
+        overflow: "hidden",
       }}
     >
       <span
@@ -50,6 +53,8 @@ export function TimerClockDisplay({
           display: "inline-flex",
           alignItems: "center",
           fontKerning: "none",
+          whiteSpace: "nowrap",
+          flexShrink: 1,
         }}
       >
         <span

@@ -26,8 +26,11 @@ export function PhoneShell({ children, reserveBottomSafeArea = true }: PhoneShel
         fontFamily: M.body,
         display: "flex",
         flexDirection: "column",
+        boxSizing: "border-box",
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: reserveBottomSafeArea ? "env(safe-area-inset-bottom)" : 0,
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
       }}
     >
       <div

@@ -59,8 +59,9 @@ const tabButtonFocus: CSSProperties = {
 };
 
 const floatNavBar: CSSProperties = {
-  background: M.bg,
+  background: M.panel,
   border: `1px solid ${M.line}`,
+  boxShadow: M.shadow,
 };
 
 /** Content inset so scroll areas clear the fixed nav on mobile/tablet. */

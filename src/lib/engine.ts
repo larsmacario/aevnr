@@ -23,7 +23,7 @@ import {
 } from "./superset";
 
 // ── types ───────────────────────────────────────────────────
-export type TimerMode = "emom" | "amrap" | "tabata" | "fortime";
+export type TimerMode = "emom" | "amrap" | "tabata" | "fortime" | "breathe";
 
 export interface TimerCfg {
   interval?: number;
@@ -33,6 +33,13 @@ export interface TimerCfg {
   work?: number;
   rest?: number;
   cap?: number;
+  inhale?: number;
+  hold?: number;
+  exhale?: number;
+  pause?: number;
+  breathTarget?: "rounds" | "duration";
+  /** Last non-zero values for optional breathing phases while temporarily disabled. */
+  breathPhaseMemory?: Partial<Record<"hold" | "pause", number>>;
 }
 
 export interface WorkoutSet {
@@ -142,6 +149,7 @@ export const TIMER_DEFAULTS: Record<TimerMode, TimerCfg> = {
   amrap: { total: 720, prep: 5 },
   tabata: { work: 20, rest: 10, rounds: 8, prep: 5 },
   fortime: { cap: 600, prep: 5 },
+  breathe: { inhale: 4, hold: 4, exhale: 4, pause: 4, rounds: 6, total: 120, breathTarget: "rounds", prep: 3 },
 };
 
 // Build the countdown timeline for a given mode/cfg.
@@ -167,6 +175,30 @@ export function buildSegments(mode: TimerMode, cfg: TimerCfg): Segment[] {
   }
   if (mode === "amrap") {
     return [{ kind: "work", label: "AMRAP", dur: cfg.total ?? 0, round: 1, rounds: 1 }];
+  }
+  if (mode === "breathe") {
+    const phaseCandidates: Array<{ label: string; dur: number; kind: SegmentKind }> = [
+      { label: "EINATMEN", dur: cfg.inhale ?? 0, kind: "work" },
+      { label: "HALTEN", dur: cfg.hold ?? 0, kind: "rest" },
+      { label: "AUSATMEN", dur: cfg.exhale ?? 0, kind: "work" },
+      { label: "PAUSE", dur: cfg.pause ?? 0, kind: "rest" },
+    ];
+    const phases = phaseCandidates.filter((phase) => phase.dur > 0);
+    const cycleDuration = phases.reduce((sum, phase) => sum + phase.dur, 0);
+    if (!cycleDuration) return [];
+    const targetDuration = cfg.breathTarget === "duration" ? (cfg.total ?? 0) : null;
+    const cycleCount = targetDuration == null ? (cfg.rounds ?? 1) : Math.ceil(targetDuration / cycleDuration);
+    const segments: Segment[] = [];
+    let remaining = targetDuration;
+    for (let round = 1; round <= cycleCount; round++) {
+      for (const phase of phases) {
+        if (remaining != null && remaining <= 0) break;
+        const dur = remaining == null ? phase.dur : Math.min(phase.dur, remaining);
+        segments.push({ ...phase, dur, round, rounds: cycleCount });
+        if (remaining != null) remaining -= dur;
+      }
+    }
+    return segments;
   }
   return []; // fortime
 }

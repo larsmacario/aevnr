@@ -58,6 +58,7 @@ export interface HomeScreenProps {
   onDiscardActive: () => void;
   onOpenPlans: () => void;
   onOpenTimer: () => void;
+  onOpenBreathing: () => void;
   onOpenProfile: () => void;
   onOpenStats: () => void;
   onOpenCalculator: () => void;
@@ -76,6 +77,7 @@ export function HomeScreen({
   onDiscardActive,
   onOpenPlans,
   onOpenTimer,
+  onOpenBreathing,
   onOpenProfile,
   onOpenStats,
   onOpenCalculator,
@@ -919,6 +921,27 @@ export function HomeScreen({
     </MButton>
   );
 
+  const breathingLink = (
+    <MButton onClick={onOpenBreathing} variant="secondary" size="md" style={quickAccessTileStyle}>
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          background: M.brandSoft,
+          color: M.brand,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flex: "0 0 auto",
+        }}
+      >
+        <Icon name="wind" size={16} stroke={2} />
+      </div>
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Atmen</div>
+    </MButton>
+  );
+
   const calculatorLink = (
     <MButton onClick={onOpenCalculator} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
@@ -1045,6 +1068,7 @@ export function HomeScreen({
         {bodyTrackerLink}
         {recoveryLink}
         {timerLink}
+        {breathingLink}
         {calculatorLink}
       </div>
       {weekPlannerCard}

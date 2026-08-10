@@ -1,11 +1,17 @@
 import type { HistoryEntry } from "../data";
 import { fmtUp, TIMER_MODES, type TimerCfg, type TimerMode, type TimerSnapshot } from "./engine";
 import type { SaveSessionInput } from "./db";
+import type { BreathingPresetId } from "./breathing";
 
 export const TIMER_TAG = "Timer";
+export const BREATHING_TAG = "Atmen";
 
 export function isTimerSession(tags: string[]): boolean {
-  return tags.includes(TIMER_TAG);
+  return tags.includes(TIMER_TAG) || tags.includes(BREATHING_TAG);
+}
+
+export function isBreathingSession(tags: string[]): boolean {
+  return tags.includes(BREATHING_TAG);
 }
 
 export function timerModeLabel(tags: string[]): string | null {
@@ -50,7 +56,28 @@ export function buildTimerSessionInput(
   };
 }
 
+export function buildBreathingSessionInput(
+  presetId: BreathingPresetId,
+  presetName: string,
+  cfg: TimerCfg,
+  elapsedSec: number,
+  completedRounds: number,
+): SaveSessionInput {
+  const prep = cfg.prep ?? 0;
+  return {
+    name: `${presetName} · ${completedRounds} Zyklen`,
+    tags: [BREATHING_TAG, presetName, `Atemmuster · ${presetId}`],
+    durationMin: workDurationMin(elapsedSec, prep),
+    volumeKg: 0,
+    setCount: completedRounds,
+  };
+}
+
 export function formatTimerHistorySubtitle(entry: Pick<HistoryEntry, "dur" | "tags" | "sets" | "name">): string {
+  if (isBreathingSession(entry.tags)) {
+    const pattern = entry.tags.find((tag) => tag !== BREATHING_TAG && !tag.startsWith("Atemmuster"));
+    return `${entry.dur} Min · ${pattern ?? "Atmen"} · ${entry.sets} Zyklen`;
+  }
   const mode = timerModeLabel(entry.tags);
   if (!mode) return `${entry.dur} Min`;
 
@@ -67,6 +94,10 @@ export function formatTimerHistorySubtitle(entry: Pick<HistoryEntry, "dur" | "ta
 }
 
 export function formatTimerDetailMetrics(entry: Pick<HistoryEntry, "dur" | "tags" | "sets" | "name">): string[] {
+  if (isBreathingSession(entry.tags)) {
+    const pattern = entry.tags.find((tag) => tag !== BREATHING_TAG && !tag.startsWith("Atemmuster"));
+    return [`${entry.dur} Min`, pattern ?? "Atmen", `${entry.sets} Zyklen`];
+  }
   const mode = timerModeLabel(entry.tags);
   if (!mode) return [`${entry.dur} Min`];
 

@@ -1,5 +1,6 @@
 import type { Json } from "./database.types";
 import { TIMER_DEFAULTS, type TimerCfg, type TimerMode } from "./engine";
+import { cloneBreathingPresets, normalizeBreathingPresets, type BreathingPresetConfigs } from "./breathing";
 import { normalizeTimerSoundPackId, DEFAULT_TIMER_SOUND_PACK_ID } from "./timerSoundPacks";
 import { normalizeWaterQuickAmounts, type WaterQuickAmounts } from "./hydration";
 import { supabase } from "./supabase";
@@ -168,6 +169,7 @@ export interface UserPreferences {
   weightIncrementUpperKg: number;
   weightIncrementLowerKg: number;
   timerDefaults: Record<TimerMode, TimerCfg>;
+  breathingPresets: BreathingPresetConfigs;
   gender: "male" | "female" | "other" | null;
   onboarded: boolean;
   /** Versioned gate so a redesigned first-run flow can be shown once to existing members. */
@@ -201,8 +203,9 @@ export interface UserPreferences {
   hydrationHintDismissedDate: string | null;
 }
 
-export type UserPreferencesUpdate = Omit<Partial<UserPreferences>, "timerDefaults"> & {
+export type UserPreferencesUpdate = Omit<Partial<UserPreferences>, "timerDefaults" | "breathingPresets"> & {
   timerDefaults?: Partial<Record<TimerMode, TimerCfg>>;
+  breathingPresets?: Partial<BreathingPresetConfigs>;
 };
 
 function cloneTimerDefaults(): Record<TimerMode, TimerCfg> {
@@ -219,6 +222,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   weightIncrementUpperKg: 2.5,
   weightIncrementLowerKg: 5,
   timerDefaults: cloneTimerDefaults(),
+  breathingPresets: cloneBreathingPresets(),
   gender: null,
   onboarded: false,
   onboardingVersion: 0,
@@ -282,6 +286,7 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
         ? obj.weightIncrementLowerKg
         : DEFAULT_PREFERENCES.weightIncrementLowerKg,
     timerDefaults: mergeTimerDefaults(obj.timerDefaults),
+    breathingPresets: normalizeBreathingPresets(obj.breathingPresets),
     gender:
       obj.gender === "male" || obj.gender === "female" || obj.gender === "other"
         ? obj.gender
@@ -370,6 +375,7 @@ export function preferencesToJson(prefs: UserPreferences): Json {
     weightIncrementUpperKg: prefs.weightIncrementUpperKg,
     weightIncrementLowerKg: prefs.weightIncrementLowerKg,
     timerDefaults: JSON.parse(JSON.stringify(prefs.timerDefaults)),
+    breathingPresets: JSON.parse(JSON.stringify(prefs.breathingPresets)),
     gender: prefs.gender,
     onboarded: prefs.onboarded,
     onboardingVersion: prefs.onboardingVersion,
@@ -398,7 +404,7 @@ export function mergePartialPreferences(
   current: UserPreferences,
   partial: UserPreferencesUpdate,
 ): UserPreferences {
-  const { timerDefaults: timerPartial, ...rest } = partial;
+  const { timerDefaults: timerPartial, breathingPresets: breathingPartial, ...rest } = partial;
   const next: UserPreferences = { ...current, ...rest };
   if (timerPartial) {
     const merged = { ...current.timerDefaults };
@@ -406,6 +412,9 @@ export function mergePartialPreferences(
       merged[mode] = { ...current.timerDefaults[mode], ...timerPartial[mode] };
     }
     next.timerDefaults = merged;
+  }
+  if (breathingPartial) {
+    next.breathingPresets = { ...current.breathingPresets, ...breathingPartial };
   }
   return next;
 }

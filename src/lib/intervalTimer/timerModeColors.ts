@@ -30,6 +30,11 @@ export const TIMER_MODE_COLORS: Record<TimerMode, TimerModeColors> = {
     soft: "rgba(113,113,122,0.08)",
     border: "rgba(113,113,122,0.18)",
   },
+  breathe: {
+    accent: M.fg,
+    soft: M.accSoft,
+    border: M.line,
+  },
 };
 
 export function timerModeAccent(mode: TimerMode): string {

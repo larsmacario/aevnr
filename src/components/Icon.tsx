@@ -18,6 +18,7 @@ const ICON_PATHS: Record<string, string> = {
   droplet: "M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13zM9 16c.4 1.4 1.4 2.2 3 2.5",
   dumbbell: "M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10",
   timer: "M12 8v5l3 2M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM9 2h6",
+  wind: "M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7",
   list: "M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01",
   menu: "M4 6h16M4 12h16M4 18h16",
   trash: "M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13",

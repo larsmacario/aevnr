@@ -56,6 +56,7 @@ import { OnboardingWizard } from "./screens/OnboardingWizard";
 import { AITrainingPlanWizard } from "./screens/AITrainingPlanWizard";
 import { ExpressTrackingSetupScreen } from "./screens/ExpressTrackingSetupScreen";
 import { Zone2SetupScreen } from "./screens/Zone2SetupScreen";
+import { BreathingScreen } from "./screens/BreathingScreen";
 type Route =
   | {
       kind: "tracking";
@@ -69,6 +70,7 @@ type Route =
   | { kind: "expressTrackingSetup" }
   | { kind: "zone2Setup"; suggestion?: { durationMin: number; device?: string; rationale?: string } }
   | { kind: "zone2Timer"; durationMin: number; device?: string; aiSuggested?: boolean }
+  | { kind: "breathing" }
   | { kind: "planBuilder"; planId?: string }
   | { kind: "exercises" }
   | { kind: "sessionDetail"; sessionId: string }
@@ -248,6 +250,7 @@ function PhoneAppInner() {
   };
 
   const startZone2Timer = (durationMin: number, device?: string, aiSuggested?: boolean) => setRoute({ kind: "zone2Timer", durationMin, device, aiSuggested });
+  const goBreathing = () => setRoute({ kind: "breathing" });
 
   const resumeActiveWorkout = () => {
     if (!activeWorkout) return;
@@ -386,6 +389,9 @@ function PhoneAppInner() {
   } else if (route?.kind === "zone2Timer") {
     body = <TimerScreen onSaveSession={handleSaveTimerSession} onBack={() => close("home")} initialMode="fortime" initialConfig={{ cap: route.durationMin * 60, prep: 5 }} sessionTags={["Zone 2", "Healthspan", ...(route.aiSuggested ? ["KI-Zone 2"] : []), ...(route.device ? [`Cardio · ${route.device}`] : [])]} />;
     showNav = false;
+  } else if (route?.kind === "breathing") {
+    body = <BreathingScreen onSaveSession={handleSaveTimerSession} onBack={() => close("home")} />;
+    showNav = false;
   } else if (route?.kind === "exercises") {
     body = (
       <ExercisesScreen
@@ -491,6 +497,7 @@ function PhoneAppInner() {
         onDiscardActive={handleDiscardWorkout}
         onOpenPlans={() => setTab("plans")}
         onOpenTimer={() => setTab("timer")}
+        onOpenBreathing={goBreathing}
         onOpenProfile={() => setTab("profile")}
         onOpenStats={goStats}
         onOpenCalculator={goCalculator}

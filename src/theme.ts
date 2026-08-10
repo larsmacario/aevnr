@@ -8,12 +8,13 @@ export const APP_NAME_SHORT = "ÆVNR";
 export const APP_DOMAIN = "aevos.life";
 
 export const M = {
-  bg: "#FFFFFF",
+  /** Leicht warmer Seitenhintergrund lässt weiße Inhaltskarten klar hervortreten. */
+  bg: "#F6F6F4",
   panel: "#FFFFFF",
   card: "#FFFFFF",
-  cardHi: "#F4F4F5",
-  line: "rgba(24,24,27,0.10)",
-  line2: "rgba(24,24,27,0.06)",
+  cardHi: "#F3F3F1",
+  line: "rgba(24,24,27,0.09)",
+  line2: "rgba(24,24,27,0.055)",
   fg: "#18181B",
   fgBody: "#52525B",
   mut: "#71717A",
@@ -35,7 +36,8 @@ export const M = {
   warningSoft: "rgba(113,113,122,0.10)",
   success: "#18181B",
   successSoft: "rgba(24,24,27,0.06)",
-  shadow: "none",
+  /** Sanfte, breite Tiefe – sichtbar genug für Karten, ohne einen Glossy-Look. */
+  shadow: "0 10px 30px rgba(24,24,27,0.055), 0 2px 8px rgba(24,24,27,0.025)",
   overlay: "rgba(24,24,27,0.40)",
   overlayLight: "rgba(24,24,27,0.04)",
   rest: "#71717A",
@@ -124,7 +126,7 @@ export function exerciseRowStyle(options?: {
     gap: EXERCISE_ROW.gap,
     padding: `0 ${EXERCISE_ROW.paddingX}px`,
     borderRadius: options?.borderRadius ?? EXERCISE_ROW.borderRadius,
-    background: bg === "transparent" ? "transparent" : M.bg,
+    background: bg === "transparent" ? "transparent" : M.card,
     border: bg === "transparent" ? "none" : "1px solid " + M.line2,
     flexShrink: 0,
     width: "100%",
@@ -139,24 +141,26 @@ export const exerciseRowEllipsis: CSSProperties = {
 
 export type BrandSurfaceVariant = "hero" | "card" | "selected";
 
-/** Flat premium surfaces — hairline borders, no tinted fills. */
+/** Premium surfaces – weiße Karten heben sich sanft vom Seitenhintergrund ab. */
 export function brandSurface(variant: BrandSurfaceVariant): CSSProperties {
   switch (variant) {
     case "hero":
       return {
-        background: M.bg,
+        background: M.card,
         border: "1px solid " + M.line,
         borderRadius: M.radiusCard,
+        boxShadow: M.shadow,
       };
     case "card":
       return {
-        background: M.bg,
+        background: M.card,
         border: "1px solid " + M.line2,
         borderRadius: M.radiusCard,
+        boxShadow: M.shadow,
       };
     case "selected":
       return {
-        background: M.bg,
+        background: M.card,
         color: M.fg,
         border: `2px solid ${M.fg}`,
       };
@@ -180,7 +184,7 @@ export function brandSelectionStyle(selected: boolean): CSSProperties {
   return selected
     ? {
         border: `2px solid ${M.fg}`,
-        background: M.bg,
+        background: M.card,
         color: M.fg,
       }
     : {
