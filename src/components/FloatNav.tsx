@@ -3,7 +3,7 @@ import { APP_NAME, displayStyle, M, Z } from "../theme";
 import { CONTENT_HORIZONTAL_PADDING } from "../lib/responsive";
 import { Icon } from "./Icon";
 
-export type Tab = "home" | "plans" | "ai-plan" | "timer" | "history" | "profile";
+export type Tab = "home" | "facts" | "plans" | "ai-plan" | "timer" | "history" | "profile";
 
 export type NavTabId = Tab | "menu";
 
@@ -11,11 +11,11 @@ type NavItem = { id: NavTabId; label: string; icon: string };
 
 export const LEFT_TABS: NavItem[] = [
   { id: "home", label: "Start", icon: "home" },
-  { id: "ai-plan", label: "KI Plan", icon: "sparkles" },
+  { id: "facts", label: "Fakten", icon: "book" },
 ];
 
 export const RIGHT_TABS: NavItem[] = [
-  { id: "plans", label: "Pläne", icon: "layers" },
+  { id: "ai-plan", label: "KI Plan", icon: "sparkles" },
   { id: "menu", label: "Menü", icon: "menu" },
 ];
 

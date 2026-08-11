@@ -1,3 +1,5 @@
+import { toLocalDateKey } from "./hydration";
+
 export interface DailyCheckinInput {
   checkinDate?: string;
   sleepHours: number;
@@ -57,6 +59,10 @@ export function getTrainingReadiness(checkin?: Pick<DailyCheckin, "sleepHours" |
   return checkin.sleepHours < 6 || checkin.energyLevel <= 4 || checkin.stressLevel >= 8 ? "reduce" : "ready";
 }
 
+export function findCheckinForDate<T extends { checkinDate: string }>(checkins: readonly T[] | null | undefined, dateKey: string): T | undefined {
+  return checkins?.find((checkin) => checkin.checkinDate === dateKey);
+}
+
 export interface HealthspanSnapshotInput {
   completedStrengthDays: number;
   strengthTargetDays: number;
@@ -73,7 +79,7 @@ export interface HealthspanSnapshotInput {
 
 export function normalizeDailyCheckin(input: DailyCheckinInput): DailyCheckinInput {
   return {
-    checkinDate: input.checkinDate ?? new Date().toISOString().slice(0, 10),
+    checkinDate: input.checkinDate ?? toLocalDateKey(),
     sleepHours: Math.min(24, Math.max(0, Math.round(input.sleepHours * 10) / 10)),
     sleepQuality: Math.min(10, Math.max(1, Math.round(input.sleepQuality))),
     stressLevel: Math.min(10, Math.max(1, Math.round(input.stressLevel))),

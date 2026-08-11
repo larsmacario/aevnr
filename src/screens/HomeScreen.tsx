@@ -37,6 +37,7 @@ import { computeRecoveryContext, computeWeeklyRecoveryStats, aggregateProteinByW
 import { useRecoveryTargets } from "../lib/recoveryTarget";
 import { aggregateWaterLastSevenDays, formatWaterAmount, shouldShowHydrationHint, toLocalDateKey } from "../lib/hydration";
 import { useNetwork } from "../lib/offline/networkStatus";
+import { useLocalDateKey } from "../hooks/useLocalDateKey";
 import { Icon } from "../components/Icon";
 import { ScreenScroll } from "../components/ScreenScroll";
 import { hasAiConsent, usePreferences } from "../lib/preferences";
@@ -48,7 +49,7 @@ import { WeekPlannerSheet } from "../components/WeekPlannerSheet";
 import { AlertSheet } from "../components/AlertSheet";
 import { DailyCheckinSheet } from "../components/DailyCheckinSheet";
 import { HealthspanDashboard } from "../components/HealthspanDashboard";
-import { buildHealthspanDomains, checkinFingerprint, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
+import { buildHealthspanDomains, checkinFingerprint, findCheckinForDate, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
 
 export interface HomeScreenProps {
   onStart: (planDayId: string, planId?: string) => void;
@@ -106,7 +107,12 @@ export function HomeScreen({
   const weekStartMonday = useMemo(() => getWeekStartMonday(), []);
   const { data: proteinLogsWeek } = useProteinLogsSince(weekStartMonday, refreshKey);
   const { data: sessions } = useSessions();
-  const { data: dailyCheckins, reload: reloadDailyCheckins } = useDailyCheckins(weekStartMonday.toISOString().slice(0, 10), refreshKey);
+  const todayCheckinDate = useLocalDateKey();
+  const { data: dailyCheckins, reload: reloadDailyCheckins } = useDailyCheckins(todayCheckinDate, refreshKey);
+  const todayCheckin = useMemo(
+    () => findCheckinForDate(dailyCheckins, todayCheckinDate),
+    [dailyCheckins, todayCheckinDate],
+  );
   const [finishSheet, setFinishSheet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
@@ -236,19 +242,19 @@ export function HomeScreen({
       zone2Minutes: zone2Sessions.reduce((sum, session) => sum + session.dur, 0),
       proteinG: sumProteinToday(proteinLogsToday ?? []), proteinTargetG,
       waterMl: sumWaterToday(waterLogsToday ?? []), waterTargetMl,
-      checkins: dailyCheckins ?? [],
+      checkins: todayCheckin ? [todayCheckin] : [],
       primaryFocus: preferences.primaryFocus,
       secondaryFocus: preferences.secondaryFocus,
     };
     return { input, domains: buildHealthspanDomains(input), recommendation: recommendHealthspanAction(input) };
-  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, dailyCheckins, preferences.primaryFocus, preferences.secondaryFocus]);
+  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus]);
 
   const cachedRecommendation = useMemo(() => {
-    const latest = dailyCheckins?.[0];
+    const latest = todayCheckin;
     const cached = preferences.dailyHealthspanRecommendation;
     if (!latest || !cached || cached.checkinDate !== latest.checkinDate) return null;
     return cached.checkinFingerprint === checkinFingerprint(latest) ? cached : null;
-  }, [dailyCheckins, preferences.dailyHealthspanRecommendation]);
+  }, [todayCheckin, preferences.dailyHealthspanRecommendation]);
 
   const handleSaveDailyCheckin = async (input: import("../lib/healthspan").DailyCheckinInput) => {
     if (!user) return;
@@ -963,6 +969,27 @@ export function HomeScreen({
     </MButton>
   );
 
+  const plansLink = (
+    <MButton onClick={onOpenPlans} variant="secondary" size="md" style={quickAccessTileStyle}>
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          background: M.brandSoft,
+          color: M.brand,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flex: "0 0 auto",
+        }}
+      >
+        <Icon name="layers" size={16} stroke={2} />
+      </div>
+      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Meine Pläne</div>
+    </MButton>
+  );
+
   const bodyTrackerLink = (
     <MButton onClick={onOpenBodyTracker} variant="secondary" size="md" style={quickAccessTileStyle}>
       <div
@@ -1070,6 +1097,7 @@ export function HomeScreen({
         {timerLink}
         {breathingLink}
         {calculatorLink}
+        {plansLink}
       </div>
       {weekPlannerCard}
       {hydrationHint}
@@ -1105,7 +1133,7 @@ export function HomeScreen({
         onClose={() => setHydrationAlert(null)}
       />
       <AlertSheet open={!!checkinAlert} title="Check-in nicht gespeichert" message={checkinAlert ?? ""} onClose={() => setCheckinAlert(null)} />
-      <DailyCheckinSheet open={checkinOpen} current={dailyCheckins?.[0]} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={handleSaveDailyCheckin} />
+      <DailyCheckinSheet open={checkinOpen} current={todayCheckin} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={handleSaveDailyCheckin} />
     </ScreenScroll>
   );
 }

@@ -13,11 +13,12 @@ import { SwipeRevealRow } from "../components/SwipeRevealRow";
 import { ExerciseListRowDumbbellIcon, ExerciseListRowText } from "../components/ExerciseListRow";
 import { generateDailyAiSession, useDailyCheckins, useExercises, fetchRecentExpressTrackingSessions, fetchSessionsSinceWithExercises, saveDailyCheckin } from "../lib/db";
 import { useAuth } from "../lib/auth";
-import { getTrainingReadiness, type DailyCheckinInput } from "../lib/healthspan";
+import { findCheckinForDate, getTrainingReadiness, type DailyCheckinInput } from "../lib/healthspan";
 import { DailyCheckinSheet } from "../components/DailyCheckinSheet";
 import { createAiConsentGrant, hasAiConsent, type ExpressPerformanceBaseline, usePreferences } from "../lib/preferences";
 import { CONTENT_HORIZONTAL_PADDING, FOOTER_BAR_PADDING_BOTTOM } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useLocalDateKey } from "../hooks/useLocalDateKey";
 import {
   buildExpressTrackingWorkout,
   extractExpressTemplatesFromSession,
@@ -61,8 +62,13 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
   const [healthspanMode, setHealthspanMode] = useState<"reduced" | "ai" | null>(null);
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [checkinBusy, setCheckinBusy] = useState(false);
-  const { data: checkins, reload: reloadCheckins } = useDailyCheckins(new Date().toISOString().slice(0, 10));
-  const readiness = getTrainingReadiness(checkins?.[0]);
+  const todayCheckinDate = useLocalDateKey();
+  const { data: checkins, reload: reloadCheckins } = useDailyCheckins(todayCheckinDate);
+  const todayCheckin = useMemo(
+    () => findCheckinForDate(checkins, todayCheckinDate),
+    [checkins, todayCheckinDate],
+  );
+  const readiness = getTrainingReadiness(todayCheckin);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPreferences, setAiPreferences] = useState<string[]>([]);
   const [aiBusy, setAiBusy] = useState(false);
@@ -495,7 +501,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
         allowCreate
         onLibraryChange={reloadExercises}
       />
-      <DailyCheckinSheet open={checkinOpen} current={checkins?.[0]} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={saveCheckin} />
+      <DailyCheckinSheet open={checkinOpen} current={todayCheckin} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={saveCheckin} />
       <BottomSheet open={aiConsentSheetOpen} onClose={() => setAiConsentSheetOpen(false)} position="absolute" zIndex={40} aria-label="KI-Einwilligung">
         <AiConsentStep onOpenPrivacy={openPrivacy} onAccept={() => void handleGrantAiConsent()} onBack={() => setAiConsentSheetOpen(false)} showActions saving={preferencesSaving} />
       </BottomSheet>

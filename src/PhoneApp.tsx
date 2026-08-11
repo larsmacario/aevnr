@@ -57,6 +57,7 @@ import { AITrainingPlanWizard } from "./screens/AITrainingPlanWizard";
 import { ExpressTrackingSetupScreen } from "./screens/ExpressTrackingSetupScreen";
 import { Zone2SetupScreen } from "./screens/Zone2SetupScreen";
 import { BreathingScreen } from "./screens/BreathingScreen";
+import { FactsScreen } from "./screens/FactsScreen";
 type Route =
   | {
       kind: "tracking";
@@ -515,6 +516,8 @@ function PhoneAppInner() {
         onOpenPlan={goPlanDetail}
       />
     );
+  } else if (tab === "facts") {
+    body = <FactsScreen />;
   } else if (tab === "timer") {
     body = <TimerScreen onSaveSession={handleSaveTimerSession} onBack={() => handleTab("home")} />;
     showNav = false;
