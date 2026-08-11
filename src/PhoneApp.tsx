@@ -58,6 +58,7 @@ import { ExpressTrackingSetupScreen } from "./screens/ExpressTrackingSetupScreen
 import { Zone2SetupScreen } from "./screens/Zone2SetupScreen";
 import { BreathingScreen } from "./screens/BreathingScreen";
 import { FactsScreen } from "./screens/FactsScreen";
+import { detectFactTimezone } from "./lib/facts";
 type Route =
   | {
       kind: "tracking";
@@ -157,7 +158,7 @@ export function PhoneApp() {
 function PhoneAppInner() {
   const { user } = useAuth();
   const { isOnline } = useNetwork();
-  const { preferences } = usePreferences();
+  const { preferences, updatePreferences } = usePreferences();
   const { active: timerActive } = useActiveTimer();
   const breakpoint = useBreakpoint();
   const navPlacement = breakpoint === "desktop" ? "left" : "bottom";
@@ -184,6 +185,11 @@ function PhoneAppInner() {
       if (result.processed > 0) setRefreshKey((k) => k + 1);
     });
   }, [user?.id, isOnline]);
+
+  useEffect(() => {
+    const timezone = detectFactTimezone();
+    if (preferences.factTimezone !== timezone) void updatePreferences({ factTimezone: timezone }, true);
+  }, [preferences.factTimezone, updatePreferences]);
 
   const persistDraft = (draft: ActiveWorkoutDraft | null) => {
     if (!user) return;

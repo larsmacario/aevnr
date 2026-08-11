@@ -48,8 +48,9 @@ import { UserAvatar } from "../components/UserAvatar";
 import { WeekPlannerSheet } from "../components/WeekPlannerSheet";
 import { AlertSheet } from "../components/AlertSheet";
 import { DailyCheckinSheet } from "../components/DailyCheckinSheet";
-import { HealthspanDashboard } from "../components/HealthspanDashboard";
+import { DashboardCoach, HealthspanDashboard } from "../components/HealthspanDashboard";
 import { buildHealthspanDomains, checkinFingerprint, findCheckinForDate, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
+import { prioritizeDashboard } from "../lib/dashboardPersonalization";
 
 export interface HomeScreenProps {
   onStart: (planDayId: string, planId?: string) => void;
@@ -248,6 +249,16 @@ export function HomeScreen({
     };
     return { input, domains: buildHealthspanDomains(input), recommendation: recommendHealthspanAction(input) };
   }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus]);
+  const dashboardFocus = preferences.dashboard.focusOverride ?? preferences.primaryFocus;
+  const dashboardPriority = useMemo(() => prioritizeDashboard({
+    focus: dashboardFocus,
+    autoPrioritize: preferences.dashboard.autoPrioritize,
+    isTrainingDay: isSelectedToday && !!selectedPlanDay,
+    lowReadiness: !!todayCheckin && (todayCheckin.sleepQuality <= 4 || todayCheckin.stressLevel >= 8 || todayCheckin.energyLevel <= 3),
+    proteinBehind: proteinTargetG > 0 && sumProteinToday(proteinLogsToday ?? []) < proteinTargetG * 0.45,
+    waterBehind: waterTargetMl > 0 && sumWaterToday(waterLogsToday ?? []) < waterTargetMl * 0.35,
+    zone2Behind: healthspan.input.zone2Minutes < 90,
+  }), [dashboardFocus, preferences.dashboard.autoPrioritize, isSelectedToday, selectedPlanDay, todayCheckin, proteinTargetG, proteinLogsToday, waterTargetMl, waterLogsToday, healthspan.input.zone2Minutes]);
 
   const cachedRecommendation = useMemo(() => {
     const latest = todayCheckin;
@@ -1090,21 +1101,13 @@ export function HomeScreen({
       </div>
 
       {weekStrip}
-      <HealthspanDashboard domains={healthspan.domains} recommendation={cachedRecommendation ?? healthspan.recommendation} generating={aiRecommendationBusy} onCheckin={() => setCheckinOpen(true)} onOpenTimer={onOpenTimer} onOpenRecovery={onOpenRecovery} onOpenExpress={onOpenExpress} onStartStrength={selectedPlanDay && activePlan ? () => onStart(selectedPlanDay.id, activePlan.id) : undefined} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>
-        {bodyTrackerLink}
-        {recoveryLink}
-        {timerLink}
-        {breathingLink}
-        {calculatorLink}
-        {plansLink}
-      </div>
-      {weekPlannerCard}
-      {hydrationHint}
-      {todayCard}
-      {activeWorkoutCard}
-      {statsBlock}
-      {recoveryWeekCard}
+      <DashboardCoach recommendation={cachedRecommendation ?? healthspan.recommendation} generating={aiRecommendationBusy} reasons={dashboardPriority.reasons} onCheckin={() => setCheckinOpen(true)} onOpenTimer={onOpenTimer} onOpenRecovery={onOpenRecovery} onOpenExpress={onOpenExpress} onStartStrength={selectedPlanDay && activePlan ? () => onStart(selectedPlanDay.id, activePlan.id) : undefined} />
+      {dashboardPriority.modules.filter((module) => !preferences.dashboard.hiddenModules.includes(module)).map((module) => {
+        if (module === "healthspan") return <HealthspanDashboard key={module} domains={healthspan.domains} />;
+        if (module === "training") return <div key={module}>{todayCard}{activeWorkoutCard}{weekPlannerCard}</div>;
+        if (module === "recovery") return <div key={module}>{hydrationHint}<div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>{recoveryLink}{breathingLink}{timerLink}</div>{recoveryWeekCard}</div>;
+        return <div key={module}>{statsBlock}<div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>{bodyTrackerLink}{calculatorLink}{plansLink}</div></div>;
+      })}
       <WorkoutFinishSheet
         open={finishSheet && !!activeWorkout && !!activeMetrics}
         name={activeWorkout?.session.name ?? ""}

@@ -32,9 +32,10 @@ describe("normalizeExpressPerformanceBaseline", () => {
 });
 
 describe("ÆVNR-Onboarding", () => {
-  it("fordert Bestandskonten ohne Version 2 erneut zum Onboarding auf", () => {
+  it("fordert Bestandskonten ohne aktuelle Onboarding-Version erneut zum Onboarding auf", () => {
     expect(hasCurrentOnboarding(mergePreferences({ onboarded: true } as never))).toBe(false);
-    expect(hasCurrentOnboarding(mergePreferences({ onboardingVersion: 2 } as never))).toBe(true);
+    expect(hasCurrentOnboarding(mergePreferences({ onboardingVersion: 2 } as never))).toBe(false);
+    expect(hasCurrentOnboarding(mergePreferences({ onboardingVersion: 3 } as never))).toBe(true);
   });
 
   it("normalisiert nur gültige neue Fokusse und ordnet sie der Legacy-Logik zu", () => {

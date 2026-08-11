@@ -5,13 +5,15 @@ import { normalizeTimerSoundPackId, DEFAULT_TIMER_SOUND_PACK_ID } from "./timerS
 import { normalizeWaterQuickAmounts, type WaterQuickAmounts } from "./hydration";
 import { supabase } from "./supabase";
 import { normalizeDailyHealthspanRecommendation, type DailyHealthspanRecommendation } from "./healthspan";
+import { normalizeFactTimezone, normalizeFactTopics, type FactTopic } from "./facts";
+import { DEFAULT_DASHBOARD_PREFERENCES, normalizeDashboardPreferences, type DashboardPreferences } from "./dashboardPersonalization";
 
 export type TrainingStructure = "full_body" | "split";
 export type TrainingSplitDays = 2 | 3 | 4 | 5 | 6;
 export type ProteinTargetMode = "plan" | "body" | "manual";
 export type AevnrFocus = "strength" | "endurance" | "energy" | "body_composition";
 
-export const ONBOARDING_VERSION = 2;
+export const ONBOARDING_VERSION = 3;
 
 export function hasCurrentOnboarding(preferences: Pick<UserPreferences, "onboardingVersion">): boolean {
   return preferences.onboardingVersion >= ONBOARDING_VERSION;
@@ -187,6 +189,9 @@ export interface UserPreferences {
   expressPerformanceBaseline: ExpressPerformanceBaseline | null;
   /** Gültige KI-Tagesempfehlung für den aktuellen Check-in. */
   dailyHealthspanRecommendation: DailyHealthspanRecommendation | null;
+  /** Themen und Zeitzone für die tägliche Faktenbibliothek. */
+  factTopics: FactTopic[];
+  factTimezone: string;
   /** Montag-Datum (yyyy-mm-dd) der Woche, in der der Wochenplaner ausgeblendet wurde */
   weekPlannerDismissedWeek: string | null;
   /** Montag-Datum (yyyy-mm-dd) der Woche, in der die Recovery-Wochenkarte ausgeblendet wurde */
@@ -201,6 +206,8 @@ export interface UserPreferences {
   waterQuickAmountsMl: WaterQuickAmounts;
   /** Lokales Datum (yyyy-mm-dd), für das der Hydration-Hinweis ausgeblendet wurde. */
   hydrationHintDismissedDate: string | null;
+  /** Steuerung für die persönlich priorisierte Startseite. */
+  dashboard: DashboardPreferences;
 }
 
 export type UserPreferencesUpdate = Omit<Partial<UserPreferences>, "timerDefaults" | "breathingPresets"> & {
@@ -237,6 +244,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   aiConsent: null,
   expressPerformanceBaseline: null,
   dailyHealthspanRecommendation: null,
+  factTopics: [],
+  factTimezone: "Europe/Berlin",
   weekPlannerDismissedWeek: null,
   recoveryWeekDismissedWeek: null,
   waterTargetMl: null,
@@ -244,6 +253,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   proteinTargetG: null,
   waterQuickAmountsMl: normalizeWaterQuickAmounts(null),
   hydrationHintDismissedDate: null,
+  dashboard: { ...DEFAULT_DASHBOARD_PREFERENCES },
 };
 
 function mergeTimerDefaults(raw: unknown): Record<TimerMode, TimerCfg> {
@@ -326,6 +336,8 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
     aiConsent: normalizeAiConsent(obj.aiConsent),
     expressPerformanceBaseline: normalizeExpressPerformanceBaseline(obj.expressPerformanceBaseline),
     dailyHealthspanRecommendation: normalizeDailyHealthspanRecommendation(obj.dailyHealthspanRecommendation),
+    factTopics: normalizeFactTopics(obj.factTopics),
+    factTimezone: normalizeFactTimezone(obj.factTimezone),
     weekPlannerDismissedWeek:
       typeof obj.weekPlannerDismissedWeek === "string"
         ? obj.weekPlannerDismissedWeek
@@ -361,6 +373,7 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
         : obj.hydrationHintDismissedDate === null
           ? null
           : DEFAULT_PREFERENCES.hydrationHintDismissedDate,
+    dashboard: normalizeDashboardPreferences(obj.dashboard),
   };
 }
 
@@ -390,6 +403,8 @@ export function preferencesToJson(prefs: UserPreferences): Json {
     aiConsent: prefs.aiConsent ? (prefs.aiConsent as unknown as Json) : null,
     expressPerformanceBaseline: prefs.expressPerformanceBaseline ? (prefs.expressPerformanceBaseline as unknown as Json) : null,
     dailyHealthspanRecommendation: prefs.dailyHealthspanRecommendation ? (prefs.dailyHealthspanRecommendation as unknown as Json) : null,
+    factTopics: prefs.factTopics,
+    factTimezone: prefs.factTimezone,
     weekPlannerDismissedWeek: prefs.weekPlannerDismissedWeek,
     recoveryWeekDismissedWeek: prefs.recoveryWeekDismissedWeek,
     waterTargetMl: prefs.waterTargetMl,
@@ -397,6 +412,7 @@ export function preferencesToJson(prefs: UserPreferences): Json {
     proteinTargetG: prefs.proteinTargetG,
     waterQuickAmountsMl: prefs.waterQuickAmountsMl,
     hydrationHintDismissedDate: prefs.hydrationHintDismissedDate,
+    dashboard: prefs.dashboard as unknown as Json,
   };
 }
 

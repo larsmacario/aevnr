@@ -14,6 +14,7 @@ import { MButton } from "../components/MButton";
 import { createBodyMeasurement, saveDailyCheckin } from "../lib/db";
 import { recommendHealthspanAction, type CoachRecommendation } from "../lib/healthspan";
 import { useBreakpoint, FOOTER_BAR_PADDING_BOTTOM } from "../lib/responsive";
+import { detectFactTimezone, FACT_TOPIC_LABELS, FACT_TOPICS, type FactTopic } from "../lib/facts";
 
 type OnboardingAction = CoachRecommendation["action"];
 
@@ -35,6 +36,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
   const [sleepQuality, setSleepQuality] = useState(6);
   const [stressLevel, setStressLevel] = useState(5);
   const [energyLevel, setEnergyLevel] = useState(6);
+  const [factTopics, setFactTopics] = useState<FactTopic[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<CoachRecommendation | null>(null);
@@ -59,6 +61,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
   const validateStep = () => {
     if (step === 0 && (!displayName.trim() || !primaryFocus)) return "Gib deinen Namen an und wähle deinen Hauptfokus.";
     if (step === 1 && (!minutesPerSession || !trainingLocation)) return "Wähle deine verfügbare Zeit und deinen Trainingsort.";
+    if (step === 4 && factTopics.length === 0) return "Wähle mindestens ein Thema aus.";
     return null;
   };
 
@@ -91,12 +94,14 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
         onboardingVersion: ONBOARDING_VERSION,
         primaryFocus,
         secondaryFocus: secondaryFocus === primaryFocus ? null : secondaryFocus,
-        fitnessGoal: legacyFitnessGoalForFocus(primaryFocus),
+        factTopics,
+        factTimezone: detectFactTimezone(),
+        fitnessGoal: legacyFitnessGoalForFocus(primaryFocus!),
         weeklyDays,
         heightCm: heightCm && Number.isFinite(Number(heightCm)) ? Number(heightCm) : null,
         anamnesis: {
           painZones: preferences.anamnesis?.painZones ?? [],
-          trainingLocation,
+          trainingLocation: trainingLocation!,
           homeEquipment: preferences.anamnesis?.homeEquipment,
           otherSports: preferences.anamnesis?.otherSports ?? [],
           kfa: preferences.anamnesis?.kfa ?? null,
@@ -123,7 +128,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
         checkins: [{ sleepHours, sleepQuality, stressLevel, energyLevel }], primaryFocus,
       });
       setRecommendation(result);
-      setStep(4);
+      setStep(5);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Dein Startprofil konnte nicht gespeichert werden. Bitte versuche es erneut.");
     } finally {
@@ -138,7 +143,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
     </label>
   );
 
-  const content = step === 4 && recommendation ? (
+  const content = step === 5 && recommendation ? (
     <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 18 }}>
       <AppLogo size={64} />
       <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>DEIN STARTPROFIL STEHT</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>ÆVNR richtet sich ab jetzt nach deinem Rhythmus.</p></div>
@@ -181,6 +186,17 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
         {checkinField("Stress", stressLevel, 1, 10, setStressLevel, "/10")}
         {checkinField("Energie", energyLevel, 1, 10, setEnergyLevel, "/10")}
       </div>}
+      {step === 4 && <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+        <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>WAS INTERESSIERT DICH?</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>Wähle bis zu drei Bereiche. Jeden Morgen wartet ein passender, fundierter Impuls auf dich.</p></div>
+        <div style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>DEINE THEMEN · {factTopics.length}/3</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {FACT_TOPICS.map((topic, index) => {
+            const selected = factTopics.includes(topic);
+            const icon = ["heart", "droplet", "wind", "dumbbell", "bolt", "sparkles", "flame", "book"][index];
+            return <button key={topic} type="button" onClick={() => setFactTopics((current) => selected ? current.filter((entry) => entry !== topic) : current.length < 3 ? [...current, topic] : current)} style={{ ...tileStyle(selected), minHeight: 118, textAlign: "center", opacity: !selected && factTopics.length >= 3 ? 0.45 : 1 }}><Icon name={icon} size={24} color={M.fg} /><div style={{ fontWeight: 700, marginTop: 12, lineHeight: 1.2 }}>{FACT_TOPIC_LABELS[topic]}</div></button>;
+          })}
+        </div>
+      </div>}
     </>
   );
 
@@ -195,9 +211,9 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
 
   return <div style={{ width: "100%", height: "100%", minWidth: 0, display: "flex", background: M.bg, color: M.fg, fontFamily: M.body }}>
     <div style={{ width: "100%", maxWidth: 840, minWidth: 0, margin: "0 auto", boxSizing: "border-box", display: "flex", flexDirection: "column", ...pageInsets }}>
-      <header style={{ flexShrink: 0, marginBottom: 24 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}><AppLogo size={32} /><span style={{ color: M.mut, fontSize: 13, fontWeight: 700 }}>{step === 4 ? "BEREIT" : `SCHRITT ${step + 1} VON 4`}</span></div><div style={{ height: 3, background: M.line, borderRadius: 3 }}><div style={{ width: `${Math.min(100, ((step + 1) / 5) * 100)}%`, height: "100%", background: M.brand, borderRadius: 3, transition: "width .25s ease" }} /></div></header>
+      <header style={{ flexShrink: 0, marginBottom: 24 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}><AppLogo size={32} /><span style={{ color: M.mut, fontSize: 13, fontWeight: 700 }}>{step === 5 ? "BEREIT" : `SCHRITT ${step + 1} VON 5`}</span></div><div style={{ height: 3, background: M.line, borderRadius: 3 }}><div style={{ width: `${Math.min(100, ((step + 1) / 6) * 100)}%`, height: "100%", background: M.brand, borderRadius: 3, transition: "width .25s ease" }} /></div></header>
       <main style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: 18 }}>{error ? <div style={{ marginBottom: 16, padding: 12, borderRadius: 12, background: M.dangerSoft, color: M.danger, fontSize: 13 }}>{error}</div> : null}{content}</main>
-      <footer style={{ flexShrink: 0, paddingTop: 12, display: "flex", gap: 10, justifyContent: step > 0 && step < 4 ? "space-between" : "flex-end" }}>{step > 0 && step < 4 ? <MButton type="button" variant="secondary" size="md" disabled={busy} onClick={() => { setError(null); setStep(step - 1); }}>Zurück</MButton> : null}{step === 4 && recommendation ? <MButton type="button" variant="primary" size="md" onClick={() => onComplete(recommendation.action)}>Meine Empfehlung starten <Icon name="chevR" size={16} /></MButton> : step === 3 ? <MButton type="button" variant="primary" size="md" disabled={busy} onClick={() => void finish()}>{busy ? "Speichert…" : "Mein Startprofil erstellen"}</MButton> : <MButton type="button" variant="primary" size="md" fullWidth={step === 0} onClick={next}>Weiter <Icon name="chevR" size={16} /></MButton>}</footer>
+      <footer style={{ flexShrink: 0, paddingTop: 12, display: "flex", gap: 10, justifyContent: step > 0 && step < 5 ? "space-between" : "flex-end" }}>{step > 0 && step < 5 ? <MButton type="button" variant="secondary" size="md" disabled={busy} onClick={() => { setError(null); setStep(step - 1); }}>Zurück</MButton> : null}{step === 5 && recommendation ? <MButton type="button" variant="primary" size="md" onClick={() => onComplete(recommendation.action)}>Meine Empfehlung starten <Icon name="chevR" size={16} /></MButton> : step === 4 ? <MButton type="button" variant="primary" size="md" disabled={busy} onClick={() => void finish()}>{busy ? "Speichert…" : "Mein Startprofil erstellen"}</MButton> : <MButton type="button" variant="primary" size="md" fullWidth={step === 0} onClick={next}>Weiter <Icon name="chevR" size={16} /></MButton>}</footer>
     </div>
   </div>;
 }

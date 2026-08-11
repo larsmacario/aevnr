@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { M } from "../theme";
 import { fmt, TIMER_DEFAULTS, TIMER_MODES, type TimerMode } from "../lib/engine";
-import { createAiConsentGrant, hasAiConsent, usePreferences } from "../lib/preferences";
+import { createAiConsentGrant, hasAiConsent, usePreferences, type AevnrFocus } from "../lib/preferences";
+import { DASHBOARD_MODULE_IDS, focusLabel, type DashboardModuleId } from "../lib/dashboardPersonalization";
 import { TimerSoundPackPicker } from "../components/TimerSoundPackPicker";
 import { TimerConfigPanel } from "../components/TimerConfigPanel";
 import { MStepper, MSwitch } from "../components/widgets";
@@ -122,6 +123,12 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const resetTimerDefaults = () => {
     updatePreferences({ timerDefaults: JSON.parse(JSON.stringify(TIMER_DEFAULTS)) }, true);
   };
+  const toggleDashboardModule = (module: DashboardModuleId) => {
+    const hiddenModules = preferences.dashboard.hiddenModules.includes(module)
+      ? preferences.dashboard.hiddenModules.filter((entry) => entry !== module)
+      : [...preferences.dashboard.hiddenModules, module];
+    updatePreferences({ dashboard: { ...preferences.dashboard, hiddenModules } }, true);
+  };
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
@@ -192,6 +199,27 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(v) => updatePreferences({ defaultReps: v })}
             />
           </SettingRow>
+        </Section>
+
+        <Section title="DEIN DASHBOARD">
+          <SettingRow label="Automatisch priorisieren" hint="ÆVNR stellt heute relevante Bereiche nach vorn.">
+            <MSwitch checked={preferences.dashboard.autoPrioritize} onChange={(autoPrioritize) => updatePreferences({ dashboard: { ...preferences.dashboard, autoPrioritize } }, true)} />
+          </SettingRow>
+          <div style={{ padding: "12px 0", borderBottom: "1px solid " + M.line2 }}>
+            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Dashboard-Fokus</div>
+            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>Optionaler Schwerpunkt zusätzlich zu deinem Onboarding-Ziel.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+              <MButton type="button" size="sm" variant={preferences.dashboard.focusOverride === null ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: null } }, true)}>Automatisch</MButton>
+              {(["strength", "endurance", "energy", "body_composition"] as AevnrFocus[]).map((focus) => <MButton key={focus} type="button" size="sm" variant={preferences.dashboard.focusOverride === focus ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: focus } }, true)}>{focusLabel(focus)}</MButton>)}
+            </div>
+          </div>
+          <div style={{ paddingTop: 12 }}>
+            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Bereiche anzeigen</div>
+            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>Der Tages-Coach bleibt immer sichtbar.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+              {DASHBOARD_MODULE_IDS.map((module) => <MButton key={module} type="button" size="sm" variant={preferences.dashboard.hiddenModules.includes(module) ? "secondary" : "primary"} onClick={() => toggleDashboardModule(module)}>{({ healthspan: "Healthspan", training: "Training", recovery: "Recovery", insights: "Insights" })[module]}</MButton>)}
+            </div>
+          </div>
         </Section>
 
         <Section title="DATEN & KI">

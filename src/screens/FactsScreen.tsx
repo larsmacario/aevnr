@@ -1,110 +1,121 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { displayStyle, labelStyle, M } from "../theme";
 import { Icon } from "../components/Icon";
 import { MButton } from "../components/MButton";
 import { ScreenScroll } from "../components/ScreenScroll";
+import { FACT_TOPIC_LABELS, type DailyFact, type FactTopic } from "../lib/facts";
+import { supabase } from "../lib/supabase";
+import { usePreferences } from "../lib/preferences";
 
-const CATEGORIES = ["Für dich", "Bewegung", "Ernährung", "Erholung"];
+type FactsState = "loading" | "ready" | "needs_topics" | "before_six" | "preparing" | "error";
+
+interface FactsResponse {
+  state?: FactsState;
+  fact?: (DailyFact & { assignmentId: string }) | null;
+  facts?: Array<DailyFact & { assignmentId: string }>;
+  error?: string;
+}
 
 export function FactsScreen() {
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [categoryOpen, setCategoryOpen] = useState(false);
+  const { preferences, updatePreferences } = usePreferences();
+  const [state, setState] = useState<FactsState>("loading");
+  const [fact, setFact] = useState<(DailyFact & { assignmentId: string }) | null>(null);
+  const [savedFacts, setSavedFacts] = useState<Array<DailyFact & { assignmentId: string }>>([]);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  const loadFact = async () => {
+    setState("loading");
+    const { data, error } = await supabase.functions.invoke("facts", { body: {} });
+    const result = data as FactsResponse | null;
+    if (error || result?.error) {
+      setState("error");
+      setFeedback(result?.error ?? error?.message ?? "Fakten konnten nicht geladen werden.");
+      return;
+    }
+    setFact(result?.fact ?? null);
+    setState(result?.state ?? "preparing");
+  };
+
+  useEffect(() => { void loadFact(); }, []);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    void (async () => {
+      const { data } = await supabase.functions.invoke("facts", { body: { view: "saved" } });
+      setSavedFacts((data as FactsResponse | null)?.facts ?? []);
+    })();
+  }, [searchOpen]);
+
+  const results = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase("de-DE");
+    if (!normalized) return savedFacts;
+    return savedFacts.filter((entry) => `${entry.title} ${entry.body}`.toLocaleLowerCase("de-DE").includes(normalized));
+  }, [query, savedFacts]);
+
   const handleShare = async () => {
-    const text = "Fakten für ein langes Leben kommen bald in ÆVNR.";
+    if (!fact) return;
+    const text = `${fact.title}\n\n${fact.body}${fact.sources[0] ? `\n\nQuelle: ${fact.sources[0].pubmedUrl}` : ""}`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "ÆVNR Fakten", text });
-        setFeedback("Geteilt");
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        setFeedback("Text kopiert");
-      } else {
-        setFeedback("Teilen ist auf diesem Gerät nicht verfügbar");
-      }
+      const canShare = typeof navigator.share === "function";
+      if (canShare) await navigator.share({ title: fact.title, text });
+      else if (navigator.clipboard) await navigator.clipboard.writeText(text);
+      else throw new Error("Teilen ist auf diesem Gerät nicht verfügbar");
+      setFeedback(canShare ? "Geteilt" : "Text kopiert");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      setFeedback("Teilen ist gerade nicht möglich");
+      setFeedback(error instanceof Error ? error.message : "Teilen ist gerade nicht möglich");
     }
   };
+
+  const toggleSaved = async () => {
+    if (!fact) return;
+    const nextSaved = !fact.saved;
+    setFact({ ...fact, saved: nextSaved });
+    const { error } = await supabase.functions.invoke("facts", { body: { action: "toggle_saved", assignmentId: fact.assignmentId, saved: nextSaved } });
+    if (error) {
+      setFact({ ...fact, saved: !nextSaved });
+      setFeedback("Speichern ist gerade nicht möglich");
+    }
+  };
+
+  const toggleTopic = (topic: FactTopic) => {
+    const current = preferences.factTopics;
+    const next = current.includes(topic) ? current.filter((entry) => entry !== topic) : current.length < 3 ? [...current, topic] : current;
+    void updatePreferences({ factTopics: next }, true);
+  };
+
+  const cardTitle = fact?.title ?? (state === "before_six" ? "Dein Fakt erscheint um 06:00 Uhr" : state === "needs_topics" ? "Wähle deine Themen" : state === "preparing" ? "Dein erster Fakt wird vorbereitet" : "Fakten für ein langes Leben");
+  const cardBody = fact?.body ?? (state === "before_six" ? "Ab 06:00 Uhr Ortszeit findest du hier einen neuen, fundierten Impuls." : state === "needs_topics" ? "Wähle bis zu drei Interessen aus, damit wir deine täglichen Fakten passend zusammenstellen können." : state === "preparing" ? "Sobald ein passender, quellengeprüfter Fakt bereitsteht, erscheint er hier." : state === "error" ? "Bitte versuche es später noch einmal." : "Dein heutiger Faktenimpuls wird geladen.");
 
   return (
     <ScreenScroll page>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ position: "relative" }}>
-          <MButton
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={() => setCategoryOpen((open) => !open)}
-            aria-expanded={categoryOpen}
-            aria-haspopup="listbox"
-            style={{ background: M.card, borderColor: M.line, minWidth: 142, justifyContent: "space-between" }}
-          >
-            {category} <Icon name="chevD" size={17} color={M.fg} />
-          </MButton>
-          {categoryOpen ? (
-            <div
-              role="listbox"
-              aria-label="Faktenkategorie"
-              style={{ position: "absolute", top: 54, left: 0, zIndex: 2, minWidth: 180, padding: 6, borderRadius: 14, background: M.panel, border: `1px solid ${M.line}`, boxShadow: M.shadow }}
-            >
-              {CATEGORIES.map((item) => (
-                <MButton
-                  key={item}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setCategory(item); setCategoryOpen(false); setFeedback(null); }}
-                  role="option"
-                  aria-selected={category === item}
-                  style={{ width: "100%", justifyContent: "flex-start", color: category === item ? M.fg : M.mut, padding: "0 12px" }}
-                >
-                  {item}
-                </MButton>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}>
-            <Icon name="search" size={21} color={M.fg} />
-          </MButton>
-        </div>
+        <div><div style={{ ...labelStyle() }}>FÜR DICH</div><div style={{ ...displayStyle(24), marginTop: 4 }}>Fakten</div></div>
+        <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Gespeicherte Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}><Icon name="search" size={21} color={M.fg} /></MButton>
       </div>
 
-      {searchOpen ? (
-        <div style={{ marginTop: 12 }}>
-          <label htmlFor="facts-search" style={{ ...labelStyle(), display: "block", marginBottom: 6 }}>Fakten durchsuchen</label>
-          <input id="facts-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Suchbegriff eingeben" autoFocus style={{ width: "100%", boxSizing: "border-box", height: 48, padding: "0 14px", borderRadius: 14, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: `500 15px ${M.body}`, outline: "none" }} />
-        </div>
-      ) : null}
+      {searchOpen ? <div style={{ marginTop: 16 }}>
+        <label htmlFor="facts-search" style={{ ...labelStyle(), display: "block", marginBottom: 6 }}>Gespeicherte Fakten durchsuchen</label>
+        <input id="facts-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Suchbegriff eingeben" autoFocus style={{ width: "100%", boxSizing: "border-box", height: 48, padding: "0 14px", borderRadius: 14, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: `500 15px ${M.body}`, outline: "none" }} />
+        {query.trim() ? <div style={{ marginTop: 10, display: "grid", gap: 8 }}>{results.length ? results.map((entry) => <div key={entry.assignmentId} style={{ padding: 12, borderRadius: 14, background: M.card, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 14 }}>{entry.title}</div><div style={{ color: M.mut, fontSize: 13, lineHeight: 1.4, marginTop: 4 }}>{entry.body}</div></div>) : <div style={{ ...labelStyle() }}>Keine gespeicherten Fakten gefunden.</div>}</div> : null}
+      </div> : null}
 
       <section style={{ minHeight: 430, marginTop: 28, padding: "28px 22px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderRadius: 24, background: M.card, border: `1px solid ${M.line2}`, boxShadow: M.shadow }}>
-        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 24, background: M.accSoft, color: M.fg, marginTop: 48 }}>
-          <Icon name="book" size={24} stroke={2} />
-        </div>
-        <div style={{ ...labelStyle(), marginTop: 20 }}>{category}</div>
-        <h1 style={{ ...displayStyle(30), margin: "10px 0 0", maxWidth: 300 }}>Fakten für ein langes Leben</h1>
-        <p style={{ maxWidth: 315, margin: "14px 0 0", color: M.mut, fontSize: 15, lineHeight: 1.5 }}>
-          {query.trim() ? `Für „${query.trim()}“ bereiten wir passende Impulse vor.` : "Hier erscheinen bald verständliche, fundierte Impulse für deinen Healthspan-Alltag."}
-        </p>
+        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 24, background: M.accSoft, color: M.fg, marginTop: 36 }}><Icon name="book" size={24} stroke={2} /></div>
+        {fact ? <div style={{ ...labelStyle(), marginTop: 20 }}>{FACT_TOPIC_LABELS[fact.topic]}</div> : null}
+        <h1 style={{ ...displayStyle(30), margin: "10px 0 0", maxWidth: 320 }}>{cardTitle}</h1>
+        <p style={{ maxWidth: 330, margin: "14px 0 0", color: M.mut, fontSize: 15, lineHeight: 1.5 }}>{cardBody}</p>
+        {fact?.sources.length ? <MButton type="button" variant="ghost" size="sm" onClick={() => setSourcesOpen((open) => !open)} style={{ marginTop: 16, color: M.fg }}>Quellen {sourcesOpen ? "ausblenden" : "anzeigen"} <Icon name={sourcesOpen ? "chevD" : "chevR"} size={15} /></MButton> : null}
+        {sourcesOpen ? <div style={{ width: "100%", marginTop: 6, textAlign: "left", display: "grid", gap: 8 }}>{fact?.sources.map((source) => <a key={source.pmid} href={source.pubmedUrl} target="_blank" rel="noreferrer" style={{ display: "block", color: M.fg, textDecoration: "none", padding: 11, borderRadius: 12, background: M.bg, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{source.title}</div><div style={{ ...labelStyle(), marginTop: 5 }}>{source.authors} · {source.journal} · {source.publicationYear}</div></a>)}</div> : null}
         <div style={{ flex: 1 }} />
         {feedback ? <div role="status" style={{ ...labelStyle(), color: M.fg, marginBottom: 14 }}>{feedback}</div> : null}
-        <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}>
-          <MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakten teilen" title="Teilen" style={{ color: M.fg }}>
-            <Icon name="share" size={22} color={M.fg} />
-          </MButton>
-          <span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{saved ? "Für später gespeichert" : "Deine Fakten kommen bald"}</span>
-          <MButton type="button" variant="ghost" size="icon" onClick={() => setSaved((value) => !value)} aria-label={saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}>
-            <Icon name="heartOutline" size={24} color={M.fg} fill={saved ? M.fg : "none"} />
-          </MButton>
-        </div>
+        {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{fact.saved ? "Für später gespeichert" : "Heute für dich"}</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
       </section>
+
+      <section style={{ marginTop: 18, padding: 16, borderRadius: 18, background: M.card, border: `1px solid ${M.line2}` }}><div style={{ ...labelStyle(), marginBottom: 10 }}>DEINE INTERESSEN · {preferences.factTopics.length}/3</div><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(Object.keys(FACT_TOPIC_LABELS) as FactTopic[]).map((topic) => <MButton key={topic} type="button" variant={preferences.factTopics.includes(topic) ? "primary" : "secondary"} size="sm" onClick={() => toggleTopic(topic)} disabled={!preferences.factTopics.includes(topic) && preferences.factTopics.length >= 3}>{FACT_TOPIC_LABELS[topic]}</MButton>)}</div></section>
     </ScreenScroll>
   );
 }
