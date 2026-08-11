@@ -523,7 +523,7 @@ function PhoneAppInner() {
       />
     );
   } else if (tab === "facts") {
-    body = <FactsScreen />;
+    body = <FactsScreen onOpenProfile={() => setTab("profile")} />;
   } else if (tab === "timer") {
     body = <TimerScreen onSaveSession={handleSaveTimerSession} onBack={() => handleTab("home")} />;
     showNav = false;

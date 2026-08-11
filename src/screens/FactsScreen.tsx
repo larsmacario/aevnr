@@ -3,9 +3,8 @@ import { displayStyle, labelStyle, M } from "../theme";
 import { Icon } from "../components/Icon";
 import { MButton } from "../components/MButton";
 import { ScreenScroll } from "../components/ScreenScroll";
-import { FACT_TOPIC_LABELS, type DailyFact, type FactTopic } from "../lib/facts";
+import { FACT_TOPIC_LABELS, type DailyFact } from "../lib/facts";
 import { supabase } from "../lib/supabase";
-import { usePreferences } from "../lib/preferences";
 
 type FactsState = "loading" | "ready" | "needs_topics" | "before_six" | "preparing" | "error";
 
@@ -16,8 +15,7 @@ interface FactsResponse {
   error?: string;
 }
 
-export function FactsScreen() {
-  const { preferences, updatePreferences } = usePreferences();
+export function FactsScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [state, setState] = useState<FactsState>("loading");
   const [fact, setFact] = useState<(DailyFact & { assignmentId: string }) | null>(null);
   const [savedFacts, setSavedFacts] = useState<Array<DailyFact & { assignmentId: string }>>([]);
@@ -32,7 +30,7 @@ export function FactsScreen() {
     const result = data as FactsResponse | null;
     if (error || result?.error) {
       setState("error");
-      setFeedback(result?.error ?? error?.message ?? "Fakten konnten nicht geladen werden.");
+      setFeedback("Dein nächster Fakt wird gerade vorbereitet.");
       return;
     }
     setFact(result?.fact ?? null);
@@ -81,12 +79,6 @@ export function FactsScreen() {
     }
   };
 
-  const toggleTopic = (topic: FactTopic) => {
-    const current = preferences.factTopics;
-    const next = current.includes(topic) ? current.filter((entry) => entry !== topic) : current.length < 3 ? [...current, topic] : current;
-    void updatePreferences({ factTopics: next }, true);
-  };
-
   const cardTitle = fact?.title ?? (state === "before_six" ? "Dein Fakt erscheint um 06:00 Uhr" : state === "needs_topics" ? "Wähle deine Themen" : state === "preparing" ? "Dein erster Fakt wird vorbereitet" : "Fakten für ein langes Leben");
   const cardBody = fact?.body ?? (state === "before_six" ? "Ab 06:00 Uhr Ortszeit findest du hier einen neuen, fundierten Impuls." : state === "needs_topics" ? "Wähle bis zu drei Interessen aus, damit wir deine täglichen Fakten passend zusammenstellen können." : state === "preparing" ? "Sobald ein passender, quellengeprüfter Fakt bereitsteht, erscheint er hier." : state === "error" ? "Bitte versuche es später noch einmal." : "Dein heutiger Faktenimpuls wird geladen.");
 
@@ -94,7 +86,10 @@ export function FactsScreen() {
     <ScreenScroll page>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div><div style={{ ...labelStyle() }}>FÜR DICH</div><div style={{ ...displayStyle(24), marginTop: 4 }}>Fakten</div></div>
-        <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Gespeicherte Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}><Icon name="search" size={21} color={M.fg} /></MButton>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <MButton type="button" variant="ghost" size="sm" onClick={onOpenProfile} style={{ color: M.fg, padding: "0 10px" }}><Icon name="user" size={16} /> Profil</MButton>
+          <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Gespeicherte Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}><Icon name="search" size={21} color={M.fg} /></MButton>
+        </div>
       </div>
 
       {searchOpen ? <div style={{ marginTop: 16 }}>
@@ -114,8 +109,6 @@ export function FactsScreen() {
         {feedback ? <div role="status" style={{ ...labelStyle(), color: M.fg, marginBottom: 14 }}>{feedback}</div> : null}
         {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{fact.saved ? "Für später gespeichert" : "Heute für dich"}</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
       </section>
-
-      <section style={{ marginTop: 18, padding: 16, borderRadius: 18, background: M.card, border: `1px solid ${M.line2}` }}><div style={{ ...labelStyle(), marginBottom: 10 }}>DEINE INTERESSEN · {preferences.factTopics.length}/3</div><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(Object.keys(FACT_TOPIC_LABELS) as FactTopic[]).map((topic) => <MButton key={topic} type="button" variant={preferences.factTopics.includes(topic) ? "primary" : "secondary"} size="sm" onClick={() => toggleTopic(topic)} disabled={!preferences.factTopics.includes(topic) && preferences.factTopics.length >= 3}>{FACT_TOPIC_LABELS[topic]}</MButton>)}</div></section>
     </ScreenScroll>
   );
 }

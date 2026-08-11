@@ -11,6 +11,7 @@ import { UserAvatar } from "../components/UserAvatar";
 import { AvatarCropSheet } from "../components/AvatarCropSheet";
 import { AvatarActionSheet } from "../components/AvatarActionSheet";
 import { ConfirmSheet } from "../components/ConfirmSheet";
+import { FACT_TOPIC_LABELS, type FactTopic } from "../lib/facts";
 export interface ProfileScreenProps {
   onBack: () => void;
   mode?: "push" | "tab";
@@ -25,11 +26,11 @@ const rowLabelStyle: React.CSSProperties = {
 };
 
 const rowValueStyle: React.CSSProperties = {
-  fontSize: 30,
+  fontSize: 17,
   color: M.fg,
-  fontFamily: M.numeric,
-  fontWeight: 700,
-  lineHeight: 1.1,
+  fontFamily: M.body,
+  fontWeight: 650,
+  lineHeight: 1.25,
   textAlign: "right",
 };
 
@@ -120,6 +121,8 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [avatarCacheKey, setAvatarCacheKey] = useState(0);
+  const [factTopicsEditing, setFactTopicsEditing] = useState(false);
+  const [factTopicsDraft, setFactTopicsDraft] = useState<FactTopic[]>(preferences.factTopics);
 
   useEffect(() => {
     setDisplayName(profile?.display_name ?? "");
@@ -136,6 +139,10 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
   useEffect(() => {
     setGender(preferences.gender);
   }, [preferences.gender]);
+
+  useEffect(() => {
+    if (!factTopicsEditing) setFactTopicsDraft(preferences.factTopics);
+  }, [preferences.factTopics, factTopicsEditing]);
 
   useEffect(() => {
     return () => {
@@ -193,6 +200,23 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
     updatePreferences({ gender }, true);
     setEditingField(null);
     setInfo("Geschlecht gespeichert.");
+  };
+
+  const toggleFactTopic = (topic: FactTopic) => {
+    setFactTopicsDraft((current) => current.includes(topic)
+      ? current.filter((entry) => entry !== topic)
+      : current.length < 3 ? [...current, topic] : current);
+  };
+
+  const saveFactTopics = async () => {
+    if (factTopicsDraft.length === 0) {
+      setError("Wähle mindestens ein Thema aus.");
+      return;
+    }
+    clearFeedback();
+    await updatePreferences({ factTopics: factTopicsDraft }, true);
+    setFactTopicsEditing(false);
+    setInfo("Deine Fakteninteressen wurden gespeichert.");
   };
 
   const submitPassword = async () => {
@@ -293,15 +317,16 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
 
   const profileRows = useMemo(
     () => [
-      { key: "displayName", label: "Name", value: displayName || "—", editable: true },
-      { key: "gender", label: "Geschlecht", value: formatGender(preferences.gender), editable: true },
-      { key: "birthDate", label: "Geburtsdatum", value: formatBirthDate(profile?.birth_date), editable: true },
-      { key: "email", label: "Email", value: user?.email ?? "—", editable: true, copyable: true },
-      { key: "userId", label: "Nutzer-IDs", value: user?.id ?? "—", editable: false, copyable: true },
+      { key: "displayName", label: "Name", value: displayName || "—", icon: "user", editable: true },
+      { key: "gender", label: "Geschlecht", value: formatGender(preferences.gender), icon: "users", editable: true },
+      { key: "birthDate", label: "Geburtsdatum", value: formatBirthDate(profile?.birth_date), icon: "calendar", editable: true },
+      { key: "email", label: "E-Mail", value: user?.email ?? "—", icon: "mail", editable: true },
+      { key: "userId", label: "Nutzer-ID", value: user?.id ?? "—", icon: "copy", editable: false, copyable: true },
       {
         key: "role",
         label: "Rolle",
         value: typeof profile?.role === "string" ? capitalizeFirst(profile.role) : "User",
+        icon: "flag",
         editable: false,
       },
     ],
@@ -411,23 +436,17 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
         </div>
 
         <div style={{ marginBottom: 18 }}>
-          <div
-            style={{
-              fontSize: 13,
-              letterSpacing: 1.5,
-              color: M.mut,
-              fontWeight: 700,
-              marginBottom: 10,
-            }}
-          >
-            INFORMATIONEN
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>INFORMATIONEN</div>
+            <div style={{ color: M.mut2, fontSize: 12, fontWeight: 600 }}>KONTO</div>
           </div>
           <div
             style={{
               background: M.card,
               border: "1px solid " + M.line2,
-              borderRadius: 16,
-              padding: "6px 14px",
+              borderRadius: 20,
+              padding: "4px 16px",
+              boxShadow: "0 8px 22px rgba(24,24,27,0.035)",
             }}
           >
             {profileRows.map((row, idx) => {
@@ -440,16 +459,17 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      minHeight: 58,
-                      padding: "6px 0",
+                      gap: 10,
+                      minHeight: 62,
+                      padding: "7px 0",
                     }}
                   >
-                    <div style={{ flex: 1.05 }}>
-                      <div style={rowLabelStyle}>{row.label}</div>
+                    <div style={{ width: 32, height: 32, borderRadius: 10, background: M.accSoft, display: "flex", alignItems: "center", justifyContent: "center", color: M.fg, flexShrink: 0 }}>
+                      <Icon name={row.icon} size={15} stroke={2} />
                     </div>
-                    <div style={{ flex: 1.35, minWidth: 0 }}>
-                      <div style={{ ...rowValueStyle, fontSize: row.key === "email" || row.key === "userId" ? 23 : 30, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={rowLabelStyle}>{row.label}</div>
+                      <div style={{ ...rowValueStyle, marginTop: 2, fontSize: row.key === "userId" ? 13 : row.key === "email" ? 15 : 17, fontFamily: row.key === "userId" ? M.numeric : M.body, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {row.value}
                       </div>
                     </div>
@@ -457,7 +477,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                       {row.copyable && typeof row.value === "string" && row.value !== "—" && (
                         <button
                           onClick={() => copyValue(row.value, row.label)}
-                          style={{ background: "none", border: "none", color: M.mut2, cursor: "pointer", display: "flex" }}
+                          style={{ width: 28, height: 28, borderRadius: 14, background: "transparent", border: "none", color: M.mut2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                           aria-label={`${row.label} kopieren`}
                         >
                           <Icon name="copy" size={15} stroke={1.8} />
@@ -469,7 +489,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                             clearFeedback();
                             setEditingField(isEditing ? null : (row.key as EditableField));
                           }}
-                          style={{ background: "none", border: "none", color: M.mut2, cursor: "pointer", display: "flex" }}
+                          style={{ width: 28, height: 28, borderRadius: 14, background: "transparent", border: "none", color: M.mut2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                           aria-label={`${row.label} bearbeiten`}
                         >
                           <Icon name="edit" size={15} stroke={2} />
@@ -604,7 +624,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                 justifyContent: "space-between",
               }}
             >
-              <span style={{ ...rowLabelStyle, color: M.fg }}>Passwort ändern</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10, ...rowLabelStyle, color: M.fg }}><span style={{ width: 32, height: 32, borderRadius: 10, background: M.accSoft, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={15} color={M.fg} /></span>Passwort ändern</span>
               <Icon name={passwordOpen ? "chevD" : "chevR"} size={16} stroke={2.2} color={M.mut} />
             </button>
 
@@ -645,6 +665,17 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}><div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>FAKTEN</div>{!factTopicsEditing ? <MButton type="button" variant="ghost" size="sm" onClick={() => { clearFeedback(); setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(true); }} style={{ minHeight: 32, padding: "0 2px", color: M.fg }}>Bearbeiten <Icon name="edit" size={14} /></MButton> : <span style={{ fontSize: 12, color: M.mut, fontWeight: 600 }}>{factTopicsDraft.length}/3</span>}</div>
+          <div style={{ background: M.card, border: "1px solid " + M.line2, borderRadius: 16, padding: 14 }}>
+            <div style={{ color: M.mut, fontSize: 13, lineHeight: 1.45, marginBottom: 12 }}>{factTopicsEditing ? "Wähle bis zu drei Themen für deine täglichen Fakten." : preferences.factTopics.length ? "Diese Themen bestimmen deine täglichen Fakten." : "Lege deine Interessen für tägliche Fakten fest."}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {factTopicsEditing ? (Object.keys(FACT_TOPIC_LABELS) as FactTopic[]).map((topic) => <MButton key={topic} type="button" variant={factTopicsDraft.includes(topic) ? "primary" : "secondary"} size="sm" onClick={() => toggleFactTopic(topic)} disabled={!factTopicsDraft.includes(topic) && factTopicsDraft.length >= 3}>{FACT_TOPIC_LABELS[topic]}</MButton>) : preferences.factTopics.map((topic) => <span key={topic} style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 18, background: M.accSoft, color: M.fg, fontSize: 13, fontWeight: 650 }}>{FACT_TOPIC_LABELS[topic]}</span>)}
+            </div>
+            {factTopicsEditing ? <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}><MButton type="button" variant="secondary" size="sm" onClick={() => { setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(false); }}>Abbrechen</MButton><MButton type="button" variant="primary" size="sm" onClick={() => void saveFactTopics()}>Speichern</MButton></div> : null}
           </div>
         </div>
 
