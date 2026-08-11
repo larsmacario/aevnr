@@ -1,8 +1,9 @@
 -- Einmal nach Migration und Function-Deploy im Supabase SQL Editor ausführen.
--- Ersetze die drei Platzhalter vor dem Ausführen durch sichere, reale Werte.
-select vault.create_secret('https://PROJECT_REF.supabase.co', 'supabase_url');
-select vault.create_secret('SUPABASE_PUBLISHABLE_KEY', 'supabase_publishable_key');
-select vault.create_secret('LONG_RANDOM_SECRET', 'facts_cron_secret');
+-- URL und Publishable Key werden für die Cron-Aufrufe im Vault abgelegt.
+-- facts_cron_secret wurde separat angelegt und wird hier nicht erneut erstellt.
+select vault.create_secret('https://jnspiqnlwbsobqctmfnk.supabase.co', 'supabase_url');
+select vault.create_secret('sb_publishable_h-CZ4IN3oFRAruP9FpMorA_OHwxGkko', 'supabase_publishable_key');
+
 
 select cron.unschedule(jobid)
 from cron.job
