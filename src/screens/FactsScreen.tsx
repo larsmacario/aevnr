@@ -96,7 +96,6 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
     setFact({ ...fact, saved: nextSaved });
     await setCachedFactSaved(user.id, fact.assignmentId, nextSaved, true);
     await enqueueMutation(user.id, "TOGGLE_FACT_SAVED", { assignmentId: fact.assignmentId, saved: nextSaved });
-    setFeedback(nextSaved ? "Für später gespeichert" : "Aus deinen gespeicherten Fakten entfernt");
   };
 
   const openAction = () => {
@@ -147,7 +146,7 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
         {sourcesOpen ? <div style={{ width: "100%", marginTop: 6, textAlign: "left", display: "grid", gap: 8 }}>{fact?.sources.map((source) => <a key={source.pmid} href={source.pubmedUrl} target="_blank" rel="noreferrer" style={{ display: "block", color: M.fg, textDecoration: "none", padding: 11, borderRadius: 12, background: M.bg, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{source.title}</div><div style={{ ...labelStyle(), marginTop: 5 }}>{source.authors} · {source.journal} · {source.publicationYear}</div></a>)}</div> : null}
         <div style={{ flex: 1 }} />
         {feedback ? <div role="status" style={{ ...labelStyle(), color: M.fg, marginBottom: 14 }}>{feedback}</div> : null}
-        {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{fact.saved ? "Für später gespeichert" : "Heute für dich"}</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
+        {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Heute für dich</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
       </section>
     </ScreenScroll>
   );
