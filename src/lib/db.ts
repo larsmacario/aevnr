@@ -1752,6 +1752,15 @@ export async function upsertDailyCheckinRemote(userId: string, rawInput: DailyCh
   if (error) throw error;
 }
 
+export async function toggleFactSavedRemote(assignmentId: string, saved: boolean): Promise<void> {
+  const { data, error } = await supabase.functions.invoke("facts", {
+    body: { action: "toggle_saved", assignmentId, saved },
+  });
+  if (error || (data as { error?: string } | null)?.error) {
+    throw error ?? new Error((data as { error?: string }).error ?? "Fakt konnte nicht gespeichert werden.");
+  }
+}
+
 export async function saveDailyCheckin(userId: string, rawInput: DailyCheckinInput): Promise<void> {
   const input = normalizeDailyCheckin(rawInput);
   const cached = { id: `${userId}:${input.checkinDate}`, userId, checkinDate: input.checkinDate!, sleepHours: input.sleepHours, sleepQuality: input.sleepQuality, stressLevel: input.stressLevel, energyLevel: input.energyLevel, note: input.note, updatedAt: Date.now() };
@@ -2798,6 +2807,7 @@ registerSyncHandlers({
   updateExerciseRemote,
   deleteExerciseRemote,
   upsertDailyCheckinRemote,
+  toggleFactSavedRemote,
   refreshPlansRemote: fetchPlansRemote,
   refreshExercisesRemote: fetchExercisesRemote,
 });

@@ -3,8 +3,11 @@ import { displayStyle, labelStyle, M } from "../theme";
 import { Icon } from "../components/Icon";
 import { MButton } from "../components/MButton";
 import { ScreenScroll } from "../components/ScreenScroll";
-import { FACT_TOPIC_LABELS, type DailyFact } from "../lib/facts";
+import { FACT_TOPIC_LABELS, factLocalDate, type DailyFact, type FactAppAction } from "../lib/facts";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/auth";
+import { cacheFact, getCachedFactForDate, getCachedFacts, setCachedFactSaved } from "../lib/offline/factStore";
+import { enqueueMutation } from "../lib/offline/syncEngine";
 
 type FactsState = "loading" | "ready" | "needs_topics" | "before_six" | "preparing" | "error";
 
@@ -15,16 +18,34 @@ interface FactsResponse {
   error?: string;
 }
 
-export function FactsScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
+interface FactsScreenProps {
+  onOpenProfile: () => void;
+  onOpenCheckin: () => void;
+  onOpenBreathing: () => void;
+  onOpenExpress: () => void;
+  onOpenRecovery: (section: "protein" | "water") => void;
+  onOpenAiPlan: () => void;
+}
+
+export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onOpenExpress, onOpenRecovery, onOpenAiPlan }: FactsScreenProps) {
+  const { user } = useAuth();
   const [state, setState] = useState<FactsState>("loading");
   const [fact, setFact] = useState<(DailyFact & { assignmentId: string }) | null>(null);
   const [savedFacts, setSavedFacts] = useState<Array<DailyFact & { assignmentId: string }>>([]);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [actionOpen, setActionOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const loadFact = async () => {
+    if (!user) return;
+    const cached = await getCachedFactForDate(user.id, factLocalDate());
+    if (cached) {
+      setFact(cached);
+      setState("ready");
+      return;
+    }
     setState("loading");
     const { data, error } = await supabase.functions.invoke("facts", { body: {} });
     const result = data as FactsResponse | null;
@@ -33,19 +54,19 @@ export function FactsScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
       setFeedback("Dein nächster Fakt wird gerade vorbereitet.");
       return;
     }
-    setFact(result?.fact ?? null);
+    const nextFact = result?.fact ?? null;
+    if (nextFact) await cacheFact(user.id, nextFact);
+    setFact(nextFact);
     setState(result?.state ?? "preparing");
   };
 
-  useEffect(() => { void loadFact(); }, []);
+  useEffect(() => { void loadFact(); }, [user?.id]);
 
   useEffect(() => {
     if (!searchOpen) return;
-    void (async () => {
-      const { data } = await supabase.functions.invoke("facts", { body: { view: "saved" } });
-      setSavedFacts((data as FactsResponse | null)?.facts ?? []);
-    })();
-  }, [searchOpen]);
+    if (!user) return;
+    void getCachedFacts(user.id).then(setSavedFacts);
+  }, [searchOpen, user?.id]);
 
   const results = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("de-DE");
@@ -70,13 +91,28 @@ export function FactsScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
 
   const toggleSaved = async () => {
     if (!fact) return;
+    if (!user) return;
     const nextSaved = !fact.saved;
     setFact({ ...fact, saved: nextSaved });
-    const { error } = await supabase.functions.invoke("facts", { body: { action: "toggle_saved", assignmentId: fact.assignmentId, saved: nextSaved } });
-    if (error) {
-      setFact({ ...fact, saved: !nextSaved });
-      setFeedback("Speichern ist gerade nicht möglich");
+    await setCachedFactSaved(user.id, fact.assignmentId, nextSaved, true);
+    await enqueueMutation(user.id, "TOGGLE_FACT_SAVED", { assignmentId: fact.assignmentId, saved: nextSaved });
+    setFeedback(nextSaved ? "Für später gespeichert" : "Aus deinen gespeicherten Fakten entfernt");
+  };
+
+  const openAction = () => {
+    switch (fact?.action?.appAction) {
+      case "checkin": onOpenCheckin(); break;
+      case "breathing": onOpenBreathing(); break;
+      case "express": onOpenExpress(); break;
+      case "protein": onOpenRecovery("protein"); break;
+      case "water": onOpenRecovery("water"); break;
+      case "ai_plan": onOpenAiPlan(); break;
     }
+  };
+
+  const actionLabel: Record<FactAppAction, string> = {
+    checkin: "Check-in öffnen", breathing: "Atemübung starten", express: "Express starten",
+    protein: "Protein ansehen", water: "Wasser ansehen", ai_plan: "KI-Plan öffnen",
   };
 
   const cardTitle = fact?.title ?? (state === "before_six" ? "Dein Fakt erscheint um 06:00 Uhr" : state === "needs_topics" ? "Wähle deine Themen" : state === "preparing" ? "Dein erster Fakt wird vorbereitet" : "Fakten für ein langes Leben");
@@ -103,6 +139,10 @@ export function FactsScreen({ onOpenProfile }: { onOpenProfile: () => void }) {
         {fact ? <div style={{ ...labelStyle(), marginTop: 20 }}>{FACT_TOPIC_LABELS[fact.topic]}</div> : null}
         <h1 style={{ ...displayStyle(30), margin: "10px 0 0", maxWidth: 320 }}>{cardTitle}</h1>
         <p style={{ maxWidth: 330, margin: "14px 0 0", color: M.mut, fontSize: 15, lineHeight: 1.5 }}>{cardBody}</p>
+        {fact?.action ? <div style={{ width: "100%", marginTop: 16, textAlign: "left", borderTop: `1px solid ${M.line2}`, paddingTop: 8 }}>
+          <MButton type="button" variant="ghost" size="sm" onClick={() => setActionOpen((open) => !open)} style={{ padding: "8px 0", color: M.fg }}>Für dich ausprobieren <Icon name={actionOpen ? "chevD" : "chevR"} size={15} /></MButton>
+          {actionOpen ? <div style={{ padding: "8px 0 4px" }}><div style={{ fontWeight: 700, fontSize: 15 }}>{fact.action.title}</div><p style={{ margin: "6px 0 0", color: M.mut, fontSize: 14, lineHeight: 1.45 }}>{fact.action.body}</p>{fact.action.appAction ? <MButton type="button" variant="secondary" size="sm" onClick={openAction} style={{ marginTop: 12 }}>{actionLabel[fact.action.appAction]}</MButton> : null}</div> : null}
+        </div> : null}
         {fact?.sources.length ? <MButton type="button" variant="ghost" size="sm" onClick={() => setSourcesOpen((open) => !open)} style={{ marginTop: 16, color: M.fg }}>Quellen {sourcesOpen ? "ausblenden" : "anzeigen"} <Icon name={sourcesOpen ? "chevD" : "chevR"} size={15} /></MButton> : null}
         {sourcesOpen ? <div style={{ width: "100%", marginTop: 6, textAlign: "left", display: "grid", gap: 8 }}>{fact?.sources.map((source) => <a key={source.pmid} href={source.pubmedUrl} target="_blank" rel="noreferrer" style={{ display: "block", color: M.fg, textDecoration: "none", padding: 11, borderRadius: 12, background: M.bg, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{source.title}</div><div style={{ ...labelStyle(), marginTop: 5 }}>{source.authors} · {source.journal} · {source.publicationYear}</div></a>)}</div> : null}
         <div style={{ flex: 1 }} />

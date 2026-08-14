@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeFactTimezone, normalizeFactTopics } from "./facts";
+import { FACT_APP_ACTIONS, normalizeFactTimezone, normalizeFactTopics } from "./facts";
 
 describe("Faktenpräferenzen", () => {
   it("akzeptiert nur bekannte Themen und maximal drei Werte", () => {
@@ -9,5 +9,9 @@ describe("Faktenpräferenzen", () => {
   it("fällt bei ungültiger Zeitzone auf Berlin zurück", () => {
     expect(normalizeFactTimezone("Mars/Olympus")).toBe("Europe/Berlin");
     expect(normalizeFactTimezone("Europe/Berlin")).toBe("Europe/Berlin");
+  });
+
+  it("beschränkt App-Hilfen auf die bekannten Navigationsziele", () => {
+    expect(FACT_APP_ACTIONS).toEqual(["checkin", "breathing", "express", "protein", "water", "ai_plan"]);
   });
 });

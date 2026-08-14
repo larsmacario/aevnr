@@ -1,4 +1,5 @@
--- Einmal nach Migration und Function-Deploy im Supabase SQL Editor ausführen.
+-- Der Tagesfakt wird beim ersten App-Öffnen des Tages zugewiesen.
+-- Dieser Job füllt ausschließlich die zentrale Faktenbibliothek auf.
 -- URL und Publishable Key werden für die Cron-Aufrufe im Vault abgelegt.
 -- facts_cron_secret wurde separat angelegt und wird hier nicht erneut erstellt.
 select vault.create_secret('https://jnspiqnlwbsobqctmfnk.supabase.co', 'supabase_url');
@@ -8,22 +9,6 @@ select vault.create_secret('sb_publishable_h-CZ4IN3oFRAruP9FpMorA_OHwxGkko', 'su
 select cron.unschedule(jobid)
 from cron.job
 where jobname in ('assign-daily-facts', 'replenish-fact-library');
-
-select cron.schedule(
-  'assign-daily-facts',
-  '* * * * *',
-  $job$
-    select net.http_post(
-      url := (select decrypted_secret from vault.decrypted_secrets where name = 'supabase_url') || '/functions/v1/assign-daily-facts',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'apikey', (select decrypted_secret from vault.decrypted_secrets where name = 'supabase_publishable_key'),
-        'x-facts-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'facts_cron_secret')
-      ),
-      body := '{}'::jsonb
-    );
-  $job$
-);
 
 select cron.schedule(
   'replenish-fact-library',

@@ -1,4 +1,5 @@
 import type { LibraryExercise, LibraryPlan } from "../../data";
+import type { DailyFact } from "../facts";
 
 export type SyncOpType =
   | "UPSERT_DAILY_CHECKIN"
@@ -11,7 +12,8 @@ export type SyncOpType =
   | "SET_ACTIVE_PLAN"
   | "CREATE_EXERCISE"
   | "UPDATE_EXERCISE"
-  | "DELETE_EXERCISE";
+  | "DELETE_EXERCISE"
+  | "TOGGLE_FACT_SAVED";
 
 /** Opaque payload — shape depends on `op`; parsed in syncEngine. */
 export type SyncPayload = Record<string, unknown>;
@@ -53,5 +55,15 @@ export interface CachedDailyCheckinRow {
   stressLevel: number;
   energyLevel: number;
   note?: string;
+  updatedAt: number;
+}
+
+export interface CachedFactRow {
+  id: string;
+  userId: string;
+  assignmentId: string;
+  localDate: string;
+  fact: DailyFact;
+  pendingSavedSync: boolean;
   updatedAt: number;
 }

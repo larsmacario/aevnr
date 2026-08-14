@@ -42,6 +42,12 @@ export function detectFactTimezone(): string {
   return normalizeFactTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 }
 
+export function factLocalDate(timeZone = detectFactTimezone(), date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 export interface FactSource {
   pmid: string;
   title: string;
@@ -52,6 +58,15 @@ export interface FactSource {
   pubmedUrl: string;
 }
 
+export const FACT_APP_ACTIONS = ["checkin", "breathing", "express", "protein", "water", "ai_plan"] as const;
+export type FactAppAction = (typeof FACT_APP_ACTIONS)[number];
+
+export interface FactAction {
+  title: string;
+  body: string;
+  appAction?: FactAppAction | null;
+}
+
 export interface DailyFact {
   id: string;
   topic: FactTopic;
@@ -60,4 +75,5 @@ export interface DailyFact {
   localDate: string;
   saved: boolean;
   sources: FactSource[];
+  action?: FactAction | null;
 }

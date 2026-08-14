@@ -58,7 +58,8 @@ import { ExpressTrackingSetupScreen } from "./screens/ExpressTrackingSetupScreen
 import { Zone2SetupScreen } from "./screens/Zone2SetupScreen";
 import { BreathingScreen } from "./screens/BreathingScreen";
 import { FactsScreen } from "./screens/FactsScreen";
-import { detectFactTimezone } from "./lib/facts";
+import { detectFactTimezone, factLocalDate } from "./lib/facts";
+import { supabase } from "./lib/supabase";
 type Route =
   | {
       kind: "tracking";
@@ -190,6 +191,16 @@ function PhoneAppInner() {
     const timezone = detectFactTimezone();
     if (preferences.factTimezone !== timezone) void updatePreferences({ factTimezone: timezone }, true);
   }, [preferences.factTimezone, updatePreferences]);
+
+  useEffect(() => {
+    if (!user || !isOnline) return;
+    const key = `aevnr:daily-fact-open:${user.id}`;
+    const today = factLocalDate();
+    if (localStorage.getItem(key) === today) return;
+    void supabase.functions.invoke("facts", { body: { action: "ensure_daily", timezone: detectFactTimezone() } }).then(({ error }) => {
+      if (!error) localStorage.setItem(key, today);
+    });
+  }, [user?.id, isOnline]);
 
   const persistDraft = (draft: ActiveWorkoutDraft | null) => {
     if (!user) return;
@@ -523,7 +534,14 @@ function PhoneAppInner() {
       />
     );
   } else if (tab === "facts") {
-    body = <FactsScreen onOpenProfile={() => setTab("profile")} />;
+    body = <FactsScreen
+      onOpenProfile={() => setTab("profile")}
+      onOpenCheckin={() => goRecovery("checkin")}
+      onOpenBreathing={goBreathing}
+      onOpenExpress={goExpressTrackingSetup}
+      onOpenRecovery={goRecovery}
+      onOpenAiPlan={goAITrainingPlanWizard}
+    />;
   } else if (tab === "timer") {
     body = <TimerScreen onSaveSession={handleSaveTimerSession} onBack={() => handleTab("home")} />;
     showNav = false;

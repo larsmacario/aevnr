@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
     if (profileError) throw profileError;
     const preferences = profile.preferences as Record<string, unknown> | null;
     const topics = normalizeTopics(preferences?.factTopics);
-    const timezone = typeof preferences?.factTimezone === "string" ? preferences.factTimezone : "Europe/Berlin";
+    const requestedTimezone = typeof body?.timezone === "string" ? body.timezone : null;
+    const timezone = requestedTimezone ?? (typeof preferences?.factTimezone === "string" ? preferences.factTimezone : "Europe/Berlin");
     const local = localParts(timezone);
 
     if (body?.action === "toggle_saved") {
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     }
 
     if (topics.length === 0) return new Response(JSON.stringify({ state: "needs_topics" }), { headers });
-    if (local.hour >= 6) {
+    if (body?.action !== "toggle_saved") {
       const { data: existing, error: existingError } = await db.from("user_daily_facts").select("id").eq("user_id", user.id).eq("local_date", local.date).maybeSingle();
       if (existingError) throw existingError;
       if (!existing) {
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const query = db.from("user_daily_facts").select("id, local_date, saved_at, health_facts(id, topic, title, body, health_fact_sources(pmid, title, authors, journal, publication_year, publication_type, pubmed_url))").eq("user_id", user.id);
+    const query = db.from("user_daily_facts").select("id, local_date, saved_at, health_facts(id, topic, title, body, action_title, action_body, app_action, health_fact_sources(pmid, title, authors, journal, publication_year, publication_type, pubmed_url))").eq("user_id", user.id);
     const { data: assignment, error } = body?.view === "saved"
       ? await query.not("saved_at", "is", null).order("saved_at", { ascending: false }).limit(20)
       : await query.eq("local_date", local.date).maybeSingle();
@@ -57,6 +58,11 @@ Deno.serve(async (req) => {
       localDate: row.local_date,
       saved: Boolean(row.saved_at),
       ...(row.health_facts ?? {}),
+      action: row.health_facts?.action_title && row.health_facts?.action_body ? {
+        title: row.health_facts.action_title,
+        body: row.health_facts.action_body,
+        appAction: row.health_facts.app_action,
+      } : null,
       sources: (row.health_facts?.health_fact_sources ?? []).map((source: Record<string, unknown>) => ({
         pmid: source.pmid,
         title: source.title,
@@ -67,7 +73,7 @@ Deno.serve(async (req) => {
         pubmedUrl: source.pubmed_url,
       })),
     }));
-    return new Response(JSON.stringify({ state: facts.length > 0 ? "ready" : local.hour < 6 ? "before_six" : "preparing", fact: facts[0] ?? null, facts }), { headers });
+    return new Response(JSON.stringify({ state: facts.length > 0 ? "ready" : "preparing", fact: facts[0] ?? null, facts }), { headers });
   } catch (error) {
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Fakten konnten nicht geladen werden." }), { status: 502, headers });
   }
