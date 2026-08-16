@@ -3,10 +3,10 @@ import { displayStyle, labelStyle, M } from "../theme";
 import { Icon } from "../components/Icon";
 import { MButton } from "../components/MButton";
 import { ScreenScroll } from "../components/ScreenScroll";
-import { FACT_TOPIC_LABELS, factLocalDate, type DailyFact, type FactAppAction } from "../lib/facts";
+import { FACT_TOPIC_LABELS, factLocalDate, type DailyFact } from "../lib/facts";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
-import { cacheFact, getCachedFactForDate, getCachedFacts, setCachedFactSaved } from "../lib/offline/factStore";
+import { cacheFact, cacheFacts, getCachedFactForDate, getCachedFacts, setCachedFactSaved } from "../lib/offline/factStore";
 import { enqueueMutation } from "../lib/offline/syncEngine";
 
 type FactsState = "loading" | "ready" | "needs_topics" | "before_six" | "preparing" | "error";
@@ -31,48 +31,74 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
   const { user } = useAuth();
   const [state, setState] = useState<FactsState>("loading");
   const [fact, setFact] = useState<(DailyFact & { assignmentId: string }) | null>(null);
-  const [savedFacts, setSavedFacts] = useState<Array<DailyFact & { assignmentId: string }>>([]);
+  const [historyFacts, setHistoryFacts] = useState<Array<DailyFact & { assignmentId: string }>>([]);
+  const [activeHistoryIndex, setActiveHistoryIndex] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [actionOpen, setActionOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [swipeStart, setSwipeStart] = useState<number | null>(null);
+
+  const chooseFact = (next: DailyFact & { assignmentId: string }, index: number) => {
+    setFact(next);
+    setActiveHistoryIndex(index);
+    setSourcesOpen(false);
+  };
+
+  const replaceHistory = (items: Array<DailyFact & { assignmentId: string }>, preferredId?: string) => {
+    const unique = [...new Map(items.map((item) => [item.assignmentId, item])).values()].sort((a, b) => b.localDate.localeCompare(a.localDate));
+    setHistoryFacts(unique);
+    const index = Math.max(0, unique.findIndex((item) => item.assignmentId === (preferredId ?? fact?.assignmentId)));
+    const selected = unique[index];
+    if (selected) chooseFact(selected, index);
+  };
 
   const loadFact = async () => {
     if (!user) return;
+    const cachedFacts = await getCachedFacts(user.id);
     const cached = await getCachedFactForDate(user.id, factLocalDate());
     if (cached) {
-      setFact(cached);
+      replaceHistory(cachedFacts, cached.assignmentId);
       setState("ready");
-      return;
+    } else {
+      setState("loading");
+      const { data, error } = await supabase.functions.invoke("facts", { body: {} });
+      const result = data as FactsResponse | null;
+      if (error || result?.error) {
+        setState("error");
+        setFeedback("Dein nächster Fakt wird gerade vorbereitet.");
+        return;
+      }
+      const nextFact = result?.fact ?? null;
+      if (nextFact) {
+        await cacheFact(user.id, nextFact);
+        replaceHistory([nextFact, ...cachedFacts], nextFact.assignmentId);
+      }
+      setFact(nextFact);
+      setState(result?.state ?? "preparing");
     }
-    setState("loading");
-    const { data, error } = await supabase.functions.invoke("facts", { body: {} });
-    const result = data as FactsResponse | null;
-    if (error || result?.error) {
-      setState("error");
-      setFeedback("Dein nächster Fakt wird gerade vorbereitet.");
-      return;
+    // Versionsschlüssel lädt den erweiterten Verlauf einmalig nach, auch wenn die
+    // erste Cache-Version nur den heutigen Fakt kannte.
+    const historyKey = `aevnr:facts-history:v2:${user.id}`;
+    if (localStorage.getItem(historyKey)) return;
+    const { data } = await supabase.functions.invoke("facts", { body: { view: "history" } });
+    const history = (data as FactsResponse | null)?.facts ?? [];
+    if (history.length) {
+      await cacheFacts(user.id, history);
+      replaceHistory([...history, ...cachedFacts], cached?.assignmentId);
     }
-    const nextFact = result?.fact ?? null;
-    if (nextFact) await cacheFact(user.id, nextFact);
-    setFact(nextFact);
-    setState(result?.state ?? "preparing");
+    localStorage.setItem(historyKey, "loaded");
   };
 
   useEffect(() => { void loadFact(); }, [user?.id]);
 
-  useEffect(() => {
-    if (!searchOpen) return;
-    if (!user) return;
-    void getCachedFacts(user.id).then(setSavedFacts);
-  }, [searchOpen, user?.id]);
-
   const results = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("de-DE");
-    if (!normalized) return savedFacts;
-    return savedFacts.filter((entry) => `${entry.title} ${entry.body}`.toLocaleLowerCase("de-DE").includes(normalized));
-  }, [query, savedFacts]);
+    if (!normalized) return historyFacts;
+    return historyFacts.filter((entry) => `${entry.title} ${entry.body}`.toLocaleLowerCase("de-DE").includes(normalized));
+  }, [query, historyFacts]);
+
+  const favouriteFacts = useMemo(() => historyFacts.filter((entry) => entry.saved), [historyFacts]);
 
   const handleShare = async () => {
     if (!fact) return;
@@ -93,7 +119,9 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
     if (!fact) return;
     if (!user) return;
     const nextSaved = !fact.saved;
-    setFact({ ...fact, saved: nextSaved });
+    const updated = { ...fact, saved: nextSaved };
+    setFact(updated);
+    setHistoryFacts((items) => items.map((item) => item.assignmentId === fact.assignmentId ? updated : item));
     await setCachedFactSaved(user.id, fact.assignmentId, nextSaved, true);
     await enqueueMutation(user.id, "TOGGLE_FACT_SAVED", { assignmentId: fact.assignmentId, saved: nextSaved });
   };
@@ -109,9 +137,23 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
     }
   };
 
-  const actionLabel: Record<FactAppAction, string> = {
-    checkin: "Check-in öffnen", breathing: "Atemübung starten", express: "Express starten",
-    protein: "Protein ansehen", water: "Wasser ansehen", ai_plan: "KI-Plan öffnen",
+  const actionTitle = fact?.action?.title?.trim().toLocaleLowerCase("de-DE") === "für dich ausprobieren"
+    ? "Ein kleiner Schritt für heute"
+    : fact?.action?.title;
+
+  const moveHistory = (direction: -1 | 1) => {
+    const nextIndex = activeHistoryIndex + direction;
+    const next = historyFacts[nextIndex];
+    if (next) chooseFact(next, nextIndex);
+  };
+
+  const onCardTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (swipeStart == null) return;
+    const end = event.changedTouches[0]?.clientX ?? swipeStart;
+    const delta = end - swipeStart;
+    if (delta < -50) moveHistory(1);
+    if (delta > 50) moveHistory(-1);
+    setSwipeStart(null);
   };
 
   const cardTitle = fact?.title ?? (state === "before_six" ? "Dein Fakt erscheint um 06:00 Uhr" : state === "needs_topics" ? "Wähle deine Themen" : state === "preparing" ? "Dein erster Fakt wird vorbereitet" : "Fakten für ein langes Leben");
@@ -123,31 +165,35 @@ export function FactsScreen({ onOpenProfile, onOpenCheckin, onOpenBreathing, onO
         <div><div style={{ ...labelStyle() }}>FÜR DICH</div><div style={{ ...displayStyle(24), marginTop: 4 }}>Fakten</div></div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <MButton type="button" variant="ghost" size="sm" onClick={onOpenProfile} style={{ color: M.fg, padding: "0 10px" }}><Icon name="user" size={16} /> Profil</MButton>
-          <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Gespeicherte Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}><Icon name="search" size={21} color={M.fg} /></MButton>
+          <MButton type="button" variant="secondary" size="icon" onClick={() => setSearchOpen((open) => !open)} aria-label="Fakten durchsuchen" title="Suchen" style={{ background: M.card, borderColor: M.line }}><Icon name="search" size={21} color={M.fg} /></MButton>
         </div>
       </div>
 
       {searchOpen ? <div style={{ marginTop: 16 }}>
-        <label htmlFor="facts-search" style={{ ...labelStyle(), display: "block", marginBottom: 6 }}>Gespeicherte Fakten durchsuchen</label>
+        <label htmlFor="facts-search" style={{ ...labelStyle(), display: "block", marginBottom: 6 }}>Fakten durchsuchen</label>
         <input id="facts-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Suchbegriff eingeben" autoFocus style={{ width: "100%", boxSizing: "border-box", height: 48, padding: "0 14px", borderRadius: 14, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: `500 15px ${M.body}`, outline: "none" }} />
-        {query.trim() ? <div style={{ marginTop: 10, display: "grid", gap: 8 }}>{results.length ? results.map((entry) => <div key={entry.assignmentId} style={{ padding: 12, borderRadius: 14, background: M.card, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 14 }}>{entry.title}</div><div style={{ color: M.mut, fontSize: 13, lineHeight: 1.4, marginTop: 4 }}>{entry.body}</div></div>) : <div style={{ ...labelStyle() }}>Keine gespeicherten Fakten gefunden.</div>}</div> : null}
+        {query.trim() ? <div style={{ marginTop: 10, display: "grid", gap: 8 }}>{results.length ? results.map((entry) => <button type="button" key={entry.assignmentId} onClick={() => chooseFact(entry, historyFacts.findIndex((item) => item.assignmentId === entry.assignmentId))} style={{ padding: 12, borderRadius: 14, background: M.card, border: `1px solid ${M.line2}`, textAlign: "left", color: M.fg, cursor: "pointer" }}><div style={{ fontWeight: 700, fontSize: 14 }}>{entry.title}</div><div style={{ color: M.mut, fontSize: 13, lineHeight: 1.4, marginTop: 4 }}>{entry.body}</div></button>) : <div style={{ ...labelStyle() }}>Keine Fakten gefunden.</div>}</div> : null}
       </div> : null}
 
-      <section style={{ minHeight: 430, marginTop: 28, padding: "28px 22px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderRadius: 24, background: M.card, border: `1px solid ${M.line2}`, boxShadow: M.shadow }}>
+      <section onTouchStart={(event) => setSwipeStart(event.touches[0]?.clientX ?? null)} onTouchEnd={onCardTouchEnd} style={{ minHeight: 430, marginTop: 28, padding: "28px 22px 20px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderRadius: 24, background: M.card, border: `1px solid ${M.line2}`, boxShadow: M.shadow, touchAction: "pan-y" }}>
+        {historyFacts.length > 1 ? <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 28 }}><MButton type="button" variant="ghost" size="sm" onClick={() => moveHistory(-1)} disabled={activeHistoryIndex === 0} aria-label="Neueren Fakt zeigen"><Icon name="chevL" size={17} /></MButton><span style={{ ...labelStyle() }}>{activeHistoryIndex + 1} / {historyFacts.length}</span><MButton type="button" variant="ghost" size="sm" onClick={() => moveHistory(1)} disabled={activeHistoryIndex === historyFacts.length - 1} aria-label="Älteren Fakt zeigen"><Icon name="chevR" size={17} /></MButton></div> : null}
         <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 24, background: M.accSoft, color: M.fg, marginTop: 36 }}><Icon name="book" size={24} stroke={2} /></div>
         {fact ? <div style={{ ...labelStyle(), marginTop: 20 }}>{FACT_TOPIC_LABELS[fact.topic]}</div> : null}
         <h1 style={{ ...displayStyle(30), margin: "10px 0 0", maxWidth: 320 }}>{cardTitle}</h1>
         <p style={{ maxWidth: 330, margin: "14px 0 0", color: M.mut, fontSize: 15, lineHeight: 1.5 }}>{cardBody}</p>
-        {fact?.action ? <div style={{ width: "100%", marginTop: 16, textAlign: "left", borderTop: `1px solid ${M.line2}`, paddingTop: 8 }}>
-          <MButton type="button" variant="ghost" size="sm" onClick={() => setActionOpen((open) => !open)} style={{ padding: "8px 0", color: M.fg }}>Für dich ausprobieren <Icon name={actionOpen ? "chevD" : "chevR"} size={15} /></MButton>
-          {actionOpen ? <div style={{ padding: "8px 0 4px" }}><div style={{ fontWeight: 700, fontSize: 15 }}>{fact.action.title}</div><p style={{ margin: "6px 0 0", color: M.mut, fontSize: 14, lineHeight: 1.45 }}>{fact.action.body}</p>{fact.action.appAction ? <MButton type="button" variant="secondary" size="sm" onClick={openAction} style={{ marginTop: 12 }}>{actionLabel[fact.action.appAction]}</MButton> : null}</div> : null}
+        {fact?.action ? <div style={{ width: "100%", marginTop: 18, textAlign: "left", padding: "16px", boxSizing: "border-box", borderRadius: 16, background: M.bg, border: `1px solid ${M.line2}` }}>
+          <div style={{ ...labelStyle(), marginBottom: 7 }}>DEIN HEUTIGER IMPULS</div>
+          <div style={{ fontWeight: 750, fontSize: 16, lineHeight: 1.3 }}>{actionTitle}</div>
+          <p style={{ margin: "7px 0 0", color: M.mut, fontSize: 14, lineHeight: 1.45 }}>{fact.action.body}</p>
+          {fact.action.appAction ? <MButton type="button" variant="primary" size="sm" onClick={openAction} style={{ marginTop: 13 }}>Jetzt loslegen <Icon name="chevR" size={15} /></MButton> : null}
         </div> : null}
         {fact?.sources.length ? <MButton type="button" variant="ghost" size="sm" onClick={() => setSourcesOpen((open) => !open)} style={{ marginTop: 16, color: M.fg }}>Quellen {sourcesOpen ? "ausblenden" : "anzeigen"} <Icon name={sourcesOpen ? "chevD" : "chevR"} size={15} /></MButton> : null}
         {sourcesOpen ? <div style={{ width: "100%", marginTop: 6, textAlign: "left", display: "grid", gap: 8 }}>{fact?.sources.map((source) => <a key={source.pmid} href={source.pubmedUrl} target="_blank" rel="noreferrer" style={{ display: "block", color: M.fg, textDecoration: "none", padding: 11, borderRadius: 12, background: M.bg, border: `1px solid ${M.line2}` }}><div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{source.title}</div><div style={{ ...labelStyle(), marginTop: 5 }}>{source.authors} · {source.journal} · {source.publicationYear}</div></a>)}</div> : null}
         <div style={{ flex: 1 }} />
         {feedback ? <div role="status" style={{ ...labelStyle(), color: M.fg, marginBottom: 14 }}>{feedback}</div> : null}
-        {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Heute für dich</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
+        {fact ? <div style={{ width: "100%", display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}><MButton type="button" variant="ghost" size="icon" onClick={() => void handleShare()} aria-label="Fakt teilen" title="Teilen" style={{ color: M.fg }}><Icon name="share" size={22} color={M.fg} /></MButton><span style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{fact.localDate === factLocalDate() ? "Heute für dich" : new Date(`${fact.localDate}T12:00:00`).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</span><MButton type="button" variant="ghost" size="icon" onClick={() => void toggleSaved()} aria-label={fact.saved ? "Aus Favoriten entfernen" : "Für später speichern"} title={fact.saved ? "Gespeichert" : "Speichern"} style={{ color: M.fg }}><Icon name="heartOutline" size={24} color={M.fg} fill={fact.saved ? M.fg : "none"} /></MButton></div> : null}
       </section>
+      {favouriteFacts.length ? <section style={{ marginTop: 20 }}><div style={{ ...labelStyle(), marginBottom: 10 }}>GESPEICHERT</div><div style={{ display: "grid", gap: 8 }}>{favouriteFacts.map((entry) => <button type="button" key={entry.assignmentId} onClick={() => chooseFact(entry, historyFacts.findIndex((item) => item.assignmentId === entry.assignmentId))} style={{ width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 16, border: `1px solid ${M.line2}`, background: M.card, color: M.fg, textAlign: "left", cursor: "pointer" }}><Icon name="heartOutline" size={18} fill={M.fg} /><span style={{ fontWeight: 650, fontSize: 14, lineHeight: 1.3, flex: 1 }}>{entry.title}</span><Icon name="chevR" size={16} color={M.mut} /></button>)}</div></section> : null}
     </ScreenScroll>
   );
 }

@@ -24,6 +24,10 @@ export async function cacheFact(userId: string, fact: CachedFact, pendingSavedSy
   });
 }
 
+export async function cacheFacts(userId: string, facts: CachedFact[]): Promise<void> {
+  await Promise.all(facts.map((fact) => cacheFact(userId, fact)));
+}
+
 export async function setCachedFactSaved(userId: string, assignmentId: string, saved: boolean, pendingSavedSync: boolean): Promise<void> {
   const id = rowId(userId, assignmentId);
   const row = await localDb.facts.get(id);

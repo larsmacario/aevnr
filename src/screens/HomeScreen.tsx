@@ -32,10 +32,11 @@ import {
   fetchSessionsSinceWithExercises,
   generateDailyAiHealthspanRecommendation,
   useDailyCheckins,
+  useMetabolicLogs,
 } from "../lib/db";
 import { computeRecoveryContext, computeWeeklyRecoveryStats, aggregateProteinByWeekday, getWeekStartMonday } from "../lib/recoveryEngine";
 import { useRecoveryTargets } from "../lib/recoveryTarget";
-import { aggregateWaterLastSevenDays, formatWaterAmount, shouldShowHydrationHint, toLocalDateKey } from "../lib/hydration";
+import { aggregateWaterLastSevenDays, formatWaterAmount, getRollingSevenDayStart, shouldShowHydrationHint, toLocalDateKey } from "../lib/hydration";
 import { useNetwork } from "../lib/offline/networkStatus";
 import { useLocalDateKey } from "../hooks/useLocalDateKey";
 import { Icon } from "../components/Icon";
@@ -49,8 +50,10 @@ import { WeekPlannerSheet } from "../components/WeekPlannerSheet";
 import { AlertSheet } from "../components/AlertSheet";
 import { DailyCheckinSheet } from "../components/DailyCheckinSheet";
 import { DashboardCoach, HealthspanDashboard } from "../components/HealthspanDashboard";
+import { PersonalQuickActions, type PersonalQuickAction } from "../components/PersonalQuickActions";
 import { buildHealthspanDomains, checkinFingerprint, findCheckinForDate, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
 import { prioritizeDashboard } from "../lib/dashboardPersonalization";
+import { selectDashboardQuickActions } from "../lib/dashboardQuickActions";
 
 export interface HomeScreenProps {
   onStart: (planDayId: string, planId?: string) => void;
@@ -66,6 +69,7 @@ export interface HomeScreenProps {
   onOpenCalculator: () => void;
   onOpenBodyTracker: () => void;
   onOpenRecovery: (section?: "protein" | "water" | "checkin") => void;
+  onOpenMetabolism: () => void;
   onOpenExpress: () => void;
   refreshKey?: number;
   trackLoading?: boolean;
@@ -85,6 +89,7 @@ export function HomeScreen({
   onOpenCalculator,
   onOpenBodyTracker,
   onOpenRecovery,
+  onOpenMetabolism,
   onOpenExpress,
   refreshKey = 0,
   trackLoading,
@@ -110,9 +115,15 @@ export function HomeScreen({
   const { data: sessions } = useSessions();
   const todayCheckinDate = useLocalDateKey();
   const { data: dailyCheckins, reload: reloadDailyCheckins } = useDailyCheckins(todayCheckinDate, refreshKey);
+  const metabolicSince = useMemo(() => getRollingSevenDayStart().toISOString(), []);
+  const { data: metabolicLogs, reload: reloadMetabolicLogs } = useMetabolicLogs(metabolicSince, refreshKey);
   const todayCheckin = useMemo(
     () => findCheckinForDate(dailyCheckins, todayCheckinDate),
     [dailyCheckins, todayCheckinDate],
+  );
+  const metabolicLoggedToday = useMemo(
+    () => (metabolicLogs ?? []).some((log) => toLocalDateKey(new Date(log.loggedAt)) === todayCheckinDate),
+    [metabolicLogs, todayCheckinDate],
   );
   const [finishSheet, setFinishSheet] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -154,7 +165,8 @@ export function HomeScreen({
     reloadWaterLogs();
     reloadWaterWeek();
     reloadDailyCheckins();
-  }, [refreshKey, reloadPlan, reloadWeek, reloadStats, reloadProteinLogs, reloadWaterLogs, reloadWaterWeek, reloadDailyCheckins]);
+    reloadMetabolicLogs();
+  }, [refreshKey, reloadPlan, reloadWeek, reloadStats, reloadProteinLogs, reloadWaterLogs, reloadWaterWeek, reloadDailyCheckins, reloadMetabolicLogs]);
 
   useEffect(() => {
     if (finishSheet) {
@@ -243,12 +255,14 @@ export function HomeScreen({
       zone2Minutes: zone2Sessions.reduce((sum, session) => sum + session.dur, 0),
       proteinG: sumProteinToday(proteinLogsToday ?? []), proteinTargetG,
       waterMl: sumWaterToday(waterLogsToday ?? []), waterTargetMl,
+      metabolicLogCount: metabolicLogs?.length ?? 0,
+      metabolicLoggedToday,
       checkins: todayCheckin ? [todayCheckin] : [],
       primaryFocus: preferences.primaryFocus,
       secondaryFocus: preferences.secondaryFocus,
     };
     return { input, domains: buildHealthspanDomains(input), recommendation: recommendHealthspanAction(input) };
-  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus]);
+  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, metabolicLogs, metabolicLoggedToday, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus]);
   const dashboardFocus = preferences.dashboard.focusOverride ?? preferences.primaryFocus;
   const dashboardPriority = useMemo(() => prioritizeDashboard({
     focus: dashboardFocus,
@@ -903,145 +917,15 @@ export function HomeScreen({
     </div>
   );
 
-  const quickAccessTileStyle = {
-    width: "100%",
-    minHeight: 58,
-    height: "auto",
-    padding: "10px",
-    borderRadius: 12,
-    flexDirection: "row" as const,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    textAlign: "left" as const,
-    background: M.card,
-    gap: 8,
+  const allQuickActions: Record<import("../lib/dashboardQuickActions").DashboardQuickActionId, PersonalQuickAction> = {
+    recovery: { id: "recovery", label: "Recovery", detail: "Erholung & Ernährung", icon: "heart", onClick: () => onOpenRecovery("protein") },
+    breathing: { id: "breathing", label: "Atmen", detail: "Kurz zur Ruhe kommen", icon: "wind", onClick: onOpenBreathing },
+    timer: { id: "timer", label: "Intervall-Timer", detail: "Deine Einheit starten", icon: "timer", onClick: onOpenTimer },
+    plans: { id: "plans", label: activePlan ? "Training & Plan" : "Plan erstellen", detail: activePlan ? "Deine nächste Einheit" : "Deinen Rhythmus planen", icon: "layers", onClick: onOpenPlans },
+    calculator: { id: "calculator", label: "1RM-Rechner", detail: "Leistung einordnen", icon: "calculator", onClick: onOpenCalculator },
+    body: { id: "body", label: "Körperwerte", detail: "Deinen Verlauf sehen", icon: "scale", onClick: onOpenBodyTracker },
   };
-
-  const timerLink = (
-    <MButton onClick={onOpenTimer} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="timer" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Interval-Timer</div>
-    </MButton>
-  );
-
-  const breathingLink = (
-    <MButton onClick={onOpenBreathing} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="wind" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Atmen</div>
-    </MButton>
-  );
-
-  const calculatorLink = (
-    <MButton onClick={onOpenCalculator} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="calculator" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>1RM-Rechner</div>
-    </MButton>
-  );
-
-  const plansLink = (
-    <MButton onClick={onOpenPlans} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="layers" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Meine Pläne</div>
-    </MButton>
-  );
-
-  const bodyTrackerLink = (
-    <MButton onClick={onOpenBodyTracker} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="scale" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Körperwerte</div>
-    </MButton>
-  );
-
-  const recoveryLink = (
-    <MButton onClick={() => onOpenRecovery("protein")} variant="secondary" size="md" style={quickAccessTileStyle}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: M.brandSoft,
-          color: M.brand,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 auto",
-        }}
-      >
-        <Icon name="heart" size={16} stroke={2} />
-      </div>
-      <div style={{ color: M.fg, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap" }}>Recovery</div>
-    </MButton>
-  );
+  const personalQuickActions = selectDashboardQuickActions({ primaryFocus: preferences.primaryFocus, secondaryFocus: preferences.secondaryFocus, hasPlan: !!activePlan }).map((id) => allQuickActions[id]);
 
   const hydrationHint = showHydrationHint ? (
     <div style={{ marginTop: 18, padding: "18px 18px 14px", borderRadius: 20, background: M.card, border: `1px solid ${M.line2}`, flexShrink: 0 }}>
@@ -1101,12 +985,13 @@ export function HomeScreen({
       </div>
 
       {weekStrip}
-      <DashboardCoach recommendation={cachedRecommendation ?? healthspan.recommendation} generating={aiRecommendationBusy} reasons={dashboardPriority.reasons} onCheckin={() => setCheckinOpen(true)} onOpenTimer={onOpenTimer} onOpenRecovery={onOpenRecovery} onOpenExpress={onOpenExpress} onStartStrength={selectedPlanDay && activePlan ? () => onStart(selectedPlanDay.id, activePlan.id) : undefined} />
+      <DashboardCoach recommendation={cachedRecommendation ?? healthspan.recommendation} generating={aiRecommendationBusy} reasons={dashboardPriority.reasons} onCheckin={() => setCheckinOpen(true)} onOpenTimer={onOpenTimer} onOpenRecovery={onOpenRecovery} onOpenMetabolism={onOpenMetabolism} onOpenExpress={onOpenExpress} onStartStrength={selectedPlanDay && activePlan ? () => onStart(selectedPlanDay.id, activePlan.id) : undefined} />
+      <PersonalQuickActions actions={personalQuickActions} />
       {dashboardPriority.modules.filter((module) => !preferences.dashboard.hiddenModules.includes(module)).map((module) => {
-        if (module === "healthspan") return <HealthspanDashboard key={module} domains={healthspan.domains} />;
+        if (module === "healthspan") return <HealthspanDashboard key={module} domains={healthspan.domains} onOpenMetabolism={onOpenMetabolism} onOpenRecovery={() => onOpenRecovery("checkin")} />;
         if (module === "training") return <div key={module}>{todayCard}{activeWorkoutCard}{weekPlannerCard}</div>;
-        if (module === "recovery") return <div key={module}>{hydrationHint}<div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>{recoveryLink}{breathingLink}{timerLink}</div>{recoveryWeekCard}</div>;
-        return <div key={module}>{statsBlock}<div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 14 }}>{bodyTrackerLink}{calculatorLink}{plansLink}</div></div>;
+        if (module === "recovery") return <div key={module}>{hydrationHint}{recoveryWeekCard}</div>;
+        return <div key={module}>{statsBlock}</div>;
       })}
       <WorkoutFinishSheet
         open={finishSheet && !!activeWorkout && !!activeMetrics}

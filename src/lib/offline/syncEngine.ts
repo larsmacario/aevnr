@@ -33,6 +33,9 @@ export interface SyncHandlers {
   updateExerciseRemote: (exerciseId: string, input: ExerciseInput) => Promise<void>;
   deleteExerciseRemote: (exerciseId: string) => Promise<void>;
   upsertDailyCheckinRemote: (userId: string, input: import("../healthspan").DailyCheckinInput) => Promise<void>;
+  createMetabolicLogRemote: (userId: string, input: import("../metabolic").MetabolicLogInput, id: string) => Promise<void>;
+  updateMetabolicLogRemote: (id: string, input: import("../metabolic").MetabolicLogInput) => Promise<void>;
+  deleteMetabolicLogRemote: (id: string) => Promise<void>;
   toggleFactSavedRemote: (assignmentId: string, saved: boolean) => Promise<void>;
   refreshPlansRemote: (userId: string) => Promise<LibraryPlan[]>;
   refreshExercisesRemote: (userId: string) => Promise<import("../../data").LibraryExercise[]>;
@@ -68,6 +71,15 @@ async function executeEntry(entry: SyncQueueEntry): Promise<void> {
   switch (entry.op) {
     case "UPSERT_DAILY_CHECKIN":
       await handlers.upsertDailyCheckinRemote(entry.userId, p.input as import("../healthspan").DailyCheckinInput);
+      break;
+    case "CREATE_METABOLIC_LOG":
+      await handlers.createMetabolicLogRemote(entry.userId, p.input as import("../metabolic").MetabolicLogInput, p.id as string);
+      break;
+    case "UPDATE_METABOLIC_LOG":
+      await handlers.updateMetabolicLogRemote(p.id as string, p.input as import("../metabolic").MetabolicLogInput);
+      break;
+    case "DELETE_METABOLIC_LOG":
+      await handlers.deleteMetabolicLogRemote(p.id as string);
       break;
     case "TOGGLE_FACT_SAVED":
       await handlers.toggleFactSavedRemote(p.assignmentId as string, p.saved === true);

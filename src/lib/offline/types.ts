@@ -3,6 +3,9 @@ import type { DailyFact } from "../facts";
 
 export type SyncOpType =
   | "UPSERT_DAILY_CHECKIN"
+  | "CREATE_METABOLIC_LOG"
+  | "UPDATE_METABOLIC_LOG"
+  | "DELETE_METABOLIC_LOG"
   | "SAVE_SESSION"
   | "ADVANCE_PLAN"
   | "CREATE_PLAN"
@@ -54,6 +57,17 @@ export interface CachedDailyCheckinRow {
   sleepQuality: number;
   stressLevel: number;
   energyLevel: number;
+  note?: string;
+  updatedAt: number;
+}
+
+export interface CachedMetabolicLogRow {
+  id: string;
+  userId: string;
+  loggedAt: string;
+  mealQuality: import("../metabolic").MealQuality;
+  energyLevel: number;
+  satietyLevel: number;
   note?: string;
   updatedAt: number;
 }

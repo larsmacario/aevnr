@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { CONTENT_HORIZONTAL_PADDING, useBreakpoint, useContentColumnStyle, useShortViewport } from "../lib/responsive";
+import { motion, useAnimationControls } from "framer-motion";
+import { CONTENT_HORIZONTAL_PADDING, useBreakpoint, useContentColumnStyle } from "../lib/responsive";
 import { breathingCycleDuration, BREATHING_PRESETS, type BreathingPresetId } from "../lib/breathing";
 import { fmt, useTimer, type TimerCfg } from "../lib/engine";
 import type { SaveSessionInput } from "../lib/db";
@@ -29,73 +29,16 @@ const phaseLabels: Array<{ key: "inhale" | "hold" | "exhale" | "pause"; label: s
   { key: "pause", label: "PAUSE" },
 ];
 
-function BoxBreathingGuide({
-  label,
-  progress,
-  seconds,
-  config,
-  round,
-  size,
-  ink,
-  line,
-  light,
-}: {
-  label: string;
-  progress: number;
-  seconds: number;
-  config: TimerCfg;
-  round: number;
-  size: string;
-  ink: string;
-  line: string;
-  light: string;
-}) {
-  const phases = [
-    { label: "EINATMEN", duration: config.inhale ?? 0 },
-    { label: "HALTEN", duration: config.hold ?? 0 },
-    { label: "AUSATMEN", duration: config.exhale ?? 0 },
-    { label: "PAUSE", duration: config.pause ?? 0 },
-  ].filter((phase) => phase.duration > 0);
-  const activeIndex = phases.findIndex((phase) => phase.label === label);
-  const cycleDuration = phases.reduce((sum, phase) => sum + phase.duration, 0);
-  const completedDuration = activeIndex < 0 ? 0 : phases.slice(0, activeIndex).reduce((sum, phase) => sum + phase.duration, 0);
-  const loopProgress = activeIndex < 0 || !cycleDuration
-    ? 0
-    : ((completedDuration + phases[activeIndex].duration * Math.max(0, Math.min(1, progress))) / cycleDuration) * 100;
-  const darkening = round % 2 === 1;
-  // The first cycle draws the dark trail. After that, an opaque light mask
-  // travels continuously around the same path: it covers dark in even rounds
-  // and uncovers it again in odd rounds without resetting at the start point.
-  const firstDarkeningCycle = round === 1 && darkening;
-  const darkTrail = firstDarkeningCycle ? loopProgress : 100;
-  const lightMaskLength = firstDarkeningCycle ? 0 : darkening ? 100 - loopProgress : loopProgress;
-  // For the darkening pass, begin the light tail after the already revealed
-  // segment. A positive offset starts the dash in its gap, keeping the tail visible.
-  const lightMaskOffset = darkening ? lightMaskLength : 0;
-  // Keep the head's path monotonic across cycles. SVG treats 0 and 100 as the
-  // same physical point, but animating between them directly causes a visible reverse jump.
-  const continuousLoopProgress = Math.max(0, (round - 1) * 100 + loopProgress);
-  const transition = "stroke-dasharray .1s linear, stroke-dashoffset .1s linear, stroke .24s ease";
-
-  return (
-    <div style={{ width: size, height: size, position: "relative", flexShrink: 0 }} aria-label={`Box-Breathe-Visualisierung: ${label}`}>
-      <svg viewBox="0 0 200 200" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}>
-        <rect x="20" y="20" width="160" height="160" rx="34" fill="none" stroke={line} strokeWidth="4" pathLength="100" />
-        <rect x="20" y="20" width="160" height="160" rx="34" fill="none" stroke={ink} strokeWidth="4" strokeLinecap="round" pathLength="100" strokeDasharray={`${darkTrail} 100`} style={{ transition }} />
-        {lightMaskLength > 0 && <rect x="20" y="20" width="160" height="160" rx="34" fill="none" stroke={light} strokeWidth="6" strokeLinecap="round" pathLength="100" strokeDasharray={`${lightMaskLength} ${100 - lightMaskLength}`} strokeDashoffset={lightMaskOffset} style={{ transition }} />}
-        {activeIndex >= 0 && <rect x="20" y="20" width="160" height="160" rx="34" fill="none" stroke={darkening ? ink : line} strokeWidth="8" strokeLinecap="round" pathLength="100" strokeDasharray="1.5 98.5" strokeDashoffset={-continuousLoopProgress} style={{ transition }} />}
-      </svg>
-      <div style={{ position: "absolute", inset: "24%", display: "grid", placeItems: "center", fontFamily: M.numeric, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: "min(148px, 27vw)", lineHeight: 0.82, letterSpacing: -4, color: ink }}>
-        {Math.max(0, Math.ceil(seconds - 1e-6))}
-      </div>
-    </div>
-  );
-}
+const boxPath = (topBottomInset: number, sideInset: number, radius: number) =>
+  `inset(${topBottomInset}px ${sideInset}px ${topBottomInset}px ${sideInset}px round ${radius}px)`;
 
 export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps) {
   const columnStyle = useContentColumnStyle();
   const breakpoint = useBreakpoint();
-  const shortViewport = useShortViewport();
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === "undefined" ? 0 : window.innerWidth,
+    height: typeof window === "undefined" ? 0 : window.innerHeight,
+  }));
   const { preferences, updatePreferences } = usePreferences();
   const { setActive } = useActiveTimer();
   const [presetId, setPresetId] = useState<BreathingPresetId>("box");
@@ -103,11 +46,22 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [settledSurface, setSettledSurface] = useState<string>(M.bg);
+  const [breathCircle, setBreathCircle] = useState<{ key: string; direction: "expand" | "contract" | "rest" | "full"; duration: number } | null>(null);
+  const circleControls = useAnimationControls();
   const preset = BREATHING_PRESETS[presetId];
   const cfg = preferences.breathingPresets[presetId];
   const T = useTimer("breathe", cfg);
   const savedRef = useRef(false);
   const previousPhase = useRef<string | null>(null);
+  const circleKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const syncViewport = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
 
   const targetSummary = useMemo(() => {
     if (cfg.breathTarget === "duration") return `${fmt(cfg.total ?? 0)} Gesamtzeit`;
@@ -116,21 +70,75 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   const clockFontSize = breakpoint === "mobile"
     ? "min(172px, calc((100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 4.6))"
     : "min(210px, calc((100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 4.6))";
-  const boxGuideSize = shortViewport
-    ? "min(244px, calc(100vw - 92px - env(safe-area-inset-left) - env(safe-area-inset-right)))"
-    : breakpoint === "mobile"
-      ? "min(320px, calc(100vw - 76px - env(safe-area-inset-left) - env(safe-area-inset-right)))"
-      : breakpoint === "tablet"
-        ? "min(390px, calc(100vw - 120px - env(safe-area-inset-left) - env(safe-area-inset-right)))"
-        : "440px";
-  const adaptivePhaseSurface = presetId !== "box";
-  const exhaling = adaptivePhaseSurface && T.phase === "run" && T.label === "AUSATMEN";
-  const holding = adaptivePhaseSurface && T.phase === "run" && T.label === "HALTEN";
-  const phaseSurface = exhaling ? M.fg : holding ? "#D4D4D8" : M.bg;
-  const phaseInk = exhaling ? M.accInk : M.fg;
-  const phaseMuted = exhaling ? "rgba(255,255,255,0.62)" : M.mut;
-  const phaseLine = exhaling ? "rgba(255,255,255,0.26)" : M.line;
-  const phaseLightTrail = exhaling ? "#52525B" : "#D4D4D8";
+  const inhaling = T.phase === "run" && T.label === "EINATMEN";
+  const exhaling = T.phase === "run" && T.label === "AUSATMEN";
+  const holding = T.phase === "run" && T.label === "HALTEN";
+  const darkPhase = inhaling || holding;
+  const phaseMuted = darkPhase ? "rgba(255,255,255,0.62)" : M.mut;
+  const phaseLine = darkPhase ? "rgba(255,255,255,0.26)" : M.line;
+  const timerInk = M.accInk;
+  const timerMuted = "rgba(255,255,255,0.62)";
+  const breathCircleDuration = inhaling ? Math.max(0.35, cfg.inhale ?? 4) : exhaling ? Math.max(0.35, cfg.exhale ?? 4) : 0.35;
+  const breathCircleKey = `${T.phase}:${T.round}:${T.label}`;
+  const boxWidth = Math.max(0, Math.min(viewport.width - 32, Math.max(320, viewport.width * 0.74)));
+  const boxHeight = Math.max(0, Math.min(viewport.height - 120, Math.max(320, viewport.height * 0.38)));
+  const boxMinPath = boxPath(
+    Math.max(16, (viewport.height - boxHeight) / 2),
+    Math.max(16, (viewport.width - boxWidth) / 2),
+    Math.min(46, Math.min(boxWidth, boxHeight) * 0.12),
+  );
+  const boxMaxPath = boxPath(0, 0, 0);
+
+  useEffect(() => {
+    if (!runningView) {
+      setBreathCircle(null);
+      setSettledSurface(M.bg);
+      return;
+    }
+    if (inhaling) {
+      setSettledSurface(M.bg);
+      setBreathCircle({ key: breathCircleKey, direction: "expand", duration: breathCircleDuration });
+      return;
+    }
+    if (holding) {
+      setSettledSurface(M.fg);
+      setBreathCircle({ key: breathCircleKey, direction: "full", duration: 0 });
+      return;
+    }
+    if (exhaling) {
+      setSettledSurface(M.bg);
+      setBreathCircle({ key: breathCircleKey, direction: "contract", duration: breathCircleDuration });
+      return;
+    }
+    setSettledSurface(M.bg);
+    setBreathCircle({ key: breathCircleKey, direction: "rest", duration: 0 });
+  }, [runningView, inhaling, holding, exhaling, breathCircleDuration, breathCircleKey]);
+
+  useEffect(() => {
+    if (!breathCircle) {
+      circleKeyRef.current = null;
+      return;
+    }
+
+    const startsLarge = breathCircle.direction === "contract" || breathCircle.direction === "full";
+    const startShape = startsLarge ? boxMaxPath : boxMinPath;
+    const targetShape = breathCircle.direction === "expand" || breathCircle.direction === "full" ? boxMaxPath : boxMinPath;
+    if (circleKeyRef.current !== breathCircle.key) {
+      circleControls.set({ clipPath: startShape });
+      circleKeyRef.current = breathCircle.key;
+    }
+    if (breathCircle.direction === "rest" || breathCircle.direction === "full") {
+      circleControls.set({ clipPath: targetShape });
+      return;
+    }
+    if (!T.running) {
+      circleControls.stop();
+      return;
+    }
+
+    const remaining = Math.max(0.01, breathCircle.duration * (1 - Math.max(0, Math.min(1, T.segProgress))));
+    void circleControls.start({ clipPath: targetShape, transition: { duration: remaining, ease: "linear" } });
+  }, [breathCircle, T.running, circleControls, boxMinPath, boxMaxPath]);
 
   useEffect(() => {
     setActive(!T.idle);
@@ -192,7 +200,25 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   if (runningView) {
     return (
       <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", ...columnStyle, padding: `0 ${CONTENT_HORIZONTAL_PADDING}px`, boxSizing: "border-box", overflow: "hidden", position: "relative" }}>
-        <motion.div aria-hidden initial={false} animate={{ backgroundColor: phaseSurface }} transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", background: settledSurface }}>
+          {breathCircle && (
+            <motion.div
+              key={breathCircle.key}
+              initial={{ clipPath: breathCircle.direction === "contract" || breathCircle.direction === "full" ? boxMaxPath : boxMinPath }}
+              animate={circleControls}
+              onAnimationComplete={() => {
+                if (breathCircle.direction === "rest" || breathCircle.direction === "full") return;
+                setSettledSurface(breathCircle.direction === "expand" ? M.fg : M.bg);
+                setBreathCircle((current) => current?.key === breathCircle.key
+                  ? breathCircle.direction === "contract"
+                    ? { key: `${breathCircle.key}:rest`, direction: "rest", duration: 0 }
+                    : null
+                  : current);
+              }}
+              style={{ position: "absolute", inset: 0, background: M.fg, willChange: "clip-path" }}
+            />
+          )}
+        </div>
         <div style={{ padding: "2px 0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
           <MButton type="button" variant="ghost" size="icon" onClick={requestBack} aria-label="Zurück">
             <Icon name="chevL" size={20} stroke={2.2} color={phaseMuted} />
@@ -203,23 +229,16 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
           </div>
           <span style={{ width: 40 }} />
         </div>
-        <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", position: "relative", zIndex: 1 }}>
-          <div style={{ color: T.phase === "prep" ? phaseMuted : phaseInk, fontSize: 13, letterSpacing: 2, fontWeight: 700, minHeight: 20 }}>
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", position: "relative", zIndex: 2 }}>
+          <div style={{ color: timerInk, fontSize: 13, letterSpacing: 2, fontWeight: 700, minHeight: 20 }}>
             {T.phase === "prep" ? "BEREIT MACHEN" : T.label}
           </div>
-          {presetId === "box" && (
-            <div style={{ marginTop: shortViewport ? 8 : 18, marginBottom: shortViewport ? 8 : 14 }}>
-              <BoxBreathingGuide label={T.phase === "prep" ? "BEREIT" : T.label} progress={T.segProgress} seconds={T.bigSeconds} config={cfg} round={T.round} size={boxGuideSize} ink={phaseInk} line={phaseLine} light={phaseLightTrail} />
+          <div style={{ position: "relative", display: "grid", placeItems: "center", width: "100%" }}>
+            <div style={{ position: "relative", zIndex: 1, width: "100%" }}>
+              <TimerClockDisplay seconds={T.bigSeconds} countUp={false} fontSize={clockFontSize} color={timerInk} minHeight={breakpoint === "mobile" ? "min(160px, 27vmin)" : "min(214px, 30vmin)"} marginTop={6} />
             </div>
-          )}
-          {presetId !== "box" && (
-            <div style={{ position: "relative", display: "grid", placeItems: "center", width: "100%" }}>
-              <div style={{ position: "relative", zIndex: 1, width: "100%" }}>
-                <TimerClockDisplay seconds={T.bigSeconds} countUp={false} fontSize={clockFontSize} color={phaseInk} minHeight={breakpoint === "mobile" ? "min(160px, 27vmin)" : "min(214px, 30vmin)"} marginTop={6} />
-              </div>
-            </div>
-          )}
-          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 26, color: phaseMuted, marginTop: 14 }}>
+          </div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 26, color: timerMuted, marginTop: 14 }}>
             ZYKLUS {String(T.round).padStart(2, "0")} <span style={{ opacity: 0.55 }}>/ {String(T.rounds).padStart(2, "0")}</span>
           </div>
         </div>
@@ -227,7 +246,7 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
           <MButton type="button" variant="secondary" size="icon" onClick={() => { T.reset(); setRunningView(false); }} aria-label="Timer zurücksetzen">
             <Icon name="reset" size={16} color={phaseMuted} />
           </MButton>
-          <button type="button" onClick={T.toggle} disabled={T.done} style={{ width: 68, height: 68, borderRadius: 34, border: "none", background: exhaling ? M.accInk : M.acc, color: exhaling ? M.acc : M.accInk, cursor: "pointer", display: "grid", placeItems: "center", transition: "background-color .65s ease, color .65s ease" }}>
+          <button type="button" onClick={T.toggle} disabled={T.done} aria-label={T.running ? "Timer pausieren" : "Timer starten"} style={{ width: 68, height: 68, borderRadius: 34, border: "none", background: darkPhase ? M.accInk : M.acc, color: darkPhase ? M.acc : M.accInk, cursor: "pointer", display: "grid", placeItems: "center", transition: "background-color .65s ease, color .65s ease" }}>
             <Icon name={T.running ? "pause" : "play"} size={30} style={{ marginLeft: T.running ? 0 : 3 }} />
           </button>
         </div>

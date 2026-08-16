@@ -168,6 +168,42 @@ export type Database = {
         }
         Relationships: []
       }
+      metabolic_logs: {
+        Row: {
+          created_at: string
+          energy_level: number
+          id: string
+          logged_at: string
+          meal_quality: string
+          note: string | null
+          satiety_level: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_level: number
+          id?: string
+          logged_at?: string
+          meal_quality: string
+          note?: string | null
+          satiety_level: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_level?: number
+          id?: string
+          logged_at?: string
+          meal_quality?: string
+          note?: string | null
+          satiety_level?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       food_products: {
         Row: {
           basis: string

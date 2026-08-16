@@ -147,13 +147,13 @@ function NavTabButton({
   );
 }
 
-function ExpressFab({ onExpressTracking }: { onExpressTracking: () => void }) {
+function QuickTrackingFab({ onQuickTracking }: { onQuickTracking: () => void }) {
   return (
     <button
       type="button"
-      onClick={onExpressTracking}
-      aria-label="ExpressTracking starten"
-      title="ExpressTracking"
+      onClick={onQuickTracking}
+      aria-label="Schnelltracking öffnen"
+      title="Schnelltracking"
       style={{
         ...tabButtonFocus,
         width: FLOAT_NAV_FAB_SIZE,
@@ -177,13 +177,13 @@ function ExpressFab({ onExpressTracking }: { onExpressTracking: () => void }) {
 export function FloatNav({
   tab,
   onTab,
-  onExpressTracking,
+  onQuickTracking,
   timerActive: _timerActive,
   placement,
 }: {
   tab: Tab;
   onTab: (t: NavTabId) => void;
-  onExpressTracking: () => void;
+  onQuickTracking: () => void;
   timerActive?: boolean;
   placement: "bottom" | "left";
 }) {
@@ -317,7 +317,7 @@ export function FloatNav({
                 }),
           }}
         >
-          <ExpressFab onExpressTracking={onExpressTracking} />
+        <QuickTrackingFab onQuickTracking={onQuickTracking} />
         </div>
       </div>
     </nav>

@@ -54,6 +54,7 @@ import {
 import { activityFactor, ageFromBirthDate } from "./nutrition";
 import { getLocalDayBounds, getRollingSevenDayStart, sumWaterLogs } from "./hydration";
 import { normalizeDailyCheckin, type DailyCheckin, type DailyCheckinInput } from "./healthspan";
+import { normalizeMetabolicLog, type MetabolicLog, type MetabolicLogInput } from "./metabolic";
 import type { CoachRecommendation } from "./healthspan";
 import { localDb } from "./offline/localDb";
 
@@ -99,6 +100,7 @@ type DbPlan = Tables<"plans">;
 type DbSessionExercise = Tables<"session_exercises">;
 type DbBodyMeasurement = Tables<"body_measurements">;
 type DbDailyCheckin = Tables<"daily_checkins">;
+type DbMetabolicLog = Tables<"metabolic_logs">;
 type DbPlanDay = Tables<"plan_days">;
 type DbPlanDayBlock = Tables<"plan_day_blocks">;
 type DbPlanDayExercise = Tables<"plan_day_exercises">;
@@ -1791,6 +1793,113 @@ export function useDailyCheckins(since?: string, refreshKey = 0) {
   }, [user?.id, since, refreshKey]);
 }
 
+function mapMetabolicLogRow(row: DbMetabolicLog): MetabolicLog {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    loggedAt: row.logged_at,
+    mealQuality: row.meal_quality as MetabolicLog["mealQuality"],
+    energyLevel: row.energy_level,
+    satietyLevel: row.satiety_level,
+    note: row.note ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function cachedMetabolicLogToModel(row: import("./offline/types").CachedMetabolicLogRow): MetabolicLog {
+  return {
+    id: row.id, userId: row.userId, loggedAt: row.loggedAt, mealQuality: row.mealQuality,
+    energyLevel: row.energyLevel, satietyLevel: row.satietyLevel, note: row.note,
+    createdAt: new Date(row.updatedAt).toISOString(), updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+async function writeMetabolicLogsCache(userId: string, logs: MetabolicLog[]): Promise<void> {
+  await localDb.metabolicLogs.bulkPut(logs.map((item) => ({
+    id: item.id, userId, loggedAt: item.loggedAt, mealQuality: item.mealQuality,
+    energyLevel: item.energyLevel, satietyLevel: item.satietyLevel, note: item.note,
+    updatedAt: new Date(item.updatedAt).getTime() || Date.now(),
+  })));
+}
+
+export async function fetchMetabolicLogs(userId: string, since?: string): Promise<MetabolicLog[]> {
+  let query = supabase.from("metabolic_logs").select("*").eq("user_id", userId).order("logged_at", { ascending: false });
+  if (since) query = query.gte("logged_at", since);
+  const { data, error } = await query;
+  if (error) throw error;
+  const logs = (data ?? []).map(mapMetabolicLogRow);
+  await writeMetabolicLogsCache(userId, logs);
+  return logs;
+}
+
+export async function createMetabolicLogRemote(userId: string, rawInput: MetabolicLogInput, id: string): Promise<void> {
+  const input = normalizeMetabolicLog(rawInput);
+  const { error } = await supabase.from("metabolic_logs").insert({
+    id, user_id: userId, logged_at: input.loggedAt!, meal_quality: input.mealQuality,
+    energy_level: input.energyLevel, satiety_level: input.satietyLevel, note: input.note ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function updateMetabolicLogRemote(id: string, rawInput: MetabolicLogInput): Promise<void> {
+  const input = normalizeMetabolicLog(rawInput);
+  const { error } = await supabase.from("metabolic_logs").update({
+    logged_at: input.loggedAt!, meal_quality: input.mealQuality, energy_level: input.energyLevel,
+    satiety_level: input.satietyLevel, note: input.note ?? null, updated_at: new Date().toISOString(),
+  }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteMetabolicLogRemote(id: string): Promise<void> {
+  const { error } = await supabase.from("metabolic_logs").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function createMetabolicLog(userId: string, rawInput: MetabolicLogInput): Promise<void> {
+  const input = normalizeMetabolicLog(rawInput);
+  const id = crypto.randomUUID();
+  await localDb.metabolicLogs.put({ id, userId, loggedAt: input.loggedAt!, mealQuality: input.mealQuality, energyLevel: input.energyLevel, satietyLevel: input.satietyLevel, note: input.note, updatedAt: Date.now() });
+  if (getIsOnlineSync()) {
+    try { await createMetabolicLogRemote(userId, input, id); return; } catch { /* queue below */ }
+  }
+  await enqueueMutation(userId, "CREATE_METABOLIC_LOG", { id, input });
+}
+
+export async function updateMetabolicLog(userId: string, id: string, rawInput: MetabolicLogInput): Promise<void> {
+  const input = normalizeMetabolicLog(rawInput);
+  const existing = await localDb.metabolicLogs.get(id);
+  if (!existing || existing.userId !== userId) throw new Error("Eintrag nicht gefunden.");
+  await localDb.metabolicLogs.put({ ...existing, loggedAt: input.loggedAt!, mealQuality: input.mealQuality, energyLevel: input.energyLevel, satietyLevel: input.satietyLevel, note: input.note, updatedAt: Date.now() });
+  if (getIsOnlineSync()) {
+    try { await updateMetabolicLogRemote(id, input); return; } catch { /* queue below */ }
+  }
+  await enqueueMutation(userId, "UPDATE_METABOLIC_LOG", { id, input });
+}
+
+export async function deleteMetabolicLog(userId: string, id: string): Promise<void> {
+  const existing = await localDb.metabolicLogs.get(id);
+  if (!existing || existing.userId !== userId) throw new Error("Eintrag nicht gefunden.");
+  await localDb.metabolicLogs.delete(id);
+  if (getIsOnlineSync()) {
+    try { await deleteMetabolicLogRemote(id); return; } catch { /* queue below */ }
+  }
+  await enqueueMutation(userId, "DELETE_METABOLIC_LOG", { id });
+}
+
+export function useMetabolicLogs(since?: string, refreshKey = 0) {
+  const { user } = useAuth();
+  return useCachedAsync({
+    cacheLoader: async () => {
+      if (!user) return null;
+      const rows = await localDb.metabolicLogs.where("userId").equals(user.id).toArray();
+      return rows.filter((row) => !since || row.loggedAt >= since).sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)).map(cachedMetabolicLogToModel);
+    },
+    networkLoader: async () => user ? fetchMetabolicLogs(user.id, since) : [],
+    enabled: !!user,
+  }, [user?.id, since, refreshKey]);
+}
+
 export type ProteinLogSource = "quick" | "manual" | "post_workout" | "barcode" | "photo";
 
 export interface ProteinLog {
@@ -2807,6 +2916,9 @@ registerSyncHandlers({
   updateExerciseRemote,
   deleteExerciseRemote,
   upsertDailyCheckinRemote,
+  createMetabolicLogRemote,
+  updateMetabolicLogRemote,
+  deleteMetabolicLogRemote,
   toggleFactSavedRemote,
   refreshPlansRemote: fetchPlansRemote,
   refreshExercisesRemote: fetchExercisesRemote,

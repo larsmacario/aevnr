@@ -8,7 +8,7 @@ const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const model = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-4-6";
 
 const tool = { name: "recommend_daily_healthspan_action", description: "Gibt genau eine sichere, nicht-medizinische Tagesaktion zurück.", input_schema: { type: "object", properties: {
-  action: { type: "string", enum: ["strength", "reduce", "endurance", "recover", "nutrition", "maintain"] },
+  action: { type: "string", enum: ["strength", "reduce", "endurance", "recover", "nutrition", "metabolism", "maintain"] },
   title: { type: "string" }, detail: { type: "string" },
   trainingAlternative: { type: "string", enum: ["reduce_volume", "zone_2"] },
 }, required: ["action", "title", "detail"] } };
@@ -28,12 +28,12 @@ serve(async (req) => {
     const readinessLow = Number(checkin.sleepHours) < 6 || Number(checkin.energyLevel) <= 4 || Number(checkin.stressLevel) >= 8;
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) return new Response(JSON.stringify({ error: "KI nicht konfiguriert." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const prompt = `Erstelle genau eine verständliche Tagesaktion für eine Healthspan-App. Keine Diagnose, Therapie, Risikobewertung oder medizinische Aussage. Check-in: ${JSON.stringify(checkin)}. Wochenstand: ${JSON.stringify(week)}. Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Aktiver Plan: ${JSON.stringify(activePlan)}. Erlaubte Aktionen: strength (nächsten Plan-Tag trainieren), reduce (Express Tracking öffnen und Belastung selbst reduzieren), endurance (Zone-2-Timer), recover (Erholung priorisieren), nutrition (eine konkrete nächste Protein-/Wasser-Gewohnheit), maintain (Kurs halten). Titel maximal 55 Zeichen, Detail maximal 180 Zeichen und konkret. ${readinessLow ? "WICHTIG: Niedrige Belastbarkeit: action darf nur reduce, endurance oder recover sein; niemals strength." : ""}`;
+    const prompt = `Erstelle genau eine verständliche Tagesaktion für eine Healthspan-App. Keine Diagnose, Therapie, Risikobewertung oder medizinische Aussage. Check-in: ${JSON.stringify(checkin)}. Wochenstand: ${JSON.stringify(week)}. Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Aktiver Plan: ${JSON.stringify(activePlan)}. Erlaubte Aktionen: strength (nächsten Plan-Tag trainieren), reduce (Express Tracking öffnen und Belastung selbst reduzieren), endurance (Zone-2-Timer), recover (Erholung priorisieren), nutrition (eine konkrete nächste Protein-/Wasser-Gewohnheit), metabolism (freiwillig eine sättigende protein- und ballaststoffreiche Mahlzeit sowie Energie/Sättigung danach protokollieren), maintain (Kurs halten). Bei metabolism niemals Insulin, Blutzucker, Fettverbrennung, Frühstücksverzögerung oder Kaffee-Timing behaupten oder empfehlen. Titel maximal 55 Zeichen, Detail maximal 180 Zeichen und konkret. ${readinessLow ? "WICHTIG: Niedrige Belastbarkeit: action darf nur reduce, endurance oder recover sein; niemals strength oder metabolism." : ""}`;
     const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model, max_tokens: 450, tools: [tool], tool_choice: { type: "tool", name: "recommend_daily_healthspan_action" }, messages: [{ role: "user", content: prompt }] }) });
     if (!response.ok) throw new Error("KI-Anbieter nicht erreichbar");
     const data = await response.json();
     const result = data.content?.find((entry: { type?: string }) => entry.type === "tool_use")?.input;
-    const actions = ["strength", "reduce", "endurance", "recover", "nutrition", "maintain"];
+    const actions = ["strength", "reduce", "endurance", "recover", "nutrition", "metabolism", "maintain"];
     if (!result || !actions.includes(result.action) || typeof result.title !== "string" || typeof result.detail !== "string") throw new Error("Ungültige KI-Antwort");
     if (readinessLow && result.action === "strength") throw new Error("KI-Antwort überschreitet die Belastungsgrenze");
     return new Response(JSON.stringify({ action: result.action, title: result.title.slice(0, 55), detail: result.detail.slice(0, 180), trainingAlternative: result.trainingAlternative === "reduce_volume" || result.trainingAlternative === "zone_2" ? result.trainingAlternative : undefined }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

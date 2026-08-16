@@ -48,9 +48,11 @@ Deno.serve(async (req) => {
     }
 
     const query = db.from("user_daily_facts").select("id, local_date, saved_at, health_facts(id, topic, title, body, action_title, action_body, app_action, health_fact_sources(pmid, title, authors, journal, publication_year, publication_type, pubmed_url))").eq("user_id", user.id);
-    const { data: assignment, error } = body?.view === "saved"
-      ? await query.not("saved_at", "is", null).order("saved_at", { ascending: false }).limit(20)
-      : await query.eq("local_date", local.date).maybeSingle();
+    const { data: assignment, error } = body?.view === "history"
+      ? await query.order("local_date", { ascending: false }).limit(120)
+      : body?.view === "saved"
+        ? await query.not("saved_at", "is", null).order("saved_at", { ascending: false }).limit(20)
+        : await query.eq("local_date", local.date).maybeSingle();
     if (error) throw error;
     const rows = Array.isArray(assignment) ? assignment : assignment ? [assignment] : [];
     const facts = rows.map((row: any) => ({

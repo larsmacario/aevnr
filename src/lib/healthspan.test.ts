@@ -24,7 +24,13 @@ describe("healthspan", () => {
     expect(recommendHealthspanAction({ ...ready, primaryFocus: "strength" }).action).toBe("strength");
     expect(recommendHealthspanAction({ ...ready, primaryFocus: "endurance" }).action).toBe("endurance");
     expect(recommendHealthspanAction({ ...ready, primaryFocus: "energy" }).action).toBe("recover");
-    expect(recommendHealthspanAction({ ...ready, primaryFocus: "body_composition" }).action).toBe("nutrition");
+    expect(recommendHealthspanAction({ ...ready, primaryFocus: "body_composition", metabolicLoggedToday: true }).action).toBe("nutrition");
+  });
+  it("bietet einen freiwilligen Stoffwechsel-Impuls ohne Messwertbehauptung", () => {
+    const recommendation = recommendHealthspanAction({ ...baseline, proteinG: 140, waterMl: 2800, completedStrengthDays: 3, checkins: [{ sleepHours: 7.5, sleepQuality: 7, stressLevel: 4, energyLevel: 8 }], metabolicLogCount: 0, metabolicLoggedToday: false });
+    expect(recommendation.action).toBe("metabolism");
+    expect(recommendation.detail).toContain("protein-");
+    expect(recommendation.detail).not.toMatch(/Insulin|Blutzucker|Fettverbrennung/i);
   });
   it("begründet den Fallback mit den individuellen Signalen", () => expect(recommendHealthspanAction({ ...baseline, checkins: [{ sleepHours: 5.5, sleepQuality: 4, stressLevel: 4, energyLevel: 8 }] }).detail).toContain("5.5 h Schlaf"));
   it("leitet Trainingsbereitschaft direkt aus dem Check-in ab", () => {
@@ -32,9 +38,10 @@ describe("healthspan", () => {
     expect(getTrainingReadiness({ sleepHours: 5.5, stressLevel: 4, energyLevel: 8 })).toBe("reduce");
     expect(getTrainingReadiness({ sleepHours: 7, stressLevel: 4, energyLevel: 8 })).toBe("ready");
   });
-  it("bildet vier erklärbare Bereiche", () => expect(buildHealthspanDomains(baseline).map((item) => item.id)).toEqual(["strength", "endurance", "nutrition", "recovery"]));
+  it("bildet fünf erklärbare Bereiche", () => expect(buildHealthspanDomains(baseline).map((item) => item.id)).toEqual(["strength", "endurance", "nutrition", "recovery", "metabolism"]));
   it("normalisiert nur gültige KI-Tagesempfehlungen", () => {
     expect(normalizeDailyHealthspanRecommendation({ version: 1, action: "endurance", title: "Zone 2", detail: "Heute locker", checkinDate: "2026-08-10", checkinFingerprint: "x", createdAt: "2026-08-10T10:00:00Z" })?.action).toBe("endurance");
+    expect(normalizeDailyHealthspanRecommendation({ version: 1, action: "metabolism", title: "Rhythmus", detail: "Beobachte dich", checkinDate: "2026-08-10", checkinFingerprint: "x", createdAt: "2026-08-10T10:00:00Z" })?.action).toBe("metabolism");
     expect(normalizeDailyHealthspanRecommendation({ version: 1, action: "medical", title: "x", detail: "x", checkinDate: "2026-08-10", checkinFingerprint: "x", createdAt: "x" })).toBeNull();
   });
   it("verändert den Fingerprint bei geänderten Tageswerten", () => expect(checkinFingerprint({ checkinDate: "2026-08-10", sleepHours: 7, sleepQuality: 6, stressLevel: 5, energyLevel: 6 })).not.toBe(checkinFingerprint({ checkinDate: "2026-08-10", sleepHours: 7, sleepQuality: 6, stressLevel: 5, energyLevel: 7 })));

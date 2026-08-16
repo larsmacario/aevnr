@@ -17,7 +17,7 @@ export interface DailyCheckin extends Required<Omit<DailyCheckinInput, "note">> 
   updatedAt: string;
 }
 
-export type HealthspanDomainId = "strength" | "endurance" | "nutrition" | "recovery";
+export type HealthspanDomainId = "strength" | "endurance" | "nutrition" | "recovery" | "metabolism";
 
 export interface HealthspanDomain {
   id: HealthspanDomainId;
@@ -29,7 +29,7 @@ export interface HealthspanDomain {
 export interface CoachRecommendation {
   title: string;
   detail: string;
-  action: "recover" | "reduce" | "endurance" | "nutrition" | "strength" | "maintain";
+  action: "recover" | "reduce" | "endurance" | "nutrition" | "metabolism" | "strength" | "maintain";
   trainingAlternative?: "reduce_volume" | "zone_2";
 }
 
@@ -47,7 +47,7 @@ export function checkinFingerprint(checkin: Pick<DailyCheckinInput, "checkinDate
 export function normalizeDailyHealthspanRecommendation(raw: unknown): DailyHealthspanRecommendation | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const value = raw as Record<string, unknown>;
-  const validAction = ["recover", "reduce", "endurance", "nutrition", "strength", "maintain"].includes(String(value.action));
+  const validAction = ["recover", "reduce", "endurance", "nutrition", "metabolism", "strength", "maintain"].includes(String(value.action));
   if (value.version !== 1 || !validAction || typeof value.title !== "string" || typeof value.detail !== "string" || typeof value.checkinDate !== "string" || typeof value.checkinFingerprint !== "string" || typeof value.createdAt !== "string") return null;
   return { version: 1, action: value.action as CoachRecommendation["action"], title: value.title.slice(0, 100), detail: value.detail.slice(0, 360), checkinDate: value.checkinDate, checkinFingerprint: value.checkinFingerprint, createdAt: value.createdAt, trainingAlternative: value.trainingAlternative === "reduce_volume" || value.trainingAlternative === "zone_2" ? value.trainingAlternative : undefined };
 }
@@ -72,6 +72,8 @@ export interface HealthspanSnapshotInput {
   proteinTargetG: number;
   waterMl: number;
   waterTargetMl: number;
+  metabolicLogCount?: number;
+  metabolicLoggedToday?: boolean;
   checkins: Pick<DailyCheckin, "sleepHours" | "sleepQuality" | "stressLevel" | "energyLevel">[];
   primaryFocus?: "strength" | "endurance" | "energy" | "body_composition" | null;
   secondaryFocus?: "strength" | "endurance" | "energy" | "body_composition" | null;
@@ -102,6 +104,7 @@ export function buildHealthspanDomains(input: HealthspanSnapshotInput): Healthsp
     { id: "endurance", label: "Ausdauer", progress: progress(input.zone2Minutes, input.zone2TargetMinutes ?? 150), detail: `${input.zone2Minutes}/${input.zone2TargetMinutes ?? 150} Min. Zone 2` },
     { id: "nutrition", label: "Ernährung & Körper", progress: Math.min(progress(input.proteinG, input.proteinTargetG), progress(input.waterMl, input.waterTargetMl)), detail: `${Math.round(input.proteinG)}/${Math.round(input.proteinTargetG)} g Protein` },
     { id: "recovery", label: "Erholung", progress: recoveryProgress, detail: latest ? `${latest.sleepHours.toFixed(1)} h Schlaf · Energie ${latest.energyLevel}/10` : "Tages-Check-in offen" },
+    { id: "metabolism", label: "Stoffwechsel-Rhythmus", progress: progress(input.metabolicLogCount ?? 0, 7), detail: input.metabolicLogCount ? `${input.metabolicLogCount} Mahlzeit${input.metabolicLogCount === 1 ? "" : "en"} protokolliert` : "Freiwillig beobachten" },
   ];
 }
 
@@ -122,6 +125,7 @@ export function recommendHealthspanAction(input: HealthspanSnapshotInput): Coach
     return { title: "Energie für deinen Tag sichern", detail: "Dein Check-in ist stabil. Richte als Nächstes deine Recovery-Basis mit Protein, Wasser und einem realistischen Rhythmus ein.", action: "recover" };
   }
   if (input.primaryFocus === "body_composition") {
+    if (!input.metabolicLoggedToday) return { title: "Deinen Rhythmus beobachten", detail: "Wenn es heute passt: Wähle eine sättigende, protein- und ballaststoffreiche Mahlzeit und halte danach Energie und Sättigung fest.", action: "metabolism" };
     return { title: "Deine Körperbasis stärken", detail: "Dein Check-in ist stabil. Starte heute mit deinem Protein- und Recovery-Ziel – die Konstanz zählt.", action: "nutrition" };
   }
   if (input.proteinG < input.proteinTargetG * 0.65 || input.waterMl < input.waterTargetMl * 0.55) {
@@ -137,6 +141,9 @@ export function recommendHealthspanAction(input: HealthspanSnapshotInput): Coach
   if (input.completedStrengthDays < input.strengthTargetDays) {
     const remaining = input.strengthTargetDays - input.completedStrengthDays;
     return { title: "Deinen nächsten Krafttag nutzen", detail: `Dein Check-in ist stabil und dir fehlen diese Woche noch ${remaining} Kraft${remaining === 1 ? "einheit" : "einheiten"}. Trainiere den nächsten geplanten Tag wie vorgesehen.`, action: "strength" };
+  }
+  if (!input.metabolicLoggedToday && (input.metabolicLogCount ?? 0) < 3) {
+    return { title: "Deinen Rhythmus beobachten", detail: "Wenn es heute passt: Wähle eine sättigende, protein- und ballaststoffreiche Mahlzeit und halte danach Energie und Sättigung fest.", action: "metabolism" };
   }
   return { title: "Dein Rhythmus passt", detail: `Check-in stabil, ${input.completedStrengthDays} Krafteinheiten und ${input.zone2Minutes} Zone-2-Minuten diese Woche: Bleib heute bei deinem gewohnten Rhythmus.`, action: "maintain" };
 }

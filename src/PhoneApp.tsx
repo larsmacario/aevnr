@@ -13,10 +13,15 @@ import {
   snapshotToDraft,
 } from "./lib/activeWorkout";
 import {
+  createWaterLog,
   fetchPlanDayForTrackingCached,
   processSyncQueue,
   saveSession,
+  sumProteinToday,
+  sumWaterToday,
   type SaveSessionInput,
+  useProteinLogsToday,
+  useWaterLogsToday,
 } from "./lib/db";
 import { NetworkProvider, useNetwork } from "./lib/offline/networkStatus";
 import type { ExerciseMetric } from "./lib/exerciseCatalog";
@@ -30,8 +35,12 @@ import { PhoneShell } from "./components/PhoneShell";
 import { FloatNav, FloatNavContentFade, floatNavContentInset, type NavTabId, type Tab } from "./components/FloatNav";
 import { AppSidePanel } from "./components/AppSidePanel";
 import { ConfirmSheet } from "./components/ConfirmSheet";
+import { AlertSheet } from "./components/AlertSheet";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { ManualProteinLogSheet } from "./components/ManualProteinLogSheet";
 import { TimerLeaveSheet } from "./components/TimerLeaveSheet";
+import { WaterAmountSheet } from "./components/WaterAmountSheet";
+import { QuickTrackingSheet } from "./components/QuickTrackingSheet";
 import { HomeScreen } from "./screens/HomeScreen";
 import { PlansScreen } from "./screens/PlansScreen";
 import { ExercisesScreen } from "./screens/ExercisesScreen";
@@ -48,6 +57,7 @@ import { StatsScreen } from "./screens/StatsScreen";
 import { CalculatorScreen } from "./screens/CalculatorScreen";
 import { BodyTrackerScreen } from "./screens/BodyTrackerScreen";
 import { RecoveryScreen, type RecoverySection } from "./screens/RecoveryScreen";
+import { MetabolismScreen } from "./screens/MetabolismScreen";
 import { AboutScreen } from "./screens/AboutScreen";
 import { SupportScreen } from "./screens/SupportScreen";
 import { ActiveTimerProvider, useActiveTimer } from "./lib/activeTimer";
@@ -60,6 +70,7 @@ import { BreathingScreen } from "./screens/BreathingScreen";
 import { FactsScreen } from "./screens/FactsScreen";
 import { detectFactTimezone, factLocalDate } from "./lib/facts";
 import { supabase } from "./lib/supabase";
+import { useRecoveryTargets } from "./lib/recoveryTarget";
 type Route =
   | {
       kind: "tracking";
@@ -85,6 +96,7 @@ type Route =
   | { kind: "calculator" }
   | { kind: "bodyTracker" }
   | { kind: "recovery"; section?: RecoverySection }
+  | { kind: "metabolism" }
   | { kind: "about" }
   | { kind: "support" }
   | { kind: "aiTrainingPlanWizard" }
@@ -171,6 +183,17 @@ function PhoneAppInner() {
   const [trackLoading, setTrackLoading] = useState(false);
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutDraft | null>(null);
   const [replaceDraftAction, setReplaceDraftAction] = useState<(() => void) | null>(null);
+  const [quickTrackingOpen, setQuickTrackingOpen] = useState(false);
+  const [manualProteinOpen, setManualProteinOpen] = useState(false);
+  const [manualWaterOpen, setManualWaterOpen] = useState(false);
+  const [nutritionRefreshKey, setNutritionRefreshKey] = useState(0);
+  const [quickWaterBusy, setQuickWaterBusy] = useState(false);
+  const [quickTrackingAlert, setQuickTrackingAlert] = useState<{ title: string; message: string } | null>(null);
+  const proteinQuery = useProteinLogsToday(nutritionRefreshKey);
+  const waterQuery = useWaterLogsToday(nutritionRefreshKey);
+  const recoveryTargets = useRecoveryTargets();
+  const proteinToday = sumProteinToday(proteinQuery.data ?? []);
+  const waterToday = sumWaterToday(waterQuery.data ?? []);
 
   useEffect(() => {
     if (!user) {
@@ -255,6 +278,46 @@ function PhoneAppInner() {
     runWithReplaceDraftConfirm(() => {
       setRoute({ kind: "expressTrackingSetup" });
     });
+  };
+
+  const goMetabolism = () => setRoute({ kind: "metabolism" });
+
+  const closeQuickTracking = () => setQuickTrackingOpen(false);
+  const openQuickTracking = () => setQuickTrackingOpen(true);
+  const openExpressFromQuickTracking = () => {
+    closeQuickTracking();
+    goExpressTrackingSetup();
+  };
+  const openProteinFromQuickTracking = () => {
+    closeQuickTracking();
+    setManualProteinOpen(true);
+  };
+  const openWaterAmountFromQuickTracking = () => {
+    closeQuickTracking();
+    setManualWaterOpen(true);
+  };
+  const handleNutritionSaved = () => {
+    setNutritionRefreshKey((key) => key + 1);
+    setManualProteinOpen(false);
+    setManualWaterOpen(false);
+    closeQuickTracking();
+    setRoute(null);
+    setTab("home");
+  };
+  const addQuickWater = async (amountMl: number) => {
+    if (!user || quickWaterBusy) return;
+    setQuickWaterBusy(true);
+    try {
+      await createWaterLog(user.id, { amountMl, source: "quick" });
+      handleNutritionSaved();
+    } catch (cause) {
+      setQuickTrackingAlert({
+        title: "Speichern fehlgeschlagen",
+        message: cause instanceof Error ? cause.message : "Wasser konnte nicht gespeichert werden.",
+      });
+    } finally {
+      setQuickWaterBusy(false);
+    }
   };
 
   const startExpressTracking = (session: Workout, healthspanMode?: "reduced" | "ai") => {
@@ -487,6 +550,9 @@ function PhoneAppInner() {
   } else if (route?.kind === "recovery") {
     body = <RecoveryScreen onBack={() => close("home")} initialSection={route.section} />;
     showNav = false;
+  } else if (route?.kind === "metabolism") {
+    body = <MetabolismScreen onBack={() => close("home")} />;
+    showNav = false;
   } else if (route?.kind === "about") {
     body = <AboutScreen onBack={() => close("home")} />;
     showNav = false;
@@ -521,6 +587,7 @@ function PhoneAppInner() {
         onOpenCalculator={goCalculator}
         onOpenBodyTracker={goBodyTracker}
         onOpenRecovery={goRecovery}
+        onOpenMetabolism={goMetabolism}
         onOpenExpress={goExpressTrackingSetup}
         trackLoading={trackLoading}
       />
@@ -598,7 +665,7 @@ function PhoneAppInner() {
         <FloatNav
           tab={tab}
           onTab={handleTab}
-          onExpressTracking={goExpressTrackingSetup}
+          onQuickTracking={openQuickTracking}
           timerActive={timerActive}
           placement={navPlacement}
         />
@@ -616,6 +683,32 @@ function PhoneAppInner() {
         icon="flag"
         onConfirm={handleReplaceDraftConfirm}
         onCancel={() => setReplaceDraftAction(null)}
+      />
+      <QuickTrackingSheet
+        open={quickTrackingOpen}
+        onClose={closeQuickTracking}
+        proteinToday={proteinToday}
+        proteinTargetG={recoveryTargets.proteinTargetG}
+        waterTodayMl={waterToday}
+        waterTargetMl={recoveryTargets.waterTargetMl}
+        waterQuickAmountsMl={preferences.waterQuickAmountsMl}
+        waterBusy={quickWaterBusy}
+        onOpenExpress={openExpressFromQuickTracking}
+        onOpenProtein={openProteinFromQuickTracking}
+        onAddWater={(amountMl) => void addQuickWater(amountMl)}
+        onOpenWaterAmount={openWaterAmountFromQuickTracking}
+      />
+      {user ? (
+        <>
+          <ManualProteinLogSheet open={manualProteinOpen} onClose={() => setManualProteinOpen(false)} onSaved={handleNutritionSaved} userId={user.id} />
+          <WaterAmountSheet open={manualWaterOpen} onClose={() => setManualWaterOpen(false)} onSaved={handleNutritionSaved} userId={user.id} />
+        </>
+      ) : null}
+      <AlertSheet
+        open={!!quickTrackingAlert}
+        title={quickTrackingAlert?.title ?? ""}
+        message={quickTrackingAlert?.message ?? ""}
+        onClose={() => setQuickTrackingAlert(null)}
       />
       <AppSidePanel
         open={menuOpen}
