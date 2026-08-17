@@ -1,4 +1,5 @@
 import { toLocalDateKey } from "./hydration";
+import { normalizeAppLanguage, type AppLanguage } from "./language";
 
 export interface DailyCheckinInput {
   checkinDate?: string;
@@ -38,6 +39,7 @@ export interface DailyHealthspanRecommendation extends CoachRecommendation {
   checkinDate: string;
   checkinFingerprint: string;
   createdAt: string;
+  language: AppLanguage;
 }
 
 export function checkinFingerprint(checkin: Pick<DailyCheckinInput, "checkinDate" | "sleepHours" | "sleepQuality" | "stressLevel" | "energyLevel" | "note">): string {
@@ -49,7 +51,7 @@ export function normalizeDailyHealthspanRecommendation(raw: unknown): DailyHealt
   const value = raw as Record<string, unknown>;
   const validAction = ["recover", "reduce", "endurance", "nutrition", "metabolism", "strength", "maintain"].includes(String(value.action));
   if (value.version !== 1 || !validAction || typeof value.title !== "string" || typeof value.detail !== "string" || typeof value.checkinDate !== "string" || typeof value.checkinFingerprint !== "string" || typeof value.createdAt !== "string") return null;
-  return { version: 1, action: value.action as CoachRecommendation["action"], title: value.title.slice(0, 100), detail: value.detail.slice(0, 360), checkinDate: value.checkinDate, checkinFingerprint: value.checkinFingerprint, createdAt: value.createdAt, trainingAlternative: value.trainingAlternative === "reduce_volume" || value.trainingAlternative === "zone_2" ? value.trainingAlternative : undefined };
+  return { version: 1, action: value.action as CoachRecommendation["action"], title: value.title.slice(0, 100), detail: value.detail.slice(0, 360), checkinDate: value.checkinDate, checkinFingerprint: value.checkinFingerprint, createdAt: value.createdAt, language: normalizeAppLanguage(value.language) ?? "de", trainingAlternative: value.trainingAlternative === "reduce_volume" || value.trainingAlternative === "zone_2" ? value.trainingAlternative : undefined };
 }
 
 export type TrainingReadiness = "missing" | "reduce" | "ready";
@@ -94,11 +96,18 @@ function progress(value: number, target: number): number {
   return target > 0 ? Math.min(1, Math.max(0, value / target)) : 0;
 }
 
-export function buildHealthspanDomains(input: HealthspanSnapshotInput): HealthspanDomain[] {
+export function buildHealthspanDomains(input: HealthspanSnapshotInput, language: AppLanguage = "de"): HealthspanDomain[] {
   const latest = input.checkins[0];
   const recoveryProgress = latest
     ? (progress(latest.sleepHours, 7) + latest.sleepQuality / 10 + (11 - latest.stressLevel) / 10 + latest.energyLevel / 10) / 4
     : 0;
+  if (language === "en") return [
+    { id: "strength", label: "Strength", progress: progress(input.completedStrengthDays, Math.max(1, input.strengthTargetDays)), detail: `${input.completedStrengthDays}/${Math.max(1, input.strengthTargetDays)} sessions` },
+    { id: "endurance", label: "Endurance", progress: progress(input.zone2Minutes, input.zone2TargetMinutes ?? 150), detail: `${input.zone2Minutes}/${input.zone2TargetMinutes ?? 150} min Zone 2` },
+    { id: "nutrition", label: "Nutrition & body", progress: Math.min(progress(input.proteinG, input.proteinTargetG), progress(input.waterMl, input.waterTargetMl)), detail: `${Math.round(input.proteinG)}/${Math.round(input.proteinTargetG)} g protein` },
+    { id: "recovery", label: "Recovery", progress: recoveryProgress, detail: latest ? `${latest.sleepHours.toFixed(1)} h sleep · energy ${latest.energyLevel}/10` : "Daily check-in open" },
+    { id: "metabolism", label: "Metabolic rhythm", progress: progress(input.metabolicLogCount ?? 0, 7), detail: input.metabolicLogCount ? `${input.metabolicLogCount} meal${input.metabolicLogCount === 1 ? "" : "s"} logged` : "Observe optionally" },
+  ];
   return [
     { id: "strength", label: "Kraft", progress: progress(input.completedStrengthDays, Math.max(1, input.strengthTargetDays)), detail: `${input.completedStrengthDays}/${Math.max(1, input.strengthTargetDays)} Einheiten` },
     { id: "endurance", label: "Ausdauer", progress: progress(input.zone2Minutes, input.zone2TargetMinutes ?? 150), detail: `${input.zone2Minutes}/${input.zone2TargetMinutes ?? 150} Min. Zone 2` },
@@ -108,7 +117,40 @@ export function buildHealthspanDomains(input: HealthspanSnapshotInput): Healthsp
   ];
 }
 
-export function recommendHealthspanAction(input: HealthspanSnapshotInput): CoachRecommendation {
+function recommendHealthspanActionEn(input: HealthspanSnapshotInput): CoachRecommendation {
+  const latest = input.checkins[0];
+  if (!latest) return { title: "Daily check-in", detail: "Log sleep, stress and energy to receive a suitable daily recommendation.", action: "recover" };
+  if (getTrainingReadiness(latest) === "reduce") {
+    const signal = latest.sleepHours < 6 ? `${latest.sleepHours.toFixed(1)} h sleep` : latest.energyLevel <= 4 ? `energy ${latest.energyLevel}/10` : `stress ${latest.stressLevel}/10`;
+    return { title: "Reduce today’s load", detail: `Your check-in shows ${signal}. Choose a lighter Express Tracking session or Zone 2 — you remain in control.`, action: "reduce", trainingAlternative: "reduce_volume" };
+  }
+  if (input.primaryFocus === "strength") return { title: "Use your strength today", detail: "Your check-in is stable. Start a short, suitable strength session and build your rhythm.", action: "strength" };
+  if (input.primaryFocus === "endurance") return { title: "Build your aerobic base", detail: "Your check-in is stable. An easy Zone 2 session is your most useful next step today.", action: "endurance", trainingAlternative: "zone_2" };
+  if (input.primaryFocus === "energy") return { title: "Support today’s energy", detail: "Your check-in is stable. Build your recovery base with protein, water and a realistic rhythm.", action: "recover" };
+  if (input.primaryFocus === "body_composition") {
+    if (!input.metabolicLoggedToday) return { title: "Observe your rhythm", detail: "If it fits today, choose a satiating meal rich in protein and fiber, then record energy and satiety.", action: "metabolism" };
+    return { title: "Strengthen your body base", detail: "Your check-in is stable. Start with your protein and recovery target today — consistency matters.", action: "nutrition" };
+  }
+  if (input.proteinG < input.proteinTargetG * 0.65 || input.waterMl < input.waterTargetMl * 0.55) {
+    const proteinOpen = Math.max(0, Math.round(input.proteinTargetG - input.proteinG));
+    const waterOpen = Math.max(0, Math.round((input.waterTargetMl - input.waterMl) / 100) * 100);
+    const nextHabit = proteinOpen > 0 && waterOpen > 0 ? `about ${proteinOpen} g protein and ${waterOpen} ml fluid remaining` : proteinOpen > 0 ? `about ${proteinOpen} g protein remaining` : `about ${waterOpen} ml fluid remaining`;
+    return { title: "Your next habit", detail: `You have ${nextHabit} today. Plan a protein-rich meal or refill a glass of water next.`, action: "nutrition" };
+  }
+  if (input.zone2Minutes < (input.zone2TargetMinutes ?? 150) * 0.7) {
+    const target = input.zone2TargetMinutes ?? 150;
+    return { title: "Build your aerobic base", detail: `You have collected ${input.zone2Minutes} of ${target} Zone 2 minutes this week. An easy session moves you closer to your weekly target.`, action: "endurance", trainingAlternative: "zone_2" };
+  }
+  if (input.completedStrengthDays < input.strengthTargetDays) {
+    const remaining = input.strengthTargetDays - input.completedStrengthDays;
+    return { title: "Use your next strength day", detail: `Your check-in is stable and you have ${remaining} strength session${remaining === 1 ? "" : "s"} left this week. Train the next planned day as intended.`, action: "strength" };
+  }
+  if (!input.metabolicLoggedToday && (input.metabolicLogCount ?? 0) < 3) return { title: "Observe your rhythm", detail: "If it fits today, choose a satiating meal rich in protein and fiber, then record energy and satiety.", action: "metabolism" };
+  return { title: "Your rhythm is on track", detail: `Stable check-in, ${input.completedStrengthDays} strength sessions and ${input.zone2Minutes} Zone 2 minutes this week: stay with your usual rhythm today.`, action: "maintain" };
+}
+
+export function recommendHealthspanAction(input: HealthspanSnapshotInput, language: AppLanguage = "de"): CoachRecommendation {
+  if (language === "en") return recommendHealthspanActionEn(input);
   const latest = input.checkins[0];
   if (!latest) return { title: "Tages-Check-in", detail: "Schlaf, Stress und Energie erfassen – dann erhältst du eine passende Tagesempfehlung.", action: "recover" };
   if (getTrainingReadiness(latest) === "reduce") {

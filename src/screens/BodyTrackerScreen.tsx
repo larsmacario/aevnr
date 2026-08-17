@@ -23,14 +23,15 @@ import {
   type BodyPhoto,
 } from "../lib/db";
 import { SplitImageSlider } from "../components/SplitImageSlider";
+import { useI18n } from "../lib/i18n";
 export interface BodyTrackerScreenProps {
   onBack: () => void;
 }
 
-function formatDateDe(isoString: string): string {
+function formatDate(isoString: string, locale: string): string {
   const d = new Date(isoString);
-  const weekday = d.toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
-  const day = d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+  const weekday = d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+  const day = d.toLocaleDateString(locale, { day: "numeric", month: "short" });
   return `${weekday}, ${day}`;
 }
 
@@ -43,21 +44,22 @@ function toInputDateString(isoString: string): string {
 }
 
 const ALL_ADDITIONAL_FIELDS = [
-  { id: "muscleMass", label: "Muskelmasse (kg)", stateKey: "muscleMass" },
-  { id: "waterPct", label: "Wasseranteil (%)", stateKey: "waterPct" },
-  { id: "chest", label: "Brust (cm)", stateKey: "chest" },
-  { id: "shoulders", label: "Schulter (cm)", stateKey: "shoulders" },
-  { id: "upperArmL", label: "Oberarm L (cm)", stateKey: "upperArmL" },
-  { id: "upperArmR", label: "Oberarm R (cm)", stateKey: "upperArmR" },
-  { id: "lowerArmL", label: "Unterarm L (cm)", stateKey: "lowerArmL" },
-  { id: "lowerArmR", label: "Unterarm R (cm)", stateKey: "lowerArmR" },
-  { id: "thighL", label: "Oberschenkel L (cm)", stateKey: "thighL" },
-  { id: "thighR", label: "Oberschenkel R (cm)", stateKey: "thighR" },
-  { id: "calfL", label: "Wade L (cm)", stateKey: "calfL" },
-  { id: "calfR", label: "Wade R (cm)", stateKey: "calfR" },
+  { id: "muscleMass", stateKey: "muscleMass" },
+  { id: "waterPct", stateKey: "waterPct" },
+  { id: "chest", stateKey: "chest" },
+  { id: "shoulders", stateKey: "shoulders" },
+  { id: "upperArmL", stateKey: "upperArmL" },
+  { id: "upperArmR", stateKey: "upperArmR" },
+  { id: "lowerArmL", stateKey: "lowerArmL" },
+  { id: "lowerArmR", stateKey: "lowerArmR" },
+  { id: "thighL", stateKey: "thighL" },
+  { id: "thighR", stateKey: "thighR" },
+  { id: "calfL", stateKey: "calfL" },
+  { id: "calfR", stateKey: "calfR" },
 ] as const;
 
 export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
+  const { locale, t } = useI18n();
   const { user } = useAuth();
   const { preferences, updatePreferences } = usePreferences();
   console.log("BodyTrackerScreen rendering. User:", user?.id);
@@ -93,7 +95,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     if (!photos?.length) { setPhotoUrls({}); return; }
     void Promise.all(photos.map(async (photo) => [photo.id, await createBodyPhotoSignedUrl(photo.photoPath)] as const))
       .then((entries) => { if (active) setPhotoUrls(Object.fromEntries(entries)); })
-      .catch((cause) => { if (active) setAlertSheet({ title: "Fotos nicht verfügbar", message: cause instanceof Error ? cause.message : "Private Foto-Links konnten nicht geladen werden." }); });
+      .catch((cause) => { if (active) setAlertSheet({ title: t("body.alert.photosUnavailable"), message: cause instanceof Error ? cause.message : t("body.alert.linksFailed") }); });
     return () => { active = false; };
   }, [photos]);
 
@@ -129,43 +131,43 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     if (liveWHR === null || !preferences.gender) return null;
     const gender = preferences.gender;
     
-    let label = "Normal";
+    let level: "normal" | "elevated" | "high" = "normal";
     let color: string = M.acc;
     let bg: string = M.accSoft;
     
     if (gender === "male") {
       if (liveWHR >= 1.00) {
-        label = "Hoch";
+        level = "high";
         color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.90) {
-        label = "Erhöht";
+        level = "elevated";
         color = M.prep;
         bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
       }
     } else if (gender === "female") {
       if (liveWHR >= 0.85) {
-        label = "Hoch";
+        level = "high";
         color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.80) {
-        label = "Erhöht";
+        level = "elevated";
         color = M.prep;
         bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
       }
     } else if (gender === "other") {
       if (liveWHR >= 0.92) {
-        label = "Hoch";
+        level = "high";
         color = M.danger;
         bg = "rgba(255, 94, 94, 0.12)";
       } else if (liveWHR >= 0.85) {
-        label = "Erhöht";
+        level = "elevated";
         color = M.prep;
         bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
       }
     }
     
-    return { ratio: liveWHR, label, color, bg };
+    return { ratio: liveWHR, level, color, bg };
   }, [liveWHR, preferences.gender]);
 
   // Edit states
@@ -186,7 +188,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
 
     const wNum = photoWeight ? parseFloat(photoWeight.replace(",", ".")) : undefined;
     if (photoWeight && (wNum === undefined || isNaN(wNum) || wNum <= 0)) {
-      setAlertSheet({ title: "Ungültiges Gewicht", message: "Bitte ein gültiges Gewicht eingeben." });
+      setAlertSheet({ title: t("body.alert.invalidWeight"), message: t("body.alert.enterWeight") });
       return;
     }
 
@@ -209,8 +211,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       setSelectedAfterPhoto(null);
     } catch (err: unknown) {
       setAlertSheet({
-        title: "Upload fehlgeschlagen",
-        message: err instanceof Error ? err.message : "Fehler beim Upload des Bildes",
+        title: t("body.alert.uploadFailed"),
+        message: err instanceof Error ? err.message : t("body.alert.uploadError"),
       });
     } finally {
       setUploading(false);
@@ -230,8 +232,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       if (selectedAfterPhoto?.id === deletePhotoTarget.id) setSelectedAfterPhoto(null);
     } catch (err: unknown) {
       setAlertSheet({
-        title: "Löschen fehlgeschlagen",
-        message: err instanceof Error ? err.message : "Fehler beim Löschen des Bildes",
+        title: t("body.alert.deleteFailed"),
+        message: err instanceof Error ? err.message : t("body.alert.deletePhotoError"),
       });
     } finally {
       setDeletePhotoBusy(false);
@@ -301,13 +303,13 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
     if (!user) return;
 
     if (!preferences.gender) {
-      setAlertSheet({ title: "Geschlecht fehlt", message: "Bitte wähle dein Geschlecht aus." });
+      setAlertSheet({ title: t("body.alert.genderMissing"), message: t("body.alert.selectGender") });
       return;
     }
 
     const wNum = parseFloat(weight.replace(",", "."));
     if (isNaN(wNum) || wNum <= 0) {
-      setAlertSheet({ title: "Ungültiges Gewicht", message: "Bitte ein gültiges Gewicht eingeben." });
+      setAlertSheet({ title: t("body.alert.invalidWeight"), message: t("body.alert.enterWeight") });
       return;
     }
 
@@ -367,8 +369,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       setAlertSheet({
-        title: "Speichern fehlgeschlagen",
-        message: err instanceof Error ? err.message : "Fehler beim Speichern",
+        title: t("body.alert.saveFailed"),
+        message: err instanceof Error ? err.message : t("body.alert.saveError"),
       });
     } finally {
       setSaving(false);
@@ -473,8 +475,8 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       setAlertSheet({
-        title: "Löschen fehlgeschlagen",
-        message: err instanceof Error ? err.message : "Fehler beim Löschen",
+        title: t("body.alert.deleteFailed"),
+        message: err instanceof Error ? err.message : t("body.alert.deleteError"),
       });
     } finally {
       setDeleteBusy(false);
@@ -486,7 +488,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       {/* Header */}
       <ScreenBackHeader
         onBack={onBack}
-        title={editingId ? "EINTRAG BEARBEITEN" : "KÖRPERWERTE"}
+        title={editingId ? t("body.editTitle") : t("body.title")}
       />
 
       <div style={{ padding: "0 22px 12px" }}>
@@ -507,7 +509,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             size="sm"
             style={{ flex: 1, fontFamily: M.label, letterSpacing: 0.3, ...(activeTab === "werte" ? null : { color: M.mut }) }}
           >
-            Werte
+            {t("body.values")}
           </MButton>
           <MButton
             type="button"
@@ -516,7 +518,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             size="sm"
             style={{ flex: 1, fontFamily: M.label, letterSpacing: 0.3, ...(activeTab === "fotos" ? null : { color: M.mut }) }}
           >
-            Fotos
+            {t("body.photos")}
           </MButton>
         </div>
       </div>
@@ -547,7 +549,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
           }}
         >
           <span style={{ fontSize: 13, fontWeight: 700, color: !preferences.gender ? M.danger : M.mut, letterSpacing: 0.5 }}>
-            GESCHLECHT {!preferences.gender && "*"}
+            {t("body.gender")} {!preferences.gender && "*"}
           </span>
           <div
             style={{
@@ -581,7 +583,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 gap: 4,
               }}
             >
-              <span>♂</span> Männlich
+              <span>♂</span> {t("body.male")}
             </button>
             <button
               type="button"
@@ -603,7 +605,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 gap: 4,
               }}
             >
-              <span>♀</span> Weiblich
+              <span>♀</span> {t("body.female")}
             </button>
             <button
               type="button"
@@ -625,7 +627,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 gap: 4,
               }}
             >
-              <span>⚧</span> Divers
+              <span>⚧</span> {t("body.other")}
             </button>
           </div>
         </div>
@@ -642,7 +644,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
           }}
         >
           <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 12 }}>
-            {editingId ? "WERTE ANPASSEN" : "MESSUNG EINTRAGEN"}
+            {editingId ? t("body.adjust") : t("body.addMeasurement")}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -650,7 +652,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Gewicht (kg)
+                  {t("body.weight")}
                 </label>
                 <input
                   type="text"
@@ -676,7 +678,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
 
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Körperfett (%)
+                  {t("body.fat")}
                 </label>
                 <input
                   type="text"
@@ -705,7 +707,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Hüfte (cm)
+                  {t("body.hips")}
                 </label>
                 <input
                   type="text"
@@ -731,7 +733,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
 
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Taille (cm)
+                  {t("body.waist")}
                 </label>
                 <input
                   type="text"
@@ -772,7 +774,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 13, color: M.mut, fontWeight: 700, letterSpacing: 1 }}>
-                    TAILLE-HÜFTE-VERHÄLTNIS (WHR)
+                    {t("body.whr")}
                   </span>
                 </div>
 
@@ -792,7 +794,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                       textTransform: "uppercase",
                     }}
                   >
-                    {whrEvaluation.label}
+                    {t(`body.risk.${whrEvaluation.level}` as "body.risk.normal")}
                   </span>
                 </div>
               </div>
@@ -824,7 +826,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                   return (
                     <div key={fieldId}>
                       <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                        <span>{field.label}</span>
+                        <span>{t(`body.fields.${field.id}` as "body.fields.muscleMass")}</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -894,7 +896,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     }}
                   >
                     <Icon name="plus" size={14} color={M.mut} style={{ marginRight: 6 }} />
-                    WERT HINZUFÜGEN...
+                    {t("body.addValue")}
                     <select
                       value=""
                       onChange={(e) => {
@@ -914,10 +916,10 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                         WebkitAppearance: "none",
                       }}
                     >
-                      <option value="" disabled>-- Wert auswählen --</option>
+                      <option value="" disabled>{t("body.selectValue")}</option>
                       {remainingFields.map((f) => (
                         <option key={f.id} value={f.id}>
-                          {f.label}
+                          {t(`body.fields.${f.id}` as "body.fields.muscleMass")}
                         </option>
                       ))}
                     </select>
@@ -929,7 +931,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             {/* Date Picker */}
             <div>
               <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                Datum
+                {t("body.date")}
               </label>
               <input
                 type="date"
@@ -957,12 +959,12 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
               {editingId && (
                 <MButton type="button" onClick={handleCancelEdit} variant="secondary" size="md" style={{ flex: 1 }}>
-                  Abbrechen
+                  {t("body.cancel")}
                 </MButton>
               )}
               <MButton type="submit" disabled={saving} variant="primary" size="md" loading={saving} style={{ flex: 2 }}>
                 <Icon name="check" size={14} color={M.accInk} />
-                {editingId ? "Speichern" : "Eintragen"}
+                {editingId ? t("body.save") : t("body.submit")}
               </MButton>
             </div>
           </div>
@@ -981,7 +983,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
-                GEWICHTSVERLAUF (LETZTE 10)
+                {t("body.weightTrend")}
               </span>
               <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 15, color: M.acc }}>
                 {weightChartPoints.length > 0
@@ -997,10 +999,10 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
         {/* History List */}
         <div>
           <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700, marginBottom: 10 }}>
-            HISTORIE
+            {t("body.history")}
           </div>
 
-          {loading && <div style={{ color: M.mut, fontSize: 14 }}>Werte werden geladen…</div>}
+          {loading && <div style={{ color: M.mut, fontSize: 14 }}>{t("body.loading")}</div>}
           {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
 
           {!loading && !error && measurements && (
@@ -1017,7 +1019,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     textAlign: "center",
                   }}
                 >
-                  Noch keine Körperwerte eingetragen.
+                  {t("body.empty")}
                 </div>
               ) : (
                 measurements.map((m) => {
@@ -1054,7 +1056,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                       {/* Top Row: Date & CRUD buttons */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 14, color: M.mut, fontWeight: 700 }}>
-                          {formatDateDe(m.performedAt)}
+                          {formatDate(m.performedAt, locale)}
                         </span>
                         <div style={{ display: "flex", gap: 12 }}>
                           <button
@@ -1089,37 +1091,37 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           (() => {
                             const ratio = m.waistCm / m.hipsCm;
                             const gender = preferences.gender;
-                            let label = "Normal";
+                            let level: "normal" | "elevated" | "high" = "normal";
                             let color: string = M.acc;
                             let bg: string = M.accSoft;
                             
                             if (gender === "male") {
                               if (ratio >= 1.00) {
-                                label = "Hoch";
+                                level = "high";
                                 color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.90) {
-                                label = "Erhöht";
+                                level = "elevated";
                                 color = M.prep;
                                 bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
                               }
                             } else if (gender === "female") {
                               if (ratio >= 0.85) {
-                                label = "Hoch";
+                                level = "high";
                                 color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.80) {
-                                label = "Erhöht";
+                                level = "elevated";
                                 color = M.prep;
                                 bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
                               }
                             } else if (gender === "other") {
                               if (ratio >= 0.92) {
-                                label = "Hoch";
+                                level = "high";
                                 color = M.danger;
                                 bg = "rgba(255, 94, 94, 0.12)";
                               } else if (ratio >= 0.85) {
-                                label = "Erhöht";
+                                level = "elevated";
                                 color = M.prep;
                                 bg = "color-mix(in oklab, " + M.prep + " 16%, transparent)";
                               }
@@ -1142,7 +1144,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                     textTransform: "uppercase",
                                   }}
                                 >
-                                  {label}
+                                  {t(`body.risk.${level}` as "body.risk.normal")}
                                 </span>
                               </div>
                             );
@@ -1166,37 +1168,37 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                         >
                           {m.muscleMassKg !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Muskelmasse: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.muscleMass")} </span>
                               <span style={{ fontWeight: 600 }}>{m.muscleMassKg.toFixed(1)} kg</span>
                             </div>
                           )}
                           {m.waterPct !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Wasseranteil: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.water")} </span>
                               <span style={{ fontWeight: 600 }}>{m.waterPct.toFixed(1)} %</span>
                             </div>
                           )}
                           {m.waistCm !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Taille: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.waist")} </span>
                               <span style={{ fontWeight: 600 }}>{m.waistCm.toFixed(1)} cm</span>
                             </div>
                           )}
                           {m.hipsCm !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Hüfte: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.hips")} </span>
                               <span style={{ fontWeight: 600 }}>{m.hipsCm.toFixed(1)} cm</span>
                             </div>
                           )}
                           {m.chestCm !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Brust: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.chest")} </span>
                               <span style={{ fontWeight: 600 }}>{m.chestCm.toFixed(1)} cm</span>
                             </div>
                           )}
                           {m.shouldersCm !== undefined && (
                             <div>
-                              <span style={{ color: M.mut2 }}>Schulter: </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.shoulders")} </span>
                               <span style={{ fontWeight: 600 }}>{m.shouldersCm.toFixed(1)} cm</span>
                             </div>
                           )}
@@ -1204,7 +1206,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           {/* Left/Right comparisons for arms & legs */}
                           {(m.upperArmLCm !== undefined || m.upperArmRCm !== undefined) && (
                             <div style={{ gridColumn: "span 2" }}>
-                              <span style={{ color: M.mut2 }}>Oberarm (L / R): </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.upperArms")} </span>
                               <span style={{ fontWeight: 600 }}>
                                 {m.upperArmLCm !== undefined ? `${m.upperArmLCm.toFixed(1)} cm` : "—"} /{" "}
                                 {m.upperArmRCm !== undefined ? `${m.upperArmRCm.toFixed(1)} cm` : "—"}
@@ -1213,7 +1215,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           )}
                           {(m.lowerArmLCm !== undefined || m.lowerArmRCm !== undefined) && (
                             <div style={{ gridColumn: "span 2" }}>
-                              <span style={{ color: M.mut2 }}>Unterarm (L / R): </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.lowerArms")} </span>
                               <span style={{ fontWeight: 600 }}>
                                 {m.lowerArmLCm !== undefined ? `${m.lowerArmLCm.toFixed(1)} cm` : "—"} /{" "}
                                 {m.lowerArmRCm !== undefined ? `${m.lowerArmRCm.toFixed(1)} cm` : "—"}
@@ -1222,7 +1224,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           )}
                           {(m.thighLCm !== undefined || m.thighRCm !== undefined) && (
                             <div style={{ gridColumn: "span 2" }}>
-                              <span style={{ color: M.mut2 }}>Oberschenkel (L / R): </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.thighs")} </span>
                               <span style={{ fontWeight: 600 }}>
                                 {m.thighLCm !== undefined ? `${m.thighLCm.toFixed(1)} cm` : "—"} /{" "}
                                 {m.thighRCm !== undefined ? `${m.thighRCm.toFixed(1)} cm` : "—"}
@@ -1231,7 +1233,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           )}
                           {(m.calfLCm !== undefined || m.calfRCm !== undefined) && (
                             <div style={{ gridColumn: "span 2" }}>
-                              <span style={{ color: M.mut2 }}>Wade (L / R): </span>
+                              <span style={{ color: M.mut2 }}>{t("body.detail.calves")} </span>
                               <span style={{ fontWeight: 600 }}>
                                 {m.calfLCm !== undefined ? `${m.calfLCm.toFixed(1)} cm` : "—"} /{" "}
                                 {m.calfRCm !== undefined ? `${m.calfRCm.toFixed(1)} cm` : "—"}
@@ -1265,17 +1267,17 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             }}
           >
             <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 12 }}>
-              FOTO HINZUFÜGEN
+              {t("body.photo.add")}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {/* Ausrichtungs-Auswahl */}
               <div>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Ausrichtung
+                  {t("body.photo.orientation")}
                 </label>
                 <div style={{ display: "flex", gap: 4, background: M.panel, padding: 2, borderRadius: 8, border: "1px solid " + M.line2 }}>
                   {(["front", "back", "side"] as const).map((orient) => {
-                    const label = orient === "front" ? "Vorne" : orient === "back" ? "Hinten" : "Seite";
+                    const label = t(orient === "front" ? "body.photo.front" : orient === "back" ? "body.photo.back" : "body.photo.side");
                     const on = photoOrientation === orient;
                     return (
                       <button
@@ -1305,7 +1307,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               <div style={{ display: "flex", gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                    Gewicht (kg, optional)
+                    {t("body.weightOptional")}
                   </label>
                   <input
                     type="text"
@@ -1330,7 +1332,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                    Datum
+                    {t("body.date")}
                   </label>
                   <input
                     type="date"
@@ -1358,7 +1360,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               {/* File Picker */}
               <div>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, display: "block", marginBottom: 5 }}>
-                  Bilddatei
+                  {t("body.photo.file")}
                 </label>
                 <div
                   style={{
@@ -1377,7 +1379,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                   }}
                 >
                   <Icon name="plus" size={14} color={photoFile ? M.acc : M.mut} style={{ marginRight: 6 }} />
-                  {photoFile ? photoFile.name : "FOTO AUSWÄHLEN..."}
+                  {photoFile ? photoFile.name : t("body.photo.select")}
                   <input
                     type="file"
                     accept="image/*"
@@ -1419,7 +1421,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                   marginTop: 6,
                 }}
               >
-                {uploading ? "WIRD HOCHGELADEN..." : "FOTO HOCHLADEN"}
+                {uploading ? t("body.photo.uploading") : t("body.photo.upload")}
               </button>
             </div>
           </form>
@@ -1436,7 +1438,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <span style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700 }}>
-                  VORHER / NACHHER VERGLEICH ({compareOrientation === "front" ? "VORNE" : compareOrientation === "back" ? "HINTEN" : "SEITE"})
+                  {t("body.photo.compare", { orientation: t(compareOrientation === "front" ? "body.photo.front" : compareOrientation === "back" ? "body.photo.back" : "body.photo.side").toUpperCase() })}
                 </span>
                 <button
                   type="button"
@@ -1453,14 +1455,14 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                     cursor: "pointer",
                   }}
                 >
-                  AUSWAHL ZURÜCKSETZEN
+                  {t("body.photo.reset")}
                 </button>
               </div>
               <SplitImageSlider
                 beforeUrl={photoUrls[selectedBeforePhoto.id] ?? ""}
                 afterUrl={photoUrls[selectedAfterPhoto.id] ?? ""}
-                beforeDate={formatDateDe(selectedBeforePhoto.performedAt)}
-                afterDate={formatDateDe(selectedAfterPhoto.performedAt)}
+                beforeDate={formatDate(selectedBeforePhoto.performedAt, locale)}
+                afterDate={formatDate(selectedAfterPhoto.performedAt, locale)}
                 beforeWeight={selectedBeforePhoto.weightKg?.toFixed(1)}
                 afterWeight={selectedAfterPhoto.weightKg?.toFixed(1)}
               />
@@ -1471,7 +1473,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
               <span style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>
-                FOTOGALERIE
+                {t("body.photo.gallery")}
               </span>
             </div>
 
@@ -1488,7 +1490,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               }}
             >
               {(["front", "back", "side"] as const).map((orient) => {
-                const label = orient === "front" ? "Vorne" : orient === "back" ? "Hinten" : "Seite";
+                const label = t(orient === "front" ? "body.photo.front" : orient === "back" ? "body.photo.back" : "body.photo.side");
                 const on = compareOrientation === orient;
                 return (
                   <button
@@ -1518,7 +1520,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
               })}
             </div>
 
-            {loadingPhotos && <div style={{ color: M.mut, fontSize: 14 }}>Fotos werden geladen…</div>}
+            {loadingPhotos && <div style={{ color: M.mut, fontSize: 14 }}>{t("body.photo.loading")}</div>}
             {errorPhotos && <div style={{ color: M.danger, fontSize: 14 }}>{errorPhotos}</div>}
 
             {!loadingPhotos && !errorPhotos && photos && (
@@ -1538,7 +1540,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                         textAlign: "center",
                       }}
                     >
-                      Noch keine Fotos für diese Ansicht hochgeladen.
+                      {t("body.photo.empty")}
                     </div>
                   );
                 }
@@ -1567,7 +1569,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           <div style={{ position: "relative", width: "100%", paddingBottom: "133.33%" }}>
                             <img
                               src={url}
-                              alt="Galerie Eintrag"
+                              alt={t("body.photo.alt")}
                               style={{
                                 position: "absolute",
                                 top: 0,
@@ -1594,7 +1596,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                   boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
                                 }}
                               >
-                                VORHER
+                                {t("body.photo.before")}
                               </div>
                             )}
                             {isAfter && (
@@ -1612,7 +1614,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                   boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
                                 }}
                               >
-                                NACHHER
+                                {t("body.photo.after")}
                               </div>
                             )}
 
@@ -1643,7 +1645,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                           <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
                             <div style={{ display: "flex", flexDirection: "column" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: M.fg }}>
-                                {formatDateDe(p.performedAt)}
+                                {formatDate(p.performedAt, locale)}
                               </span>
                               {p.weightKg !== undefined && (
                                 <span style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>
@@ -1671,7 +1673,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                   cursor: "pointer",
                                 }}
                               >
-                                VORHER
+                                {t("body.photo.before")}
                               </button>
                               <button
                                 type="button"
@@ -1691,7 +1693,7 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
                                   cursor: "pointer",
                                 }}
                               >
-                                NACHHER
+                                {t("body.photo.after")}
                               </button>
                             </div>
                           </div>
@@ -1715,12 +1717,11 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       />
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        title="Eintrag löschen?"
+        title={t("body.deleteEntry.title")}
         message={
           deleteTarget ? (
             <>
-              Möchtest du den Eintrag vom{" "}
-              <strong style={{ color: M.fg }}>{formatDateDe(deleteTarget.performedAt)}</strong> wirklich löschen?
+              {t("body.deleteEntry.message", { date: formatDate(deleteTarget.performedAt, locale) })}
             </>
           ) : null
         }
@@ -1730,12 +1731,11 @@ export function BodyTrackerScreen({ onBack }: BodyTrackerScreenProps) {
       />
       <DeleteConfirmDialog
         open={!!deletePhotoTarget}
-        title="Foto löschen?"
+        title={t("body.deletePhoto.title")}
         message={
           deletePhotoTarget ? (
             <>
-              Möchtest du dieses Foto vom{" "}
-              <strong style={{ color: M.fg }}>{formatDateDe(deletePhotoTarget.performedAt)}</strong> wirklich löschen?
+              {t("body.deletePhoto.message", { date: formatDate(deletePhotoTarget.performedAt, locale) })}
             </>
           ) : null
         }

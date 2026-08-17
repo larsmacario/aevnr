@@ -97,7 +97,9 @@ export function BottomSheet({
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    padding: "16px 18px 24px",
+    // Fixed and absolute sheets both extend to the physical bottom edge on
+    // iPhone. Keep the final action clear of the home indicator.
+    padding: "16px 18px calc(24px + env(safe-area-inset-bottom, 0px))",
     boxSizing: "border-box",
   };
 

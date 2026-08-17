@@ -1,5 +1,4 @@
 import { M } from "../../theme";
-import { TIMER_MODES } from "../../lib/engine";
 import type { IntervalTimerSession } from "../../lib/intervalTimer/useIntervalTimerSession";
 import { timerModeAccent, timerPhaseColor } from "../../lib/intervalTimer/timerModeColors";
 import { useBreakpoint, useShortViewport } from "../../lib/responsive";
@@ -7,6 +6,7 @@ import { Icon } from "../Icon";
 import { HeartRateTrend } from "../HeartRateTrend";
 import { MButton } from "../MButton";
 import { TimerClockDisplay } from "./TimerClockDisplay";
+import { useI18n } from "../../lib/i18n";
 
 export interface TimerRunStepProps {
   session: IntervalTimerSession;
@@ -14,6 +14,7 @@ export interface TimerRunStepProps {
 }
 
 export function TimerRunStep({ session, variant }: TimerRunStepProps) {
+  const { t } = useI18n();
   const isSheet = variant === "sheet";
   const breakpoint = useBreakpoint();
   const isShort = useShortViewport();
@@ -32,7 +33,9 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
     requestReset,
   } = session;
 
-  const modeMeta = TIMER_MODES.find((m) => m.id === mode)!;
+  const phaseLabel = T.label && ["GO", "WORK", "REST", "AMRAP", "EINATMEN", "HALTEN", "AUSATMEN", "PAUSE"].includes(T.label)
+    ? t(`interval.phase.${T.label}` as "interval.phase.GO")
+    : T.label;
   const modeAccent = timerModeAccent(mode);
   const timerPhaseTextColor = timerPhaseColor(T.kind, modeAccent, T.done);
   const clockCountUp = T.countUp && T.phase !== "prep";
@@ -46,12 +49,12 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
   const roundMetaContent =
     (mode === "emom" || mode === "tabata") && T.phase !== "prep" ? (
       <>
-        RUNDE {String(T.round).padStart(2, "0")}{" "}
+        {t("interval.run.round", { current: String(T.round).padStart(2, "0") })}{" "}
         <span style={{ color: M.mut2 }}>/ {String(T.rounds).padStart(2, "0")}</span>
       </>
     ) : mode === "amrap" && T.phase !== "prep" ? (
       <>
-        {T.taps} <span style={{ color: M.mut2 }}>RUNDEN</span>
+        {T.taps} <span style={{ color: M.mut2 }}>{t("interval.run.rounds")}</span>
       </>
     ) : null;
 
@@ -80,7 +83,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
             color: T.running ? M.fg : M.mut2,
           }}
         >
-          + Runde abschließen
+          {t("interval.run.completeRound")}
         </MButton>
       )}
       {mode === "fortime" && (
@@ -97,7 +100,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           }}
         >
           <Icon name="flag" size={15} stroke={2.4} />
-          Zeit stoppen
+          {t("interval.run.stopTime")}
         </MButton>
       )}
     </div>
@@ -113,7 +116,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
         flexShrink: 0,
       }}
     >
-      <MButton onClick={requestReset} variant="secondary" size="icon" aria-label="Timer zurücksetzen">
+      <MButton onClick={requestReset} variant="secondary" size="icon" aria-label={t("interval.run.reset")}>
         <Icon name="reset" size={16} stroke={2} color={M.mut} />
       </MButton>
       <button
@@ -142,7 +145,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
   const header = (
     <div style={{ textAlign: "center", flexShrink: 0, marginBottom: isCompact ? 8 : 12 }}>
       <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 20, letterSpacing: 1, color: M.fg }}>
-        {modeMeta.name}
+        {t(`interval.mode.${mode}.name` as "interval.mode.emom.name")}
       </div>
       <div
         style={{
@@ -153,7 +156,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
           fontWeight: 600,
         }}
       >
-        {modeMeta.blurb.toUpperCase()}
+        {t(`interval.mode.${mode}.blurb` as "interval.mode.emom.blurb").toUpperCase()}
       </div>
     </div>
   );
@@ -170,7 +173,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
             color: saveStatus === "saved" ? M.acc : M.danger,
           }}
         >
-          {saveStatus === "saved" ? "Im Verlauf gespeichert" : saveError}
+          {saveStatus === "saved" ? t("interval.run.saved") : saveError}
         </div>
       )}
 
@@ -194,7 +197,7 @@ export function TimerRunStep({ session, variant }: TimerRunStepProps) {
             color: timerPhaseTextColor,
           }}
         >
-          {T.label}
+          {phaseLabel}
         </span>
         <TimerClockDisplay
           seconds={T.bigSeconds}

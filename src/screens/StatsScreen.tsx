@@ -8,31 +8,28 @@ import { useBodyMeasurements } from "../lib/db";
 import { MButton } from "../components/MButton";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useI18n } from "../lib/i18n";
+import type { TranslationKey } from "../locales/de";
 
-const PERIODS: { id: StatsPeriod; label: string }[] = [
-  { id: "d7", label: "7 Tage" },
-  { id: "d30", label: "30 Tage" },
-  { id: "d90", label: "90 Tage" },
-  { id: "all", label: "Gesamt" },
-];
+const PERIODS: StatsPeriod[] = ["d7", "d30", "d90", "all"];
 
 const BODY_METRICS_CFG = [
-  { key: "weightKg", label: "GEWICHTSVERLAUF", unit: "kg" },
-  { key: "bodyFatPct", label: "KÖRPERFETTANTEIL", unit: "%" },
-  { key: "muscleMassKg", label: "MUSKELMASSE", unit: "kg" },
-  { key: "waterPct", label: "WASSERANTEIL", unit: "%" },
-  { key: "hipsCm", label: "HÜFTUMFANG", unit: "cm" },
-  { key: "waistCm", label: "TAILLENUMFANG", unit: "cm" },
-  { key: "chestCm", label: "BRUSTUMFANG", unit: "cm" },
-  { key: "shouldersCm", label: "SCHULTERUMFANG", unit: "cm" },
-  { key: "upperArmLCm", label: "OBERARM LINKS", unit: "cm" },
-  { key: "upperArmRCm", label: "OBERARM RECHTS", unit: "cm" },
-  { key: "lowerArmLCm", label: "UNTERARM LINKS", unit: "cm" },
-  { key: "lowerArmRCm", label: "UNTERARM RECHTS", unit: "cm" },
-  { key: "thighLCm", label: "OBERSCHENKEL LINKS", unit: "cm" },
-  { key: "thighRCm", label: "OBERSCHENKEL RECHTS", unit: "cm" },
-  { key: "calfLCm", label: "WADEN LINKS", unit: "cm" },
-  { key: "calfRCm", label: "WADEN RECHTS", unit: "cm" },
+  { key: "weightKg", unit: "kg" },
+  { key: "bodyFatPct", unit: "%" },
+  { key: "muscleMassKg", unit: "kg" },
+  { key: "waterPct", unit: "%" },
+  { key: "hipsCm", unit: "cm" },
+  { key: "waistCm", unit: "cm" },
+  { key: "chestCm", unit: "cm" },
+  { key: "shouldersCm", unit: "cm" },
+  { key: "upperArmLCm", unit: "cm" },
+  { key: "upperArmRCm", unit: "cm" },
+  { key: "lowerArmLCm", unit: "cm" },
+  { key: "lowerArmRCm", unit: "cm" },
+  { key: "thighLCm", unit: "cm" },
+  { key: "thighRCm", unit: "cm" },
+  { key: "calfLCm", unit: "cm" },
+  { key: "calfRCm", unit: "cm" },
 ] as const;
 
 export interface StatsScreenProps {
@@ -41,6 +38,7 @@ export interface StatsScreenProps {
 }
 
 export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
+  const { t } = useI18n();
   const [period, setPeriod] = useState<StatsPeriod>("d7");
   const { data, loading, error, reload } = useStatsOverview(period, refreshKey);
   const { data: measurements, reload: reloadBody } = useBodyMeasurements(refreshKey);
@@ -68,7 +66,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title="STATISTIK" />
+      <ScreenBackHeader onBack={onBack} title={t("stats.title")} />
 
       <div style={{ padding: "0 22px 10px" }}>
         <div
@@ -81,17 +79,17 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
             border: "1px solid " + M.line2,
           }}
         >
-          {PERIODS.map((p) => {
-            const on = period === p.id;
+          {PERIODS.map((periodId) => {
+            const on = period === periodId;
             return (
               <MButton
-                key={p.id}
-                onClick={() => setPeriod(p.id)}
+                key={periodId}
+                onClick={() => setPeriod(periodId)}
                 variant={on ? "primary" : "ghost"}
                 size="sm"
                 style={{ flex: 1, fontSize: 13, letterSpacing: 0.1, ...(on ? null : { color: M.mut }) }}
               >
-                {p.label}
+                {t(`stats.period.${periodId}` as TranslationKey)}
               </MButton>
             );
           })}
@@ -106,23 +104,23 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
           padding: `0 22px ${SCROLL_BOTTOM_PADDING}px`,
         }}
       >
-        {loading && <div style={{ color: M.mut, fontSize: 14 }}>Statistiken werden geladen…</div>}
+        {loading && <div style={{ color: M.mut, fontSize: 14 }}>{t("stats.loading")}</div>}
         {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
 
         {!loading && !error && data && (
           <>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <MStat label="SESSIONS" value={String(data.summary.sessions)} sub="im Zeitraum" />
-              <MStat label="VOLUMEN" value={`${data.summary.volumeT}t`} sub="im Zeitraum" />
-              <MStat label="ZEIT" value={`${data.summary.durationH}h`} sub="trainiert" />
+              <MStat label={t("home.stats.sessions").toLocaleUpperCase()} value={String(data.summary.sessions)} sub={t("stats.inPeriod")} />
+              <MStat label={t("home.stats.volume")} value={`${data.summary.volumeT}t`} sub={t("stats.inPeriod")} />
+              <MStat label={t("history.time")} value={`${data.summary.durationH}h`} sub={t("history.trained")} />
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-              <MStat label="STREAK" value={String(data.summary.streakWeeks)} sub="Wochen" />
-              <MStat label="PRs" value={String(data.summary.prCount)} sub="markiert" />
+              <MStat label={t("home.stats.streak")} value={String(data.summary.streakWeeks)} sub={t("home.stats.weeks")} />
+              <MStat label="PRs" value={String(data.summary.prCount)} sub={t("stats.marked")} />
               <MStat
-                label="KRAFT"
+                label={t("stats.strength")}
                 value={String(data.summary.strengthSessions)}
-                sub={data.summary.timerSessions > 0 ? `+ ${data.summary.timerSessions} Timer` : "Sessions"}
+                sub={data.summary.timerSessions > 0 ? `+ ${data.summary.timerSessions} Timer` : t("home.stats.sessions")}
               />
             </div>
 
@@ -137,7 +135,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
-                  {data.chartTitle}
+                  {t(`stats.chart.${period}` as TranslationKey)}
                 </span>
                 <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.acc }}>
                   {chart.reduce((a, w) => a + w.v, 0) > 0 ? "●" : "—"}
@@ -145,7 +143,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
               </div>
               {chart.length === 0 ? (
                 <div style={{ color: M.mut, fontSize: 13, marginTop: 16, textAlign: "center" }}>
-                  Keine Daten im gewählten Zeitraum
+                  {t("stats.noData")}
                 </div>
               ) : (
                 <TrendLineChart points={volumeChartPoints} unit="t" height={100} />
@@ -166,7 +164,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                   textAlign: "center",
                 }}
               >
-                Noch keine Körperdaten erfasst.
+                {t("stats.noBody")}
               </div>
             ) : (
               activeMetrics.map((cfg) => {
@@ -195,7 +193,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <span style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700 }}>
-                        {cfg.label} (LETZTE 10)
+                        {t(`stats.metric.${cfg.key}` as TranslationKey)} ({t("stats.lastTen")})
                       </span>
                       <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.acc }}>
                         {latestVal.toFixed(1)} {cfg.unit}
@@ -218,7 +216,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                   marginBottom: 10,
                 }}
               >
-                TOP-ÜBUNGEN
+                {t("stats.topExercises")}
               </div>
               {data.topExercises.length === 0 ? (
                 <div
@@ -232,7 +230,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                     textAlign: "center",
                   }}
                 >
-                  Keine Kraft-Übungen mit Volumen im gewählten Zeitraum.
+                  {t("stats.noExercises")}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -263,7 +261,7 @@ export function StatsScreen({ onBack, refreshKey = 0 }: StatsScreenProps) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 15, color: M.fg }}>{ex.name}</div>
                         <div style={{ color: M.mut, fontSize: 13, marginTop: 2 }}>
-                          in {ex.sessionCount} Session{ex.sessionCount === 1 ? "" : "s"}
+                          {t(ex.sessionCount === 1 ? "stats.sessionCount_one" : "stats.sessionCount_other", { count: ex.sessionCount })}
                         </div>
                       </div>
                       <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 18, color: M.acc }}>

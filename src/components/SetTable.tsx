@@ -7,6 +7,7 @@ import { Icon } from "./Icon";
 import { InlineDisclosureMenu, type InlineDisclosureMenuItem } from "./InlineDisclosureMenu";
 import { SetMetricFields, setFieldHeaders } from "./SetMetricFields";
 import { WARMUP_COLUMN_WIDTH, WarmUpSetToggle } from "./WarmUpSetToggle";
+import { useI18n } from "../lib/i18n";
 
 export type SetTableSet = SetLike & {
   done?: boolean;
@@ -68,9 +69,11 @@ export function SetTable({
   onRemove,
   onWarmUpChange,
   onAddSet,
-  addSetLabel = "+ Satz",
+  addSetLabel,
 }: SetTableProps) {
-  const headers = setFieldHeaders(metric);
+  const { language, t } = useI18n();
+  const headers = setFieldHeaders(metric, language);
+  const resolvedAddSetLabel = addSetLabel ?? t("set.add");
   const isLg = size === "lg";
   const valueFontSize = compact ? 17 : isLg ? 24 : 21;
   const setColWidth = isLg ? 36 : 34;
@@ -85,7 +88,7 @@ export function SetTable({
     if (s.done && onToggleDone) {
       menuItems.push({
         icon: <Icon name="edit" size={16} stroke={2} color={M.mut2} />,
-        label: "Bearbeiten",
+        label: t("set.edit"),
         onClick: () => onToggleDone(si),
       });
     }
@@ -97,7 +100,7 @@ export function SetTable({
         showDelete
         deleteDisabled={!canRemove}
         onDelete={() => onRemove(si)}
-        ariaLabel="Satz-Aktionen"
+        ariaLabel={t("set.actions")}
       />
     );
   };
@@ -181,7 +184,7 @@ export function SetTable({
                     color: s.done ? M.acc : si === 0 && s.warmUp ? M.acc : suggested ? M.brand : M.fg,
                   }}
                 >
-                  Satz {setNumberLabel(si, s.warmUp)}
+                  {t("set.label", { number: setNumberLabel(si, s.warmUp) })}
                 </span>
                 {collapsed ? (
                   <span
@@ -209,7 +212,7 @@ export function SetTable({
                   <button
                     type="button"
                     onClick={() => onToggleDone(si)}
-                    aria-label={s.done ? "Satz wieder öffnen" : suggested ? "Vorschlag bestätigen" : "Satz abschließen"}
+                    aria-label={s.done ? t("set.reopen") : suggested ? t("set.confirmSuggestion") : t("set.complete")}
                     style={{
                       width: 44,
                       height: 44,
@@ -256,7 +259,7 @@ export function SetTable({
                   <button
                     type="button"
                     onClick={() => onToggleDone(si)}
-                    aria-label={suggested ? "Vorschlag bestätigen" : "Satz abschließen"}
+                    aria-label={suggested ? t("set.confirmSuggestion") : t("set.complete")}
                     style={{
                       ...brandButtonStyle(),
                       flex: 1,
@@ -337,7 +340,7 @@ export function SetTable({
                 <button
                   type="button"
                   onClick={() => onToggleDone(si)}
-                  aria-label={s.done ? "Satz wieder öffnen" : suggested ? "Vorschlag bestätigen" : "Satz abschließen"}
+                  aria-label={s.done ? t("set.reopen") : suggested ? t("set.confirmSuggestion") : t("set.complete")}
                   style={{
                     width: actionBtnSize,
                     height: actionBtnSize,
@@ -378,7 +381,7 @@ export function SetTable({
           fontFamily: M.body,
         }}
       >
-        {addSetLabel}
+        {resolvedAddSetLabel}
       </button>
     </>
   );

@@ -19,29 +19,23 @@ import { useBreakpoint, SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { MUSCLE_GROUP_SECTIONS } from "../lib/exerciseCatalog";
 import { normalizeMusclePriorities, type MusclePriorities } from "../lib/musclePriorities";
 import { MusclePrioritySliderRow } from "../components/MusclePrioritySliderRow";
-import { getExerciseCountHint } from "../lib/ai-plan-volume";
+import { exerciseCountBounds } from "../lib/ai-plan-volume";
 import {
   defaultTrainingWeekdays,
   normalizeTrainingWeekdays,
   toggleTrainingWeekday,
-  TRAINING_WEEKDAY_LABELS,
+  trainingWeekdayLabel,
 } from "../lib/trainingWeekdays";
 import { MButton } from "../components/MButton";
 import { ScreenBackHeader } from "../components/ScreenScroll";
 import { AiConsentStep } from "../components/AiConsentStep";
+import { useI18n } from "../lib/i18n";
 
-function formatSleepHours(hours: number): string {
+function formatSleepHours(hours: number, locale: string): string {
   const rounded = Math.round(hours * 2) / 2;
-  const str = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace(".", ",");
+  const str = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(rounded);
   return `${str} h`;
 }
-
-const GENERATION_LOADING_TEXTS = [
-  "Analysiere Anamnesedaten...",
-  "Bewerte körperliche Einschränkungen...",
-  "Die KI generiert deinen Trainingsplan...",
-  "Speichere Trainingsplan in der Datenbank...",
-] as const;
 
 /** Phasen an typischen Laufzeiten (Speichern → KI → DB). */
 function getGenerationLoadingStep(elapsedSec: number): number {
@@ -51,23 +45,6 @@ function getGenerationLoadingStep(elapsedSec: number): number {
   return 3;
 }
 
-function formatGenerationTimeHint(elapsedSec: number): string {
-  const prefix = "Bitte schließe die App nicht. ";
-  if (elapsedSec < 4) {
-    return prefix + "Dieser Vorgang dauert etwa 30–60 Sekunden.";
-  }
-  if (elapsedSec < 20) {
-    const remaining = Math.max(10, 55 - elapsedSec);
-    return prefix + `Noch etwa ${remaining} Sekunden …`;
-  }
-  if (elapsedSec < 45) {
-    return prefix + "Die KI erstellt deinen Plan — bitte weiter warten.";
-  }
-  if (elapsedSec < 60) {
-    return prefix + "Fast fertig — nur noch einen Moment.";
-  }
-  return prefix + "Das dauert ungewöhnlich lange. Prüfe deine Verbindung und warte noch kurz.";
-}
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -135,45 +112,21 @@ const stepperBtnStyle: React.CSSProperties = {
   justifyContent: "center",
 };
 
-function getHtvClassification(htv: number, gender: string | null): { text: string; color: string } {
+function getHtvClassification(htv: number, gender: string | null): { level: "low" | "medium" | "high"; color: string } {
   if (gender === "male") {
-    if (htv < 0.90) return { text: "Geringes Risiko (Normalwert)", color: M.brand };
-    if (htv < 1.0) return { text: "Mäßiges Risiko (Übergewicht)", color: "#9ca3af" };
-    return { text: "Hohes Risiko (Adipositas)", color: "#6b7280" };
+    if (htv < 0.90) return { level: "low", color: M.brand };
+    if (htv < 1.0) return { level: "medium", color: "#9ca3af" };
+    return { level: "high", color: "#6b7280" };
   } else if (gender === "female") {
-    if (htv < 0.80) return { text: "Geringes Risiko (Normalwert)", color: M.brand };
-    if (htv < 0.85) return { text: "Mäßiges Risiko (Übergewicht)", color: "#9ca3af" };
-    return { text: "Hohes Risiko (Adipositas)", color: "#6b7280" };
+    if (htv < 0.80) return { level: "low", color: M.brand };
+    if (htv < 0.85) return { level: "medium", color: "#9ca3af" };
+    return { level: "high", color: "#6b7280" };
   } else {
-    if (htv < 0.85) return { text: "Geringes Risiko (Normalwert)", color: M.brand };
-    if (htv < 0.92) return { text: "Mäßiges Risiko (Übergewicht)", color: "#9ca3af" };
-    return { text: "Hohes Risiko (Adipositas)", color: "#6b7280" };
+    if (htv < 0.85) return { level: "low", color: M.brand };
+    if (htv < 0.92) return { level: "medium", color: "#9ca3af" };
+    return { level: "high", color: "#6b7280" };
   }
 }
-
-const SPLIT_OPTIONS: { days: TrainingSplitDays; label: string; hint: string }[] = [
-  { days: 2, label: "2er-Split", hint: "Ober- / Unterkörper" },
-  { days: 3, label: "3er-Split", hint: "Push / Pull / Beine" },
-  { days: 4, label: "4er-Split", hint: "4 Muskelgruppen-Rotation" },
-  { days: 5, label: "5er-Split", hint: "Klassischer 5-Tage-Split" },
-  { days: 6, label: "6er-Split", hint: "1 Fokus pro Tag" },
-];
-
-const STANDARD_EQUIPMENT = [
-  { id: "dumbbells", name: "Kurzhanteln" },
-  { id: "barbell", name: "Langhantel" },
-  { id: "pullup_bar", name: "Klimmzugstange" },
-  { id: "bench", name: "Trainingsbank" },
-  { id: "bands", name: "Widerstandsbänder" },
-  { id: "kettlebell", name: "Kettlebell" },
-];
-
-const INTRO_BENEFITS = [
-  "Individueller Trainingsplan mit Übungen, Sätzen und Intensität als % deines 1RM (kg trägst du selbst ein)",
-  "Ernährungs-Richtwerte: Kalorien, Makros und Trinkmenge — lokal berechnet und nachvollziehbar",
-  "Persönliche Empfehlungen: Trainingsfokus, Ernährung, Regeneration, Hydration und empfohlene Plan-Dauer",
-  "Plan wird in der App gespeichert und kann sofort als aktiver Trainingsplan genutzt werden",
-];
 
 interface AITrainingPlanWizardProps {
   onBack: () => void;
@@ -181,11 +134,42 @@ interface AITrainingPlanWizardProps {
 }
 
 export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlanWizardProps) {
+  const { language, locale, t } = useI18n();
   const { user, profile, updateBirthDate } = useAuth();
   const { preferences, updatePreferences, saving: prefsSaving } = usePreferences();
   const { data: measurements, loading: measurementsLoading } = useBodyMeasurements();
   const breakpoint = useBreakpoint();
   const bodyValuesPrefilled = useRef(false);
+  const introBenefits = [1, 2, 3, 4].map((index) => t(`aiPlan.intro.benefit${index}` as "aiPlan.intro.benefit1"));
+  const splitOptions: { days: TrainingSplitDays; label: string; hint: string }[] = ([2, 3, 4, 5, 6] as const).map((days) => ({
+    days,
+    label: t(`aiPlan.split.${days}` as "aiPlan.split.2"),
+    hint: t(`aiPlan.split.${days}Hint` as "aiPlan.split.2Hint"),
+  }));
+  const standardEquipment = [
+    { id: "dumbbells", name: t("aiPlan.equipment.dumbbells") },
+    { id: "barbell", name: t("aiPlan.equipment.barbell") },
+    { id: "pullup_bar", name: t("aiPlan.equipment.pullup") },
+    { id: "bench", name: t("aiPlan.equipment.bench") },
+    { id: "bands", name: t("aiPlan.equipment.bands") },
+    { id: "kettlebell", name: t("aiPlan.equipment.kettlebell") },
+  ];
+  const muscleGroupLabels: Record<string, string> = {
+    Brust: t("aiPlan.muscles.chest"),
+    Latissimus: t("aiPlan.muscles.lats"),
+    "Oberer Rücken": t("aiPlan.muscles.upperBack"),
+    "Unterer Rücken": t("aiPlan.muscles.lowerBack"),
+    Schultern: t("aiPlan.muscles.shoulders"),
+    Bizeps: t("aiPlan.muscles.biceps"),
+    Trizeps: t("aiPlan.muscles.triceps"),
+    Unterarme: t("aiPlan.muscles.forearms"),
+    "Bauch / Core": t("aiPlan.muscles.core"),
+    Quadrizeps: t("aiPlan.muscles.quads"),
+    Hamstrings: t("aiPlan.muscles.hamstrings"),
+    Gesäß: t("aiPlan.muscles.glutes"),
+    Waden: t("aiPlan.muscles.calves"),
+  };
+  const generationLoadingTexts = [1, 2, 3, 4].map((index) => t(`aiPlan.loading.${index}` as "aiPlan.loading.1"));
 
   const legalBaseUrl = (import.meta.env.VITE_LEGAL_BASE_URL ?? "https://rephive.app").replace(/\/$/, "");
   const openDatenschutz = () => {
@@ -273,6 +257,14 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
   const [generatedPlanId, setGeneratedPlanId] = useState<string | null>(null);
   const [genElapsedSec, setGenElapsedSec] = useState(0);
   const generationStartedAtRef = useRef<number | null>(null);
+  const generationTimeHint = (() => {
+    const prefix = `${t("aiPlan.loading.keepOpen")} `;
+    if (genElapsedSec < 4) return prefix + t("aiPlan.loading.initial");
+    if (genElapsedSec < 20) return prefix + t("aiPlan.loading.remaining", { seconds: Math.max(10, 55 - genElapsedSec) });
+    if (genElapsedSec < 45) return prefix + t("aiPlan.loading.wait");
+    if (genElapsedSec < 60) return prefix + t("aiPlan.loading.almost");
+    return prefix + t("aiPlan.loading.long");
+  })();
 
   const addAllergy = () => {
     const trimmed = tempAllergy.trim();
@@ -362,85 +354,83 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
     setError(null);
     if (step === 1) {
       if (!gender) {
-        setError("Bitte wähle dein Geschlecht aus.");
+        setError(t("aiPlan.validation.gender"));
         return;
       }
     }
     if (step === 2) {
       if (!heightCm.trim() || isNaN(parseInt(heightCm))) {
-        setError("Bitte gib eine gültige Körpergröße an.");
+        setError(t("aiPlan.validation.height"));
         return;
       }
       if (!weightKg.trim() || isNaN(parseFloat(weightKg))) {
-        setError("Bitte gib ein gültiges Körpergewicht an.");
+        setError(t("aiPlan.validation.weight"));
         return;
       }
       if (metricMode === "kfa" && kfa.trim() && isNaN(parseFloat(kfa))) {
-        setError("Bitte gib einen gültigen Körperfettanteil an.");
+        setError(t("aiPlan.validation.fat"));
         return;
       }
       if (metricMode === "htv") {
         if (waistCm.trim() && isNaN(parseFloat(waistCm))) {
-          setError("Bitte gib einen gültigen Taillenumfang an.");
+          setError(t("aiPlan.validation.waist"));
           return;
         }
         if (hipsCm.trim() && isNaN(parseFloat(hipsCm))) {
-          setError("Bitte gib einen gültigen Hüftumfang an.");
+          setError(t("aiPlan.validation.hips"));
           return;
         }
         if ((waistCm.trim() && !hipsCm.trim()) || (!waistCm.trim() && hipsCm.trim())) {
-          setError("Bitte fülle sowohl Taillen- als auch Hüftumfang aus, um das HTV zu berechnen.");
+          setError(t("aiPlan.validation.whr"));
           return;
         }
       }
     }
     if (step === 3) {
       if (!fitnessGoal) {
-        setError("Bitte wähle ein Fitnessziel aus.");
+        setError(t("aiPlan.validation.goal"));
         return;
       }
       if (!experienceLevel) {
-        setError("Bitte wähle deine Trainingserfahrung aus.");
+        setError(t("aiPlan.validation.experience"));
         return;
       }
     }
     if (step === 7) {
       if (!trainingStructure) {
-        setError("Bitte wähle Ganzkörper oder Split-Training.");
+        setError(t("aiPlan.validation.structure"));
         return;
       }
       if (trainingStructure === "split" && !trainingSplitDays) {
-        setError("Bitte wähle die Split-Größe (2er bis 6er).");
+        setError(t("aiPlan.validation.split"));
         return;
       }
     }
     if (step === 8) {
       if (selectedWeekdays.length < 1) {
-        setError("Bitte wähle mindestens einen Trainingstag.");
+        setError(t("aiPlan.validation.day"));
         return;
       }
       if (trainingStructure === "split" && trainingSplitDays && selectedWeekdays.length < trainingSplitDays) {
-        setError(
-          `Für einen ${trainingSplitDays}er-Split brauchst du mindestens ${trainingSplitDays} Trainingstage pro Woche.`,
-        );
+        setError(t("aiPlan.validation.splitDays", { split: trainingSplitDays, count: trainingSplitDays }));
         return;
       }
       if (!minutesPerSession) {
-        setError("Bitte wähle die Zeit pro Trainingseinheit.");
+        setError(t("aiPlan.validation.duration"));
         return;
       }
     }
     if (step === 10) {
       if (!occupation) {
-        setError("Bitte wähle deine berufliche Alltagsaktivität.");
+        setError(t("aiPlan.validation.occupation"));
         return;
       }
       if (stressLevel < 1 || stressLevel > 10) {
-        setError("Bitte wähle dein Stresslevel (1–10).");
+        setError(t("aiPlan.validation.stress"));
         return;
       }
       if (sleepHours < 4 || sleepHours > 12 || !Number.isInteger(sleepHours * 2)) {
-        setError("Bitte gib eine realistische Schlafdauer (4–12 Stunden, in 0,5h-Schritten) an.");
+        setError(t("aiPlan.validation.sleep"));
         return;
       }
     }
@@ -458,7 +448,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
   const startGenerationFlow = (options?: { consentGranted?: boolean }) => {
     if (!options?.consentGranted && !hasAiConsent(preferences)) {
-      setError("Bitte erteile zuerst deine Einwilligung zur KI-Nutzung.");
+      setError(t("aiPlan.validation.consent"));
       setStep(12);
       return;
     }
@@ -472,14 +462,14 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
       await updatePreferences({ aiConsent: createAiConsentGrant() }, true);
       startGenerationFlow({ consentGranted: true });
     } catch {
-      setError("Die Einwilligung konnte nicht gespeichert werden. Bitte erneut versuchen.");
+      setError(t("aiPlan.validation.consentSave"));
     }
   };
 
   const runGeneration = async (consentGranted = false) => {
     if (!user) return;
     if (!consentGranted && !hasAiConsent(preferences)) {
-      setError("Für die KI-Planerstellung ist deine Einwilligung erforderlich.");
+      setError(t("aiPlan.validation.consentRequired"));
       setStep(12);
       return;
     }
@@ -566,6 +556,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
       // KI Edge-Function zur Planerstellung aufrufen
       const planId = await generateAndSaveAITrainingPlan(user.id, {
+        language,
         gender,
         birthDate: birthDate.trim() || profile?.birth_date,
         heightCm: parsedHeight,
@@ -582,7 +573,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
       setGeneratedPlanId(planId);
     } catch (e: any) {
       console.error("Fehler bei der KI-Generierung:", e);
-      setError(e.message || "Es ist ein Fehler bei der Generierung aufgetreten. Bitte versuche es erneut.");
+      setError(e.message || t("aiPlan.error.generate"));
       setStep(13);
     } finally {
       setBusy(false);
@@ -624,14 +615,14 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
         <div style={{ width: "100%", flexShrink: 0 }}>
           <ScreenBackHeader
             onBack={onBack}
-            title="KI-PLAN"
-            backAriaLabel="Abbrechen"
+            title={t("aiPlan.title")}
+            backAriaLabel={t("aiPlan.cancel")}
             style={{ padding: 0, marginBottom: step > 0 ? 8 : 16 }}
           />
           {step > 0 && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
               <div style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>
-                Schritt {step} von {stepsCount - 1}
+                {t("aiPlan.step", { current: step, total: stepsCount - 1 })}
               </div>
             </div>
           )}
@@ -706,11 +697,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                 </div>
               </div>
               <h1 style={{ fontFamily: M.numeric, fontSize: 36, fontWeight: 800, margin: 0, letterSpacing: 0.5, lineHeight: 1.1 }}>
-                DEIN KI-TRAININGSPLAN
+                {t("aiPlan.intro.title")}
               </h1>
               <p style={{ color: M.mut, fontSize: 16, lineHeight: 1.5, margin: "12px 0 0 0" }}>
-                Beantworte ein paar Fragen zu Ziel, Alltag und Voraussetzungen — du erhältst einen maßgeschneiderten Plan plus
-                nachlesbare Empfehlungen zu Training und Ernährung.
+                {t("aiPlan.intro.description")}
               </p>
             </div>
 
@@ -724,10 +714,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               }}
             >
               <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 10 }}>
-                DAS BEKOMMST DU
+                {t("aiPlan.intro.includes")}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {INTRO_BENEFITS.map((text) => (
+                {introBenefits.map((text) => (
                   <div key={text} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14 }}>
                     <span style={{ color: M.brand, fontWeight: 700, flexShrink: 0 }}>✓</span>
                     <span style={{ color: M.fg, lineHeight: 1.45 }}>{text}</span>
@@ -738,17 +728,16 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-                WARUM DAS SINN MACHT
+                {t("aiPlan.intro.why")}
               </div>
               <p style={{ color: M.mut, fontSize: 13, lineHeight: 1.55, margin: "0 0 8px 0" }}>
-                Ziel, verfügbare Zeit, Regeneration und Einschränkungen werden zusammen betrachtet — statt nur einzelne Übungen
-                aus dem Bauchgefühl zu wählen.
+                {t("aiPlan.intro.why1")}
               </p>
               <p style={{ color: M.mut, fontSize: 13, lineHeight: 1.55, margin: "0 0 8px 0" }}>
-                In ca. 3–5 Minuten Eingabe erhältst du einen strukturierten Plan, ohne stundenlang recherchieren zu müssen.
+                {t("aiPlan.intro.why2")}
               </p>
               <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.5, margin: 0 }}>
-                Alle Angaben sind Richtwerte und ersetzen keine medizinische oder ernährungstherapeutische Beratung.
+                {t("aiPlan.intro.disclaimer")}
               </p>
             </div>
 
@@ -762,9 +751,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               }}
             >
               <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.45, margin: 0 }}>
-                Deine Angaben werden in deinem {APP_NAME}-Konto gespeichert. Für die Plan-Erstellung werden relevante Daten an
-                <strong> Anthropic</strong> übermittelt — dazu holen wir vor der Generierung eine separate Einwilligung ein
-                (kein automatisches Opt-in). Es erfolgt keine Weitergabe zu Werbezwecken.{" "}
+                {t("aiPlan.intro.dataPrefix", { app: APP_NAME })}{" "}
                 <button
                   type="button"
                   onClick={openDatenschutz}
@@ -780,7 +767,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     cursor: "pointer",
                   }}
                 >
-                  Datenschutzerklärung
+                  {t("aiConsent.privacy")}
                 </button>
               </p>
             </div>
@@ -792,27 +779,27 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Profil
+                {t("aiPlan.profile.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Erzähl uns kurz etwas über dich — die KI nutzt diese Angaben für personalisierte Empfehlungen.
+                {t("aiPlan.profile.description")}
               </p>
             </div>
 
             {/* Geschlecht */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Geschlecht
+                {t("aiPlan.profile.gender")}
               </span>
               <div style={{ display: "flex", gap: 8 }}>
                 <button type="button" onClick={() => setGender("male")} style={tileStyle(gender === "male")}>
-                  <span style={{ fontSize: 20 }}>♂</span> Männlich
+                  <span style={{ fontSize: 20 }}>♂</span> {t("aiPlan.profile.male")}
                 </button>
                 <button type="button" onClick={() => setGender("female")} style={tileStyle(gender === "female")}>
-                  <span style={{ fontSize: 20 }}>♀</span> Weiblich
+                  <span style={{ fontSize: 20 }}>♀</span> {t("aiPlan.profile.female")}
                 </button>
                 <button type="button" onClick={() => setGender("other")} style={tileStyle(gender === "other")}>
-                  <span style={{ fontSize: 20 }}>⚧</span> Divers
+                  <span style={{ fontSize: 20 }}>⚧</span> {t("aiPlan.profile.other")}
                 </button>
               </div>
             </div>
@@ -826,10 +813,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Körperwerte
+                {t("aiPlan.body.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Deine Körperwerte helfen der KI, deinen Kalorienbedarf und deine körperlichen Potenziale zu berechnen.
+                {t("aiPlan.body.description")}
               </p>
             </div>
 
@@ -837,12 +824,12 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Körpergröße (cm)
+                  {t("aiPlan.body.height")}
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
                     type="number"
-                    placeholder="z.B. 180"
+                    placeholder={language === "de" ? "z. B. 180" : "e.g. 180"}
                     value={heightCm}
                     onChange={(e) => setHeightCm(e.target.value)}
                     style={inputStyle}
@@ -855,12 +842,12 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Gewicht (kg)
+                  {t("aiPlan.body.weight")}
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
                     type="number"
-                    placeholder="z.B. 80.5"
+                    placeholder={language === "de" ? "z. B. 80,5" : "e.g. 80.5"}
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
                     style={inputStyle}
@@ -876,7 +863,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {/* KFA oder HTV Selector */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Körperfett oder Hüft-Taillen-Verhältnis
+                {t("aiPlan.body.metric")}
               </span>
               <div style={{ display: "flex", background: M.card, borderRadius: 12, padding: 4, border: "1px solid " + M.line }}>
                 <button
@@ -895,7 +882,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     fontFamily: M.display,
                   }}
                 >
-                  KÖRPERFETT (KFA)
+                  {t("aiPlan.body.fat")}
                 </button>
                 <button
                   type="button"
@@ -913,7 +900,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     fontFamily: M.display,
                   }}
                 >
-                  HÜFT-TAILLE (HTV)
+                  {t("aiPlan.body.whr")}
                 </button>
               </div>
             </div>
@@ -921,12 +908,12 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {metricMode === "kfa" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Körperfettanteil (optional, %)
+                  {t("aiPlan.body.fatOptional")}
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
                     type="number"
-                    placeholder="z.B. 15"
+                    placeholder={language === "de" ? "z. B. 15" : "e.g. 15"}
                     value={kfa}
                     onChange={(e) => setKfa(e.target.value)}
                     style={inputStyle}
@@ -941,12 +928,12 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      Hüftumfang (cm)
+                      {t("aiPlan.body.hips")}
                     </label>
                     <div style={{ position: "relative" }}>
                       <input
                         type="number"
-                        placeholder="z.B. 95"
+                        placeholder={language === "de" ? "z. B. 95" : "e.g. 95"}
                         value={hipsCm}
                         onChange={(e) => setHipsCm(e.target.value)}
                         style={inputStyle}
@@ -959,12 +946,12 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      Taillenumfang (cm)
+                      {t("aiPlan.body.waist")}
                     </label>
                     <div style={{ position: "relative" }}>
                       <input
                         type="number"
-                        placeholder="z.B. 85"
+                        placeholder={language === "de" ? "z. B. 85" : "e.g. 85"}
                         value={waistCm}
                         onChange={(e) => setWaistCm(e.target.value)}
                         style={inputStyle}
@@ -997,13 +984,13 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                         }}
                       >
                         <div style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                          Berechnetes HTV / WHR
+                          {t("aiPlan.body.calculatedWhr")}
                         </div>
                         <div style={{ fontSize: 32, fontFamily: M.numeric, fontWeight: 800, color: M.fg }}>
                           {ratio.toFixed(2)}
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: classification.color }}>
-                          {classification.text}
+                          {t(`aiPlan.body.risk.${classification.level}` as "aiPlan.body.risk.low")}
                         </div>
                       </div>
                     );
@@ -1020,34 +1007,34 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Ziel & Erfahrung
+                {t("aiPlan.goal.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Gib an, welches Ziel du erreichen willst und wie erfahren du bist.
+                {t("aiPlan.goal.description")}
               </p>
             </div>
 
             {/* Fitnessziel */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Dein Primäres Ziel
+                {t("aiPlan.goal.primary")}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button type="button" onClick={() => setFitnessGoal("muscle_building")} style={tileStyle(fitnessGoal === "muscle_building")}>
                   <Icon name="bolt" size={20} color={fitnessGoal === "muscle_building" ? M.brand : M.fg} />
-                  <span>Muskelaufbau</span>
+                  <span>{t("aiPlan.goal.muscle")}</span>
                 </button>
                 <button type="button" onClick={() => setFitnessGoal("fat_loss")} style={tileStyle(fitnessGoal === "fat_loss")}>
                   <Icon name="flame" size={20} color={fitnessGoal === "fat_loss" ? M.brand : M.fg} />
-                  <span>Fettverbrennung</span>
+                  <span>{t("aiPlan.goal.fatLoss")}</span>
                 </button>
                 <button type="button" onClick={() => setFitnessGoal("fitness")} style={tileStyle(fitnessGoal === "fitness")}>
                   <Icon name="timer" size={20} color={fitnessGoal === "fitness" ? M.brand : M.fg} />
-                  <span>Fitness & Fit</span>
+                  <span>{t("aiPlan.goal.fitness")}</span>
                 </button>
                 <button type="button" onClick={() => setFitnessGoal("strength")} style={tileStyle(fitnessGoal === "strength")}>
                   <Icon name="dumbbell" size={20} color={fitnessGoal === "strength" ? M.brand : M.fg} />
-                  <span>Kraftaufbau</span>
+                  <span>{t("aiPlan.goal.strength")}</span>
                 </button>
               </div>
             </div>
@@ -1055,7 +1042,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {/* Erfahrung */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Deine Trainingserfahrung
+                {t("aiPlan.experience.label")}
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button
@@ -1064,8 +1051,8 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   style={{ ...listTileStyle(experienceLevel === "beginner"), padding: "12px 16px" }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700 }}>Anfänger</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>Unter 1 Jahr Erfahrung</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.experience.beginner")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.experience.beginnerHint")}</div>
                   </div>
                   {experienceLevel === "beginner" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
@@ -1075,8 +1062,8 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   style={{ ...listTileStyle(experienceLevel === "intermediate"), padding: "12px 16px" }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700 }}>Fortgeschritten</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>1 bis 3 Jahre Erfahrung</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.experience.intermediate")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.experience.intermediateHint")}</div>
                   </div>
                   {experienceLevel === "intermediate" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
@@ -1086,8 +1073,8 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   style={{ ...listTileStyle(experienceLevel === "advanced"), padding: "12px 16px" }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700 }}>Profi</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>Über 3 Jahre Erfahrung</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.experience.advanced")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.experience.advancedHint")}</div>
                   </div>
                   {experienceLevel === "advanced" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
@@ -1101,10 +1088,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Muskelgruppen-Priorität
+                {t("aiPlan.muscles.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Bewerte die Bedeutung jeder Muskelgruppe für deine Ziele. Die KI plant mehr Volumen für wichtige Bereiche.
+                {t("aiPlan.muscles.description")}
               </p>
             </div>
 
@@ -1121,12 +1108,13 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     marginBottom: 4,
                   }}
                 >
-                  {section.label}
+                  {t(section.id === "upper" ? "aiPlan.muscles.upper" : "aiPlan.muscles.lower")}
                 </span>
                 {section.groups.map((group) => (
                   <MusclePrioritySliderRow
                     key={group}
                     group={group}
+                    groupLabel={muscleGroupLabels[group] ?? group}
                     value={musclePriorities[group]}
                     onChange={(value) => setMusclePriorities((prev) => ({ ...prev, [group]: value }))}
                   />
@@ -1141,35 +1129,35 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Ernährung
+                {t("aiPlan.diet.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Deine Ernährungspräferenz fließt in die KI-Empfehlungen ein.
+                {t("aiPlan.diet.description")}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Ernährungspräferenz
+                {t("aiPlan.diet.label")}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button type="button" onClick={() => setDietPreference("omnivore")} style={tileStyle(dietPreference === "omnivore")}>
-                  <span>Keine Vorgabe</span>
+                  <span>{t("aiPlan.diet.omnivore")}</span>
                 </button>
                 <button type="button" onClick={() => setDietPreference("vegetarian")} style={tileStyle(dietPreference === "vegetarian")}>
-                  <span>Vegetarisch</span>
+                  <span>{t("aiPlan.diet.vegetarian")}</span>
                 </button>
                 <button type="button" onClick={() => setDietPreference("vegan")} style={tileStyle(dietPreference === "vegan")}>
-                  <span>Vegan</span>
+                  <span>{t("aiPlan.diet.vegan")}</span>
                 </button>
                 <button type="button" onClick={() => setDietPreference("pescetarian")} style={tileStyle(dietPreference === "pescetarian")}>
-                  <span>Pescetarisch</span>
+                  <span>{t("aiPlan.diet.pescetarian")}</span>
                 </button>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <input
                   type="text"
-                  placeholder="Allergie z.B. Nüsse"
+                  placeholder={t("aiPlan.diet.allergyPlaceholder")}
                   value={tempAllergy}
                   onChange={(e) => setTempAllergy(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addAllergy()}
@@ -1210,37 +1198,37 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Trainingsort
+                {t("aiPlan.location.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Wo willst du trainieren?
+                {t("aiPlan.location.description")}
               </p>
             </div>
 
             {/* Trainingsort */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Trainingsort
+                {t("aiPlan.location.title")}
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button type="button" onClick={() => setTrainingLocation("gym")} style={listTileStyle(trainingLocation === "gym")}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>Fitnessstudio (Gym)</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>Alle Geräte, Freihanteln, Kabelzüge</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.location.gym")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.location.gymHint")}</div>
                   </div>
                   {trainingLocation === "gym" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
                 <button type="button" onClick={() => setTrainingLocation("home_equipment")} style={listTileStyle(trainingLocation === "home_equipment")}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>Home Gym mit Ausrüstung</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>Kurzhanteln, Bänder, Klimmzugstange</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.location.home")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.location.homeHint")}</div>
                   </div>
                   {trainingLocation === "home_equipment" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
                 <button type="button" onClick={() => setTrainingLocation("bodyweight")} style={listTileStyle(trainingLocation === "bodyweight")}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>Nur Eigengewicht (Bodyweight)</div>
-                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>Keinerlei Geräte oder Gewichte nötig</div>
+                    <div style={{ fontWeight: 700 }}>{t("aiPlan.location.bodyweight")}</div>
+                    <div style={{ fontSize: 13, color: M.mut, fontWeight: 400 }}>{t("aiPlan.location.bodyweightHint")}</div>
                   </div>
                   {trainingLocation === "bodyweight" && <Icon name="check" size={16} color={M.brand} />}
                 </button>
@@ -1250,10 +1238,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {trainingLocation === "home_equipment" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: -8, paddingLeft: 12, borderLeft: "2px solid " + M.brandSoft }}>
                 <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Vorhandene Ausrüstung im Home Gym
+                  {t("aiPlan.location.equipment")}
                 </span>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {STANDARD_EQUIPMENT.map((eq) => {
+                  {standardEquipment.map((eq) => {
                     const selected = homeEquipment.includes(eq.id);
                     return (
                       <button
@@ -1291,16 +1279,16 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Trainingsstruktur
+                {t("aiPlan.structure.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Ganzkörper oder Split — im nächsten Schritt wählst du deine Trainingstage und die Dauer.
+                {t("aiPlan.structure.description")}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Trainingsstruktur
+                {t("aiPlan.structure.title")}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button
@@ -1311,16 +1299,16 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   }}
                   style={tileStyle(trainingStructure === "full_body")}
                 >
-                  <span>Ganzkörper</span>
-                  <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>Jede Einheit: ganzer Körper</span>
+                  <span>{t("aiPlan.structure.full")}</span>
+                  <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>{t("aiPlan.structure.fullHint")}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTrainingStructure("split")}
                   style={tileStyle(trainingStructure === "split")}
                 >
-                  <span>Split-Training</span>
-                  <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>Muskelgruppen getrennt</span>
+                  <span>{t("aiPlan.structure.split")}</span>
+                  <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>{t("aiPlan.structure.splitHint")}</span>
                 </button>
               </div>
             </div>
@@ -1328,10 +1316,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {trainingStructure === "split" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Split-Größe
+                  {t("aiPlan.structure.splitSize")}
                 </span>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {SPLIT_OPTIONS.map((opt) => (
+                  {splitOptions.map((opt) => (
                     <button
                       key={opt.days}
                       type="button"
@@ -1353,7 +1341,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
             {trainingStructure === "full_body" && selectedWeekdays.length > 3 && (
               <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.45, margin: 0 }}>
-                Ganzkörper-Training ist oft mit 2–3 Einheiten pro Woche am sinnvollsten — du kannst trotzdem mehr wählen.
+                {t("aiPlan.structure.fullWarning")}
               </p>
             )}
           </div>
@@ -1364,19 +1352,19 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Tage & Zeit
+                {t("aiPlan.schedule.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                An welchen Wochentagen trainierst du — und wie lange dauert eine Einheit?
+                {t("aiPlan.schedule.description")}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Trainingstage
+                {t("aiPlan.schedule.days")}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
-                {TRAINING_WEEKDAY_LABELS.map((label, dayIndex) => (
+                {Array.from({ length: 7 }, (_, dayIndex) => trainingWeekdayLabel(dayIndex, locale)).map((label, dayIndex) => (
                   <button
                     key={label}
                     type="button"
@@ -1386,7 +1374,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                       padding: "14px 4px",
                       minWidth: 0,
                     }}
-                    aria-label={`${label} ${selectedWeekdays.includes(dayIndex) ? "abwählen" : "auswählen"}`}
+                    aria-label={t(selectedWeekdays.includes(dayIndex) ? "aiPlan.schedule.deselect" : "aiPlan.schedule.select", { day: label })}
                     aria-pressed={selectedWeekdays.includes(dayIndex)}
                   >
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
@@ -1395,14 +1383,14 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               </div>
               <p style={{ color: M.mut, fontSize: 13, margin: 0 }}>
                 {selectedWeekdays.length === 1
-                  ? "1 Tag ausgewählt"
-                  : `${selectedWeekdays.length} Tage ausgewählt`}
+                  ? t("aiPlan.schedule.selectedOne")
+                  : t("aiPlan.schedule.selected", { count: selectedWeekdays.length })}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Zeit pro Trainingseinheit
+                {t("aiPlan.schedule.duration")}
               </span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {[30, 45, 60, 90].map((mins) => (
@@ -1412,16 +1400,22 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     onClick={() => setMinutesPerSession(mins)}
                     style={tileStyle(minutesPerSession === mins)}
                   >
-                    <span>{mins} Min</span>
+                    <span>{t("aiPlan.schedule.minutes", { count: mins })}</span>
                   </button>
                 ))}
               </div>
               {experienceLevel && fitnessGoal && (
                 <p style={{ color: M.mut, fontSize: 13, margin: 0 }}>
-                  {getExerciseCountHint(minutesPerSession, experienceLevel, fitnessGoal, {
-                    sleepHours,
-                    stressLevel,
-                  }, ageFromBirthDate(birthDate.trim() || profile?.birth_date))}
+                  {(() => {
+                    const bounds = exerciseCountBounds({
+                      minutes: minutesPerSession,
+                      experienceLevel,
+                      fitnessGoal,
+                      anamnesis: { sleepHours, stressLevel },
+                      ageYears: ageFromBirthDate(birthDate.trim() || profile?.birth_date),
+                    });
+                    return t("aiPlan.schedule.exerciseHint", bounds);
+                  })()}
                 </p>
               )}
             </div>
@@ -1433,10 +1427,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Schmerzen & Einschränkungen
+                {t("aiPlan.pain.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Hast du Schmerzen in bestimmten Gelenken oder Zonen? Die KI wird Übungen für diese Bereiche meiden oder anpassen.
+                {t("aiPlan.pain.description")}
               </p>
             </div>
 
@@ -1446,42 +1440,42 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                 onClick={() => togglePainZone("knees")}
                 style={tileStyle(painZones.includes("knees"))}
               >
-                <span>Knie</span>
+                <span>{t("aiPlan.pain.knees")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePainZone("lower_back")}
                 style={tileStyle(painZones.includes("lower_back"))}
               >
-                <span>Unterer Rücken</span>
+                <span>{t("aiPlan.pain.lowerBack")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePainZone("shoulders")}
                 style={tileStyle(painZones.includes("shoulders"))}
               >
-                <span>Schultern</span>
+                <span>{t("aiPlan.pain.shoulders")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePainZone("wrists")}
                 style={tileStyle(painZones.includes("wrists"))}
               >
-                <span>Handgelenke</span>
+                <span>{t("aiPlan.pain.wrists")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePainZone("neck")}
                 style={tileStyle(painZones.includes("neck"))}
               >
-                <span>Nacken / HWS</span>
+                <span>{t("aiPlan.pain.neck")}</span>
               </button>
               <button
                 type="button"
                 onClick={() => togglePainZone("none")}
                 style={tileStyle(painZones.length === 0)}
               >
-                <span>Keine Beschwerden</span>
+                <span>{t("aiPlan.pain.none")}</span>
               </button>
             </div>
           </div>
@@ -1492,35 +1486,35 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Alltag & Regeneration
+                {t("aiPlan.recovery.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Beruf, Schlaf und Stress helfen der KI, Volumen und Erholung realistisch zu planen.
+                {t("aiPlan.recovery.description")}
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Beruf / Alltagsaktivität
+                {t("aiPlan.recovery.occupation")}
               </span>
               <button type="button" onClick={() => setOccupation("sedentary")} style={listTileStyle(occupation === "sedentary")}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>Überwiegend sitzend</div>
-                  <div style={{ fontSize: 13, color: M.mut }}>Büro, Homeoffice</div>
+                  <div style={{ fontWeight: 700 }}>{t("aiPlan.recovery.sedentary")}</div>
+                  <div style={{ fontSize: 13, color: M.mut }}>{t("aiPlan.recovery.sedentaryHint")}</div>
                 </div>
                 {occupation === "sedentary" && <Icon name="check" size={16} color={M.brand} />}
               </button>
               <button type="button" onClick={() => setOccupation("standing")} style={listTileStyle(occupation === "standing")}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>Überwiegend stehend</div>
-                  <div style={{ fontSize: 13, color: M.mut }}>Einzelhandel, Pflege</div>
+                  <div style={{ fontWeight: 700 }}>{t("aiPlan.recovery.standing")}</div>
+                  <div style={{ fontSize: 13, color: M.mut }}>{t("aiPlan.recovery.standingHint")}</div>
                 </div>
                 {occupation === "standing" && <Icon name="check" size={16} color={M.brand} />}
               </button>
               <button type="button" onClick={() => setOccupation("physical")} style={listTileStyle(occupation === "physical")}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>Körperlich belastend</div>
-                  <div style={{ fontSize: 13, color: M.mut }}>Handwerk, Logistik</div>
+                  <div style={{ fontWeight: 700 }}>{t("aiPlan.recovery.physical")}</div>
+                  <div style={{ fontSize: 13, color: M.mut }}>{t("aiPlan.recovery.physicalHint")}</div>
                 </div>
                 {occupation === "physical" && <Icon name="check" size={16} color={M.brand} />}
               </button>
@@ -1531,32 +1525,32 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               onClick={() => setShiftWork((v) => !v)}
               style={listTileStyle(shiftWork)}
             >
-              <span>Schichtarbeit</span>
+              <span>{t("aiPlan.recovery.shift")}</span>
               {shiftWork && <Icon name="check" size={16} color={M.brand} />}
             </button>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Ø Schlaf pro Nacht (Stunden)
+                {t("aiPlan.recovery.sleep")}
               </span>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, background: M.card, padding: "12px", borderRadius: 14, border: "1px solid " + M.line }}>
                 <button
                   type="button"
                   onClick={() => setSleepHours((h) => Math.max(4, Math.round((h - 0.5) * 2) / 2))}
                   style={stepperBtnStyle}
-                  aria-label="Schlaf reduzieren"
+                  aria-label={t("aiPlan.recovery.reduceSleep")}
                 >
                   -
                 </button>
                 <div style={{ textAlign: "center", minWidth: 80 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.display }}>{formatSleepHours(sleepHours)}</div>
-                  <div style={{ fontSize: 13, color: M.mut }}>pro Nacht</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.display }}>{formatSleepHours(sleepHours, locale)}</div>
+                  <div style={{ fontSize: 13, color: M.mut }}>{t("aiPlan.recovery.perNight")}</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSleepHours((h) => Math.min(12, Math.round((h + 0.5) * 2) / 2))}
                   style={stepperBtnStyle}
-                  aria-label="Schlaf erhöhen"
+                  aria-label={t("aiPlan.recovery.increaseSleep")}
                 >
                   +
                 </button>
@@ -1565,26 +1559,26 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Stresslevel (1 = sehr niedrig, 10 = sehr hoch)
+                {t("aiPlan.recovery.stress")}
               </span>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, background: M.card, padding: "12px", borderRadius: 14, border: "1px solid " + M.line }}>
                 <button
                   type="button"
                   onClick={() => setStressLevel((s) => Math.max(1, s - 1))}
                   style={stepperBtnStyle}
-                  aria-label="Stress reduzieren"
+                  aria-label={t("aiPlan.recovery.reduceStress")}
                 >
                   -
                 </button>
                 <div style={{ textAlign: "center", minWidth: 80 }}>
                   <div style={{ fontSize: 24, fontWeight: 700, color: M.brand, fontFamily: M.display }}>{stressLevel}</div>
-                  <div style={{ fontSize: 13, color: M.mut }}>von 10</div>
+                  <div style={{ fontSize: 13, color: M.mut }}>{t("aiPlan.recovery.ofTen")}</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setStressLevel((s) => Math.min(10, s + 1))}
                   style={stepperBtnStyle}
-                  aria-label="Stress erhöhen"
+                  aria-label={t("aiPlan.recovery.increaseStress")}
                 >
                   +
                 </button>
@@ -1598,10 +1592,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
               <h2 style={{ fontFamily: M.label, fontSize: 24, fontWeight: 700, margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Andere Sportarten
+                {t("aiPlan.sports.title")}
               </h2>
               <p style={{ color: M.mut, fontSize: 14, margin: 0 }}>
-                Machst du andere Sportarten? Dies hilft der KI, die Regeneration optimal zu planen.
+                {t("aiPlan.sports.description")}
               </p>
             </div>
 
@@ -1620,7 +1614,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   type="text"
-                  placeholder="z.B. Laufen, Fußball"
+                  placeholder={t("aiPlan.sports.placeholder")}
                   value={tempSport}
                   onChange={(e) => setTempSport(e.target.value)}
                   style={{ ...inputStyle, textAlign: "left", flex: 1, padding: "10px 12px" }}
@@ -1639,13 +1633,13 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                     cursor: "pointer",
                   }}
                 >
-                  HINZUFÜGEN
+                  {t("aiPlan.sports.add")}
                 </button>
               </div>
 
               {/* Frequenz für neue Sportart */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>Häufigkeit:</span>
+                <span style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>{t("aiPlan.sports.frequency")}</span>
                 <div style={{ display: "flex", gap: 6 }}>
                   {[1, 2, 3, 4, 5].map((f) => (
                     <button
@@ -1675,7 +1669,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
             {otherSports.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                 <span style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Eingetragene Sportarten
+                  {t("aiPlan.sports.entered")}
                 </span>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {otherSports.map((s, idx) => (
@@ -1694,14 +1688,14 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                       }}
                     >
                       <span>
-                        {s.sport} <span style={{ color: M.brand, marginLeft: 4 }}>({s.frequency}x/Woche)</span>
+                        {s.sport} <span style={{ color: M.brand, marginLeft: 4 }}>({t("aiPlan.sports.perWeek", { count: s.frequency })})</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => removeSport(idx)}
                         style={{ background: "none", border: "none", color: M.danger, cursor: "pointer", padding: 4 }}
                       >
-                        Entfernen
+                        {t("aiPlan.sports.remove")}
                       </button>
                     </div>
                   ))}
@@ -1752,13 +1746,13 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                 `}</style>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <h3 style={{ fontFamily: M.display, fontSize: 24, fontWeight: 400, margin: 0 }}>
-                    DEIN PLAN WIRD GENERIERT
+                    {t("aiPlan.loading.title")}
                   </h3>
                   <p style={{ color: M.brand, fontWeight: 700, fontSize: 16, margin: 0 }}>
-                    {GENERATION_LOADING_TEXTS[getGenerationLoadingStep(genElapsedSec)]}
+                    {generationLoadingTexts[getGenerationLoadingStep(genElapsedSec)]}
                   </p>
                   <p style={{ color: M.mut, fontSize: 13, margin: 0 }}>
-                    {formatGenerationTimeHint(genElapsedSec)}
+                    {generationTimeHint}
                   </p>
                 </div>
               </>
@@ -1780,10 +1774,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <h3 style={{ fontFamily: M.display, fontSize: 28, fontWeight: 400, margin: 0 }}>
-                    PLAN ERFOLGREICH GENERIERT!
+                    {t("aiPlan.success.title")}
                   </h3>
                   <p style={{ color: M.mut, fontSize: 15, lineHeight: 1.5, margin: 0 }}>
-                    Dein personalisierter KI-Trainingsplan wurde erstellt und als dein aktiver Trainingsplan hinterlegt. Du kannst direkt loslegen!
+                    {t("aiPlan.success.description")}
                   </p>
                 </div>
                 <OneRmPercentInfoCard compact style={{ width: "100%", textAlign: "left" }} />
@@ -1795,15 +1789,15 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
                   fullWidth
                   style={{ marginTop: 12 }}
                 >
-                  TRAININGSPLAN ANSEHEN
+                  {t("aiPlan.success.view")}
                   <Icon name="play" size={18} color={M.brandInk} />
                 </MButton>
               </>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ color: M.danger, fontWeight: 600 }}>Generierung fehlgeschlagen.</p>
+                <p style={{ color: M.danger, fontWeight: 600 }}>{t("aiPlan.failed")}</p>
                 <MButton type="button" onClick={() => void runGeneration(true)} variant="primary" size="md">
-                  Erneut versuchen
+                  {t("aiPlan.retry")}
                 </MButton>
               </div>
             )}
@@ -1815,7 +1809,7 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
       {step === 0 && (
         <div style={{ width: "100%", flexShrink: 0 }}>
           <MButton type="button" onClick={nextStep} variant="primary" size="md" fullWidth>
-            JETZT STARTEN <Icon name="chevR" size={16} color={M.brandInk} />
+            {t("aiPlan.start")} <Icon name="chevR" size={16} color={M.brandInk} />
           </MButton>
         </div>
       )}
@@ -1823,10 +1817,10 @@ export function AITrainingPlanWizard({ onBack, onPlanGenerated }: AITrainingPlan
       {step > 0 && step < 12 && (
         <div style={{ width: "100%", flexShrink: 0, display: "flex", justifyContent: "space-between", gap: 12 }}>
           <MButton type="button" onClick={prevStep} variant="secondary" size="md">
-            <Icon name="chevL" size={16} /> ZURÜCK
+            <Icon name="chevL" size={16} /> {t("aiPlan.back")}
           </MButton>
           <MButton type="button" onClick={nextStep} variant="primary" size="md">
-            WEITER <Icon name="chevR" size={16} />
+            {t("aiPlan.next")} <Icon name="chevR" size={16} />
           </MButton>
         </div>
       )}

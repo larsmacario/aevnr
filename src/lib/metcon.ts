@@ -90,20 +90,20 @@ export function formatMetconSessionResult(result: MetconSessionResult): string {
   return `Circuit · ${result.roundsCompleted} Runde${result.roundsCompleted === 1 ? "" : "n"}`;
 }
 
-export function formatMetconBlockBadge(config: MetconConfig): string {
-  const name = FORMAT_LABELS[config.format];
+export function formatMetconBlockBadge(config: MetconConfig, language: "de" | "en" = "de"): string {
+  const name = language === "en" && config.format === "circuit" ? "Circuit" : FORMAT_LABELS[config.format];
   if (config.format === "amrap") {
     const sec = config.durationSec ?? METCON_DEFAULTS.amrap.durationSec!;
     const min = Math.round(sec / 60);
-    return `${name} · ${min} Min`;
+    return `${name} · ${min} ${language === "en" ? "min" : "Min"}`;
   }
   if (config.format === "emom") {
     const rounds = config.rounds ?? METCON_DEFAULTS.emom.rounds!;
-    return `${name} · ${rounds} Runden`;
+    return `${name} · ${rounds} ${language === "en" ? "rounds" : "Runden"}`;
   }
   const rounds = config.rounds ?? METCON_DEFAULTS.circuit.rounds!;
   const work = config.workSec ?? METCON_DEFAULTS.circuit.workSec!;
-  return `${name} · ${rounds} Runden · ${work} s/Station`;
+  return `${name} · ${rounds} ${language === "en" ? "rounds" : "Runden"} · ${work} s/${language === "en" ? "station" : "Station"}`;
 }
 
 /** Parse legacy single-exercise MetCon note into exercise names. */

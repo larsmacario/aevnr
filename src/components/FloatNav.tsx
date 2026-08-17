@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { APP_NAME, displayStyle, M, Z } from "../theme";
 import { CONTENT_HORIZONTAL_PADDING } from "../lib/responsive";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 export type Tab = "home" | "facts" | "plans" | "ai-plan" | "timer" | "history" | "profile";
 
@@ -38,8 +39,12 @@ export const FLOAT_NAV_FAB_OVERHANG = FLOAT_NAV_FAB_SIZE - FLOAT_NAV_FAB_LIFT;
 /** Bottom padding for tab scroll areas — matches gap above the nav bar. */
 export const FLOAT_NAV_SCROLL_BOTTOM_GAP = FLOAT_NAV_BOTTOM_MARGIN;
 
-/** Same offset as nav `bottom` — must match floatNavContentInset or iOS shows extra gap above nav. */
-export const FLOAT_NAV_BOTTOM_OFFSET_CSS = `max(${FLOAT_NAV_BOTTOM_MARGIN}px, calc(env(safe-area-inset-bottom, 0px) - 24px))`;
+/**
+ * Keep the bar completely above the iOS home indicator. The shell deliberately
+ * does not reserve the bottom inset while a floating nav is visible, so this
+ * component owns the full safe-area offset itself.
+ */
+export const FLOAT_NAV_BOTTOM_OFFSET_CSS = `calc(${FLOAT_NAV_BOTTOM_MARGIN}px + env(safe-area-inset-bottom, 0px))`;
 
 export const FLOAT_NAV_GLASS_HEIGHT =
   FLOAT_NAV_PADDING_Y +
@@ -148,12 +153,13 @@ function NavTabButton({
 }
 
 function QuickTrackingFab({ onQuickTracking }: { onQuickTracking: () => void }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onQuickTracking}
-      aria-label="Schnelltracking öffnen"
-      title="Schnelltracking"
+      aria-label={t("nav.quickTracking")}
+      title={t("nav.quickTrackingTitle")}
       style={{
         ...tabButtonFocus,
         width: FLOAT_NAV_FAB_SIZE,
@@ -187,11 +193,14 @@ export function FloatNav({
   timerActive?: boolean;
   placement: "bottom" | "left";
 }) {
+  const { t } = useI18n();
   const horizontal = placement === "bottom";
+  const leftTabs = LEFT_TABS.map((item) => ({ ...item, label: item.id === "home" ? t("nav.home") : t("nav.facts") }));
+  const rightTabs = RIGHT_TABS.map((item) => ({ ...item, label: item.id === "ai-plan" ? t("nav.aiPlan") : t("nav.menu") }));
 
   return (
     <nav
-      aria-label="Hauptnavigation"
+      aria-label={t("nav.main")}
       style={{
         position: horizontal ? "absolute" : "fixed",
         zIndex: Z.nav,
@@ -245,7 +254,7 @@ export function FloatNav({
                   }
             }
           >
-            {LEFT_TABS.map((n) => (
+            {leftTabs.map((n) => (
               <NavTabButton
                 key={n.id}
                 item={n}
@@ -289,7 +298,7 @@ export function FloatNav({
                   }
             }
           >
-            {RIGHT_TABS.map((n) => (
+            {rightTabs.map((n) => (
               <NavTabButton
                 key={n.id}
                 item={n}

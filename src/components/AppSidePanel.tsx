@@ -5,6 +5,7 @@ import { useBreakpoint } from "../lib/responsive";
 import { Icon } from "./Icon";
 import { MButton } from "./MButton";
 import { UserAvatar } from "./UserAvatar";
+import { useI18n } from "../lib/i18n";
 
 export interface AppSidePanelProps {
   open: boolean;
@@ -25,14 +26,8 @@ type PanelItem = {
   onClick: () => void;
 };
 
-function greetingForHour(hour: number): string {
-  if (hour < 12) return "Guten Morgen";
-  if (hour < 18) return "Guten Tag";
-  return "Guten Abend";
-}
-
-function firstName(displayName: string): string {
-  return displayName.trim().split(/\s+/)[0] || "Athlet";
+function firstName(displayName: string, fallback: string): string {
+  return displayName.trim().split(/\s+/)[0] || fallback;
 }
 
 function PanelAction({ item }: { item: PanelItem }) {
@@ -96,12 +91,14 @@ export function AppSidePanel({
   onOpenSupport,
   onOpenExercises,
 }: AppSidePanelProps) {
+  const { t } = useI18n();
   const { profile, signOut } = useAuth();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
-  const displayName = profile?.display_name?.trim() || "Athlet";
-  const name = firstName(displayName);
-  const greeting = greetingForHour(new Date().getHours());
+  const displayName = profile?.display_name?.trim() || t("menu.athlete");
+  const name = firstName(displayName, t("menu.athlete"));
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? t("menu.greeting.morning") : hour < 18 ? t("menu.greeting.day") : t("menu.greeting.evening");
 
   const runFromMenu = (action: () => void) => {
     onClose();
@@ -117,20 +114,20 @@ export function AppSidePanel({
 
   const panelSections: { title: string; items: PanelItem[] }[] = [
     {
-      title: "PERSÖNLICHER BEREICH",
-      items: [{ label: "Profil", description: "Deine Daten und Präferenzen", icon: "user", onClick: () => runFromMenu(onOpenProfile) }],
+      title: t("menu.personal"),
+      items: [{ label: t("menu.profile"), description: t("menu.profileDesc"), icon: "user", onClick: () => runFromMenu(onOpenProfile) }],
     },
     {
-      title: "TRAINING & ERKENNTNISSE",
+      title: t("menu.training"),
       items: [
-        { label: "Verlauf", description: "Deine vergangenen Einheiten", icon: "history", onClick: () => runFromMenu(onOpenHistory) },
-        { label: "Übungen", description: "Deine persönliche Bibliothek", icon: "dumbbell", onClick: () => onOpenExercises && runFromMenu(onOpenExercises) },
-        { label: "Statistik", description: "Entwicklung im Überblick", icon: "layers", onClick: () => runFromMenu(onOpenStats) },
+        { label: t("menu.history"), description: t("menu.historyDesc"), icon: "history", onClick: () => runFromMenu(onOpenHistory) },
+        { label: t("menu.exercises"), description: t("menu.exercisesDesc"), icon: "dumbbell", onClick: () => onOpenExercises && runFromMenu(onOpenExercises) },
+        { label: t("menu.stats"), description: t("menu.statsDesc"), icon: "layers", onClick: () => runFromMenu(onOpenStats) },
       ],
     },
     {
-      title: "EINSTELLUNGEN",
-      items: [{ label: "Einstellungen", description: "App und Training abstimmen", icon: "edit", onClick: () => runFromMenu(onOpenSettings) }],
+      title: t("menu.settingsSection"),
+      items: [{ label: t("menu.settings"), description: t("menu.settingsDesc"), icon: "edit", onClick: () => runFromMenu(onOpenSettings) }],
     },
   ];
 
@@ -140,7 +137,7 @@ export function AppSidePanel({
         <>
           <motion.button
             type="button"
-            aria-label="Menü schließen"
+            aria-label={t("menu.close")}
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -151,7 +148,7 @@ export function AppSidePanel({
           <motion.aside
             role="dialog"
             aria-modal="true"
-            aria-label="Menü"
+            aria-label={t("menu.aria")}
             initial={{ x: "100%" }}
             animate={{ x: "0%" }}
             exit={{ x: "100%" }}
@@ -187,14 +184,14 @@ export function AppSidePanel({
                     {greeting}, {name}
                   </div>
                   <div style={{ marginTop: 4, color: M.fg, fontFamily: M.label, fontSize: 19, fontWeight: 700, lineHeight: 1.1 }}>
-                    Schön, dass du da bist.
+                    {t("menu.welcome")}
                   </div>
                   <div style={{ marginTop: 5, color: M.mut, fontFamily: M.body, fontSize: 13, lineHeight: 1.3 }}>
-                    Dein Raum für nachhaltige Stärke.
+                    {t("menu.tagline")}
                   </div>
                 </div>
               </div>
-              <MButton onClick={onClose} variant="secondary" size="icon" aria-label="Menü schließen" haptic={false}>
+              <MButton onClick={onClose} variant="secondary" size="icon" aria-label={t("menu.close")} haptic={false}>
                 <Icon name="x" size={16} stroke={2.3} color={M.mut} />
               </MButton>
             </header>
@@ -213,27 +210,27 @@ export function AppSidePanel({
             <footer style={{ marginTop: "auto", padding: "16px 20px calc(16px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid " + M.line2, display: "grid", gap: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                 <button type="button" onClick={() => runFromMenu(onOpenSupport)} style={footerLinkStyle}>
-                  Support <Icon name="chevR" size={13} stroke={2} color={M.mut2} />
+                  {t("menu.support")} <Icon name="chevR" size={13} stroke={2} color={M.mut2} />
                 </button>
                 <button type="button" onClick={() => runFromMenu(onOpenAbout)} style={footerLinkStyle}>
-                  Über {APP_NAME} <Icon name="chevR" size={13} stroke={2} color={M.mut2} />
+                  {t("menu.about", { app: APP_NAME })} <Icon name="chevR" size={13} stroke={2} color={M.mut2} />
                 </button>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", color: M.mut2, fontFamily: M.body, fontSize: 12 }}>
                 {[
-                  ["Impressum", "/impressum"],
-                  ["AGB", "/agb"],
-                  ["Datenschutz", "/datenschutz"],
+                  [t("menu.imprint"), "/impressum"],
+                  [t("menu.terms"), "/agb"],
+                  [t("menu.privacy"), "/datenschutz"],
                 ].map(([label, path]) => (
-                  <button key={label} type="button" onClick={() => openExternalLegal(path)} aria-label={`${label} (öffnet externe Seite)`} style={legalLinkStyle}>
+                  <button key={label} type="button" onClick={() => openExternalLegal(path)} aria-label={t("menu.external", { label })} style={legalLinkStyle}>
                     {label} <Icon name="externalLink" size={11} stroke={1.9} color={M.mut2} />
                   </button>
                 ))}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ color: M.mut2, fontFamily: M.body, fontSize: 12 }}>Version {__APP_VERSION__}</span>
+                <span style={{ color: M.mut2, fontFamily: M.body, fontSize: 12 }}>{t("menu.version", { version: __APP_VERSION__ })}</span>
                 <button type="button" onClick={() => runFromMenu(signOut)} style={{ ...footerLinkStyle, color: M.mut }}>
-                  Abmelden
+                  {t("menu.logout")}
                 </button>
               </div>
             </footer>

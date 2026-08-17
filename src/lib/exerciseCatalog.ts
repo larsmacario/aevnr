@@ -208,11 +208,37 @@ export function setVolumeKg(set: SetLike, metric: ExerciseMetric): number {
   return set.reps * set.kg;
 }
 
-export function metricLabel(metric: ExerciseMetric): string {
+export function metricLabel(metric: ExerciseMetric, language: "de" | "en" = "de"): string {
+  if (language === "en") {
+    const labels: Record<ExerciseMetric, string> = {
+      weight_reps: "Weight and repetitions",
+      weight_time: "Weight and time",
+      weight_reps_time: "Weight, repetitions, and time",
+      assisted_bodyweight_reps: "Assisted bodyweight and repetitions",
+      reps: "Repetitions",
+      reps_time: "Repetitions and time",
+      distance_time: "Distance and time",
+      time: "Time",
+    };
+    return labels[metric] ?? metric;
+  }
   return EXERCISE_METRICS.find((m) => m.id === metric)?.label ?? metric;
 }
 
-export function metricShort(metric: ExerciseMetric): string {
+export function metricShort(metric: ExerciseMetric, language: "de" | "en" = "de"): string {
+  if (language === "en") {
+    switch (metric) {
+      case "weight_reps": return "Wt.+reps";
+      case "weight_time": return "Wt.+time";
+      case "weight_reps_time": return "Wt.+reps+time";
+      case "assisted_bodyweight_reps": return "Assist+reps";
+      case "reps": return "Reps";
+      case "reps_time": return "Reps+time";
+      case "distance_time": return "Distance+time";
+      case "time": return "Time";
+      default: return metric;
+    }
+  }
   switch (metric) {
     case "weight_reps":
       return "Gew.+Wdh.";
@@ -235,13 +261,13 @@ export function metricShort(metric: ExerciseMetric): string {
   }
 }
 
-export function formatSetLine(set: SetLike, metric: ExerciseMetric): string {
+export function formatSetLine(set: SetLike, metric: ExerciseMetric, language: "de" | "en" = "de"): string {
   const spec = getMetricSpec(metric);
   const parts: string[] = [];
   if (spec.showKg && set.kg > 0) {
-    parts.push(`${set.kg} kg${spec.kgLabel === "HILFE" ? " Hilfe" : ""}`);
+    parts.push(`${set.kg} kg${spec.kgLabel === "HILFE" ? (language === "en" ? " assist" : " Hilfe") : ""}`);
   }
-  if (spec.showReps) parts.push(`${set.reps} Wdh.`);
+  if (spec.showReps) parts.push(`${set.reps} ${language === "en" ? "reps" : "Wdh."}`);
   if (spec.showDistance) parts.push(formatDistanceM(getSetDistanceM(set, metric)));
   if (spec.showTime) parts.push(formatDurationSec(getSetDurationSec(set, metric)));
   return parts.join(" · ") || "—";

@@ -77,6 +77,7 @@ export interface CachedFactRow {
   userId: string;
   assignmentId: string;
   localDate: string;
+  language: import("../language").AppLanguage;
   fact: DailyFact;
   pendingSavedSync: boolean;
   updatedAt: number;

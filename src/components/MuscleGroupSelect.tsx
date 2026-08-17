@@ -1,5 +1,4 @@
 import {
-  CATALOG_PLACEHOLDER_LABEL,
   CATALOG_UNSELECTED,
   DEFAULT_MUSCLE_GROUP,
   MUSCLE_GROUP_SECTIONS,
@@ -8,19 +7,22 @@ import {
 } from "../lib/exerciseCatalog";
 import { M } from "../theme";
 import { catalogLabelStyle, catalogSelectStyle, catalogSelectStyleForValue } from "./catalogSelectStyle";
+import { useI18n } from "../lib/i18n";
+import { muscleGroupTranslationKey } from "../lib/catalogLabels";
 
 function MuscleGroupOptions({ includeAll, includePlaceholder }: { includeAll?: boolean; includePlaceholder?: boolean }) {
+  const { t } = useI18n();
   return (
     <>
       {includePlaceholder && (
-        <option value={CATALOG_UNSELECTED}>{CATALOG_PLACEHOLDER_LABEL}</option>
+        <option value={CATALOG_UNSELECTED}>{t("catalog.select")}</option>
       )}
-      {includeAll && <option value="">Alle</option>}
+      {includeAll && <option value="">{t("catalog.all")}</option>}
       {MUSCLE_GROUP_SECTIONS.map((section) => (
-        <optgroup key={section.id} label={section.label}>
+        <optgroup key={section.id} label={t(section.id === "upper" ? "aiPlan.muscles.upper" : "aiPlan.muscles.lower")}>
           {section.groups.map((group) => (
             <option key={group} value={group}>
-              {group}
+              {muscleGroupTranslationKey(group) ? t(muscleGroupTranslationKey(group)!) : group}
             </option>
           ))}
         </optgroup>
@@ -47,10 +49,11 @@ export interface MuscleGroupFormSelectProps {
 export type MuscleGroupSelectProps = MuscleGroupFilterSelectProps | MuscleGroupFormSelectProps;
 
 export function MuscleGroupSelect(props: MuscleGroupSelectProps) {
+  const { t } = useI18n();
   if (props.mode === "filter") {
     return (
       <div style={{ marginBottom: 10 }}>
-        <div style={catalogLabelStyle}>MUSKELGRUPPE</div>
+        <div style={catalogLabelStyle}>{t("catalog.muscleGroup")}</div>
         <select
           value={props.value ?? ""}
           onChange={(e) => props.onChange(e.target.value ? e.target.value : null)}
@@ -69,7 +72,7 @@ export function MuscleGroupSelect(props: MuscleGroupSelectProps) {
 
   const field = (
     <>
-      <div style={catalogLabelStyle}>MUSKELGRUPPE</div>
+      <div style={catalogLabelStyle}>{t("catalog.muscleGroup")}</div>
       <select
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
@@ -88,7 +91,7 @@ export function MuscleGroupSelect(props: MuscleGroupSelectProps) {
     <div style={{ marginBottom: 14 }}>
       {field}
       {legacyHint && (
-        <div style={{ fontSize: 13, color: M.mut2, marginTop: 8 }}>Früher: {legacyHint}</div>
+        <div style={{ fontSize: 13, color: M.mut2, marginTop: 8 }}>{t("catalog.formerly", { value: legacyHint })}</div>
       )}
     </div>
   );

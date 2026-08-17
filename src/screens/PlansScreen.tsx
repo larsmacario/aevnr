@@ -6,6 +6,7 @@ import { Icon } from "../components/Icon";
 import { MTag } from "../components/widgets";
 import { ScreenHeader, ScreenScroll } from "../components/ScreenScroll";
 import { MButton } from "../components/MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface PlansScreenProps {
   onOpenBuilder: () => void;
@@ -14,6 +15,7 @@ export interface PlansScreenProps {
 }
 
 export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: PlansScreenProps) {
+  const { t } = useI18n();
   const { isOnline } = useNetwork();
   const { data: plans, loading, error, reload, isStale } = usePlans();
 
@@ -27,26 +29,26 @@ export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: Plans
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenHeader>
         <div>
-          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Pläne</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>{t("plans.title")}</div>
           <div style={{ fontSize: 14, color: M.mut, marginTop: 3, fontWeight: 600 }}>
             {loading && list.length === 0
               ? "…"
-              : `${list.length} Trainingspläne · nur einer aktiv${isStale && !isOnline ? " · Offline" : ""}`}
+              : t("plans.summary", { count: list.length, offline: isStale && !isOnline ? ` · ${t("home.offline")}` : "" })}
           </div>
         </div>
-        <MButton onClick={onOpenBuilder} variant="primary" size="icon" aria-label="Plan erstellen">
+        <MButton onClick={onOpenBuilder} variant="primary" size="icon" aria-label={t("plans.create")}>
           <Icon name="plus" size={18} stroke={2.6} color={M.accInk} />
         </MButton>
       </ScreenHeader>
 
       <ScreenScroll style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {loading && list.length === 0 && (
-          <div style={{ color: M.mut, fontSize: 14 }}>Pläne werden geladen…</div>
+          <div style={{ color: M.mut, fontSize: 14 }}>{t("plans.loading")}</div>
         )}
         {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && list.length === 0 && (
           <div style={{ color: M.mut, fontSize: 14, textAlign: "center", marginTop: 24 }}>
-            Noch keine Trainingspläne. Erstelle deinen ersten mit +.
+            {t("plans.empty")}
           </div>
         )}
         {list.map((plan) => {
@@ -84,10 +86,10 @@ export function PlansScreen({ onOpenBuilder, onOpenPlan, refreshKey = 0 }: Plans
                   >
                     {plan.name}
                   </div>
-                  {plan.isActive && <MTag>Aktiv</MTag>}
+                  {plan.isActive && <MTag>{t("plans.active")}</MTag>}
                 </div>
                 <div style={{ fontSize: 14, color: M.mut, marginTop: 5, fontWeight: 600 }}>
-                  {plan.days.length} Tage · {exerciseCount} Übungen
+                  {t("plans.meta", { days: plan.days.length, exercises: exerciseCount })}
                 </div>
               </div>
               <Icon name="chevR" size={20} color={M.mut2} stroke={2.2} />

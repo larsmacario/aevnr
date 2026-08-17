@@ -3,6 +3,7 @@ import { BottomSheet } from "../BottomSheet";
 import { MButton } from "../MButton";
 import { Icon } from "../Icon";
 import type { HeartRateConnectionStatus } from "../../lib/heartRate/bleHeartRate";
+import { useI18n } from "../../lib/i18n";
 
 export interface HeartRateConnectSheetProps {
   open: boolean;
@@ -27,15 +28,16 @@ export function HeartRateConnectSheet({
   onConnect,
   onDisconnect,
 }: HeartRateConnectSheetProps) {
+  const { t } = useI18n();
   const connected = status === "connected";
 
   return (
-    <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={40} aria-label="Herzfrequenz-Sensor">
+    <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={40} aria-label={t("heartRate.sensor")}>
       <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, marginBottom: 8 }}>
-        Herzfrequenz-Sensor
+        {t("heartRate.sensor")}
       </div>
       <p style={{ color: M.mut, fontSize: 14, lineHeight: 1.45, margin: "0 0 18px" }}>
-        Koppel einen BLE-Brustgurt oder ein Fitness-Armband mit Heart-Rate-Service (z. B. Polar, Garmin, Wahoo).
+        {t("heartRate.description")}
       </p>
 
       {!isSupported ? (
@@ -51,7 +53,7 @@ export function HeartRateConnectSheet({
             marginBottom: 16,
           }}
         >
-          Bluetooth-Herzfrequenz ist in Safari nicht verfügbar. Nutze die {APP_NAME} iOS-App oder Chrome mit Web Bluetooth.
+          {t("heartRate.unsupported", { app: APP_NAME })}
         </div>
       ) : connected ? (
         <div
@@ -66,9 +68,9 @@ export function HeartRateConnectSheet({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name="heart" size={20} fill={M.brand} color={M.brand} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, color: M.fg, fontSize: 15 }}>{deviceName ?? "Sensor verbunden"}</div>
+              <div style={{ fontWeight: 700, color: M.fg, fontSize: 15 }}>{deviceName ?? t("heartRate.connected")}</div>
               <div style={{ color: M.mut, fontSize: 13, marginTop: 4 }}>
-                {bpm != null ? `${bpm} bpm` : "Warte auf Messwert…"}
+                {bpm != null ? `${bpm} bpm` : t("heartRate.waiting")}
               </div>
             </div>
           </div>
@@ -86,15 +88,15 @@ export function HeartRateConnectSheet({
           }}
         >
           {status === "connecting"
-            ? "Gerätewahl wird geöffnet…"
-            : "Noch kein Sensor verbunden. Tippe unten, um ein Gerät auszuwählen."}
+            ? t("heartRate.connecting")
+            : t("heartRate.disconnected")}
         </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {connected ? (
           <MButton type="button" variant="secondary" size="md" fullWidth disabled={isBusy} onClick={onDisconnect}>
-            Verbindung trennen
+            {t("heartRate.disconnect")}
           </MButton>
         ) : (
           <MButton
@@ -105,11 +107,11 @@ export function HeartRateConnectSheet({
             disabled={!isSupported || isBusy}
             onClick={onConnect}
           >
-            <Icon name="heart" size={16} color={M.brandInk} /> Sensor verbinden
+            <Icon name="heart" size={16} color={M.brandInk} /> {t("heartRate.connect")}
           </MButton>
         )}
         <MButton type="button" variant="ghost" size="md" fullWidth onClick={onClose}>
-          Schließen
+          {t("heartRate.close")}
         </MButton>
       </div>
     </BottomSheet>

@@ -2,6 +2,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 export const FACT_TOPICS = ["gut_health", "nutrition", "sleep", "movement", "cardiovascular", "mental_health", "metabolism", "healthy_aging"] as const;
 export type FactTopic = (typeof FACT_TOPICS)[number];
+export type FactLanguage = "de" | "en";
+
+export function normalizeLanguage(raw: unknown): FactLanguage {
+  return raw === "en" ? "en" : "de";
+}
 
 const topicQueries: Record<FactTopic, string> = {
   gut_health: "(gut microbiome OR gastrointestinal health) AND (systematic review[Publication Type] OR meta-analysis[Publication Type])",
@@ -34,12 +39,12 @@ export function hasCronSecret(req: Request): boolean {
   return Boolean(expected && req.headers.get("x-facts-cron-secret") === expected);
 }
 
-export async function selectUnseenFact(userId: string, topics: FactTopic[]) {
+export async function selectUnseenFact(userId: string, topics: FactTopic[], language: FactLanguage) {
   const db = serviceClient();
   const { data: assigned, error: assignedError } = await db.from("user_daily_facts").select("fact_id").eq("user_id", userId);
   if (assignedError) throw assignedError;
   const seen = new Set((assigned ?? []).map((entry) => entry.fact_id));
-  const { data: candidates, error } = await db.from("health_facts").select("id, topic").eq("status", "published").in("topic", topics).order("published_at", { ascending: true }).limit(250);
+  const { data: candidates, error } = await db.from("health_facts").select("id, topic").eq("status", "published").eq("language", language).in("topic", topics).order("published_at", { ascending: true }).limit(250);
   if (error) throw error;
   const unseen = (candidates ?? []).filter((entry) => !seen.has(entry.id));
   if (unseen.length === 0) return null;

@@ -1,18 +1,19 @@
 # Aktueller Stand
 
 ## Letzte Änderungen
-- Healthspan-Pivot umgesetzt: Dashboard, tägliche Check-ins (Schlaf/Stress/Energie), Recovery-Trends, Zone-2-Flow und private Körperfoto-URLs.
-- Express Tracking besitzt regelbasierten Coach sowie freiwillige KI-Tages-Sessions mit 30-Tage-Historie, Präferenzen, Startwerten und editierbarer Review.
-- KI-Tagesempfehlung wird nach dem Check-in erzeugt, im Preferences-Cache gespeichert und fällt ohne Einwilligung/Netz/Fehler auf einen individuellen Regel-Fallback zurück.
-- Supabase Edge Functions `generate-daily-express-session` (v2) und `generate-daily-healthspan-recommendation` (v1) sind aktiv; Tests zuletzt: 88 erfolgreich.
+- Vollständige Zweisprachigkeit (DE/EN) für die gesamte App umgesetzt: KI-Plan-Assistent, Body-Tracker, About-Seite, Intervall-Timer, Übungs- und Eingabedialoge, Offline-Banner, Drafts und Stats.
+- KI-Prompts und System-Anweisungen in Supabase Edge Functions (`generate-fact-library`, `generate-daily-healthspan-recommendation`, `generate-daily-express-session`, `generate-training-plan`) auf strikte Unterscheidung der aktiven Spracheinstellung (DE vs. EN) angepasst.
+- Supabase-Migration `add_fact_languages` auf Remote-Datenbank angewendet (`health_facts` und `user_daily_facts` mit `language`-Spalte & Constraints).
+- Supabase Edge Functions (`generate-fact-library`, `facts`, `assign-daily-facts`, `generate-daily-healthspan-recommendation`, `generate-daily-express-session`, `generate-training-plan`) erfolgreich via MCP auf Projekt `ÆVNR` (`jnspiqnlwbsobqctmfnk`) deployed.
+- Typprüfung (`tsc --noEmit`), 123 Vitest-Tests, Produktions-Build und iOS-Assets-Sync erfolgreich.
 
 ## Fokus
-- Healthspan-UX auf Gerät testen, insbesondere KI-Check-in-Empfehlung und Express-Startwerte.
+- Finale Validierung der zweisprachigen Generierung und UI-Elemente.
 
 ## Nächste Schritte
-- Bei Web-Änderungen vor iOS-Test: `npm run build && npx cap sync ios`.
+- Bei weiteren Web-Änderungen: `npm run build && npx cap copy ios`.
 - Rechtliches, Domain und App-Bundle-ID auf ÆVNR ausrichten.
 
 ## Offene Punkte
 - KI-Empfehlungen sind Lifestyle-/Präventionshilfe ohne medizinische Bewertung; Apple Health/Wearables folgen später.
-- Worktree enthält die laufenden, noch nicht committeten Healthspan-Änderungen.
+- Worktree enthält die laufenden, noch nicht committeten Änderungen.

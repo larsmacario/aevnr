@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { M } from "../theme";
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface DeleteConfirmDialogProps {
   open?: boolean;
@@ -25,6 +26,7 @@ export function DeleteConfirmDialog({
   step2Title,
   step2Message,
 }: DeleteConfirmDialogProps) {
+  const { t } = useI18n();
   const twoStep = Boolean(step2Title && step2Message);
   const [step, setStep] = useState<1 | 2>(1);
 
@@ -69,10 +71,10 @@ export function DeleteConfirmDialog({
         fullWidth
         style={{ marginBottom: 10, flexShrink: 0, background: isFinalStep ? M.dangerSoft : undefined }}
       >
-        {busy && isFinalStep ? "…" : isFinalStep ? "Löschen" : "Weiter"}
+        {busy && isFinalStep ? "…" : isFinalStep ? t("common.delete") : t("common.continue")}
       </MButton>
       <MButton type="button" onClick={handleCancel} variant="ghost" size="md" fullWidth style={{ flexShrink: 0 }}>
-        Abbrechen
+        {t("common.cancel")}
       </MButton>
     </BottomSheet>
   );

@@ -7,6 +7,7 @@ import type { SyncQueueEntry } from "../lib/offline/types";
 import { useNetwork } from "../lib/offline/networkStatus";
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface SyncStatusSheetProps {
   open: boolean;
@@ -16,6 +17,7 @@ export interface SyncStatusSheetProps {
 }
 
 export function SyncStatusSheet({ open, onClose, pendingCount, onSynced }: SyncStatusSheetProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { isOnline } = useNetwork();
   const [entries, setEntries] = useState<SyncQueueEntry[]>([]);
@@ -46,17 +48,17 @@ export function SyncStatusSheet({ open, onClose, pendingCount, onSynced }: SyncS
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} aria-label="Synchronisation">
+    <BottomSheet open={open} onClose={onClose} aria-label={t("sync.title")}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, color: M.fg }}>Synchronisation</div>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, color: M.fg }}>{t("sync.title")}</div>
         <p style={{ margin: 0, color: M.mut, fontSize: 13, lineHeight: 1.45 }}>
           {isOnline
-            ? "Änderungen werden an Supabase gesendet, sobald du online bist oder auf Sync tippst."
-            : "Du bist offline. Gespeicherte Änderungen warten auf eine Internetverbindung."}
+            ? t("sync.online")
+            : t("sync.offline")}
         </p>
 
         {entries.length === 0 ? (
-          <div style={{ color: M.mut, fontSize: 13 }}>Keine ausstehenden Änderungen.</div>
+          <div style={{ color: M.mut, fontSize: 13 }}>{t("sync.empty")}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {entries.map((entry) => (
@@ -82,7 +84,7 @@ export function SyncStatusSheet({ open, onClose, pendingCount, onSynced }: SyncS
 
         {isOnline && entries.length > 0 && (
           <MButton variant="primary" size="md" fullWidth onClick={() => void handleSync()} loading={syncing}>
-            Jetzt synchronisieren
+            {t("sync.now")}
           </MButton>
         )}
       </div>

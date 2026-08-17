@@ -23,7 +23,6 @@ import {
 import type { ExerciseMetric } from "../lib/exerciseCatalog";
 import {
   BLOCK_ORDER,
-  BLOCK_LABELS,
   BUILDER_DEFAULT_ENABLED_BLOCKS,
   DEFAULT_ENABLED_BLOCKS,
   disabledBlocks,
@@ -51,6 +50,7 @@ import { MButton } from "../components/MButton";
 import { HorizontalSlidePager } from "../components/HorizontalSlidePager";
 import { FOOTER_BAR_PADDING_BOTTOM } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useI18n } from "../lib/i18n";
 
 interface BuilderExercise extends LibraryExercise {
   blockType: TrainingBlockType;
@@ -69,10 +69,10 @@ interface BuilderDay {
   exercises: BuilderExercise[];
 }
 
-function createEmptyDay(index: number, usedWeekdays: number[] = []): BuilderDay {
+function createEmptyDay(index: number, usedWeekdays: number[] = [], name = `Tag ${index + 1}`): BuilderDay {
   return {
     id: crypto.randomUUID(),
-    name: `Tag ${index + 1}`,
+    name,
     trainingWeekday: defaultWeekdayForPlanDayIndex(index, usedWeekdays),
     enabledBlocks: [...BUILDER_DEFAULT_ENABLED_BLOCKS],
     metconConfig: null,
@@ -96,13 +96,14 @@ export interface PlanBuilderScreenProps {
 }
 
 export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenProps) {
+  const { locale, t } = useI18n();
   const isEditing = Boolean(planId);
   const { user } = useAuth();
   const { preferences } = usePreferences();
   const { data: existingPlan, loading: planLoading } = usePlan(planId ?? null);
   const { data: exerciseLibrary, loading: exercisesLoading, reload: reloadExercises } = useExercises();
 
-  const [name, setName] = useState("Neuer Trainingsplan");
+  const [name, setName] = useState(() => t("builder.defaultName"));
   const [days, setDays] = useState<BuilderDay[]>([]);
   const [initialized, setInitialized] = useState(!isEditing);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
@@ -116,7 +117,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
   const [activeDayIndex, setActiveDayIndex] = useState(0);
 
   const exLibrary = exerciseLibrary ?? [];
-  const weekdayLabels = days.map((d) => trainingWeekdayLabel(d.trainingWeekday));
+  const weekdayLabels = days.map((d) => trainingWeekdayLabel(d.trainingWeekday, locale));
   const activeDay = days[activeDayIndex] ?? null;
   const configExercise = activeDay?.exercises.find((e) => e.id === configExerciseId) ?? null;
 
@@ -164,8 +165,8 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
 
   useEffect(() => {
     if (isEditing || days.length > 0 || !initialized) return;
-    setDays([createEmptyDay(0)]);
-  }, [isEditing, days.length, initialized]);
+    setDays([createEmptyDay(0, [], t("builder.defaultDay", { number: 1 }))]);
+  }, [isEditing, days.length, initialized, t]);
 
   const updateDayAt = (index: number, updater: (day: BuilderDay) => BuilderDay) => {
     setDays((prev) => prev.map((day, i) => (i === index ? updater(day) : day)));
@@ -178,7 +179,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
   const addDay = () => {
     setDays((prev) => {
       const usedWeekdays = prev.map((d) => d.trainingWeekday);
-      const next = [...prev, createEmptyDay(prev.length, usedWeekdays)];
+      const next = [...prev, createEmptyDay(prev.length, usedWeekdays, t("builder.defaultDay", { number: prev.length + 1 }))];
       setActiveDayIndex(next.length - 1);
       return next;
     });
@@ -313,17 +314,20 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
     if (!user || days.length === 0) return;
     const trainingWeekdays = trainingWeekdaysFromPlanDayWeekdays(days.map((d) => d.trainingWeekday));
     if (new Set(trainingWeekdays).size !== trainingWeekdays.length) {
-      setError("Jeder Wochentag darf nur einem Workout zugeordnet sein.");
+      setError(t("builder.weekdayUnique"));
       return;
     }
     setSaving(true);
     setError(null);
     try {
       const totalExercises = days.reduce((sum, d) => sum + d.exercises.length, 0);
-      const sub = `${days.length} Tag${days.length === 1 ? "" : "e"} · ${totalExercises} Übung${totalExercises === 1 ? "" : "en"}`;
+      const sub = t("builder.summary", {
+        days: t(days.length === 1 ? "builder.dayCount" : "builder.dayCountPlural", { count: days.length }),
+        exercises: t(totalExercises === 1 ? "builder.exerciseCount" : "builder.exerciseCountPlural", { count: totalExercises }),
+      });
 
       const payload = {
-        name: name.trim() || "Neuer Trainingsplan",
+        name: name.trim() || t("builder.defaultName"),
         sub,
         days: days.map((d, i) => {
           const blockConfigs =
@@ -363,7 +367,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
           });
 
           return {
-            name: d.name.trim() || `Tag ${i + 1}`,
+            name: d.name.trim() || t("builder.defaultDay", { number: i + 1 }),
             enabledBlocks: d.enabledBlocks,
             blockConfigs,
             exercises,
@@ -379,7 +383,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
       }
       onSave();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      setError(e instanceof Error ? e.message : t("builder.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -390,7 +394,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
   if (isEditing && ((planLoading && !existingPlan) || !initialized)) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: M.mut, fontSize: 14 }}>
-        Plan wird geladen…
+        {t("plan.loading")}
       </div>
     );
   }
@@ -398,9 +402,9 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
   if (isEditing && !planLoading && !existingPlan) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 22 }}>
-        <div style={{ color: M.mut, fontSize: 14 }}>Plan nicht gefunden.</div>
+        <div style={{ color: M.mut, fontSize: 14 }}>{t("plan.notFound")}</div>
         <MButton onClick={onBack} variant="primary" size="sm">
-          Zurück
+          {t("common.back")}
         </MButton>
       </div>
     );
@@ -410,7 +414,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader
         onBack={onBack}
-        title={isEditing ? "PLAN BEARBEITEN" : "NEUER PLAN"}
+        title={isEditing ? t("builder.editTitle") : t("builder.newTitle")}
         trailing={<span style={{ width: 32 }} aria-hidden />}
       />
 
@@ -469,7 +473,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
                 letterSpacing: 0.4,
               }}
             >
-              <Icon name="plus" size={16} stroke={2.6} /> Tag hinzufügen
+              <Icon name="plus" size={16} stroke={2.6} /> {t("builder.addDay")}
             </MButton>
             <MButton
               disabled={saving || days.length === 0}
@@ -480,7 +484,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
               loading={saving}
               style={{ maxWidth: 320 }}
             >
-              Speichern
+              {t("builder.save")}
             </MButton>
           </div>
         ) : (
@@ -490,7 +494,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
               count={days.length}
               activeIndex={activeDayIndex}
               onIndexChange={setActiveDayIndex}
-              ariaLabel="Plan-Tage bearbeiten"
+              ariaLabel={t("builder.pagerAria")}
               tabListPadding="6px 0 0"
               tabSize="lg"
               tabBarTrailing={
@@ -499,7 +503,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
                   onClick={addDay}
                   variant="ghost"
                   size="icon"
-                  aria-label="Tag hinzufügen"
+                  aria-label={t("builder.addDay")}
                   style={{
                     border: "1.5px dashed " + M.line,
                     color: M.fg,
@@ -524,7 +528,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
                 >
                   <PlanDaySlide
                     dayNumber={index + 1}
-                    label={planDayDisplayName({ name: day.name, position: index }, weekdayLabels)}
+                    label={planDayDisplayName({ name: day.name, position: index }, weekdayLabels, t("plan.day", { number: index + 1 }))}
                     isCurrent={false}
                     isActive={activeDayIndex === index}
                     scrollHeader={
@@ -585,7 +589,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
                         onClick={() => removeDay(day.id)}
                         variant="ghost"
                         size="icon"
-                        aria-label="Tag entfernen"
+                        aria-label={t("builder.removeDay")}
                         style={{ color: M.mut2 }}
                       >
                         <Icon name="trash" size={16} stroke={2} />
@@ -611,7 +615,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
                 fullWidth
                 loading={saving}
               >
-                Speichern
+                {t("builder.save")}
               </MButton>
             </div>
           </>
@@ -643,13 +647,13 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
 
       <ConfirmSheet
         open={removeBlockConfirm != null}
-        title="Baustein entfernen?"
+        title={t("builder.removeBlock.title")}
         message={
           removeBlockConfirm
-            ? `„${BLOCK_LABELS[removeBlockConfirm]}“ wird dauerhaft aus diesem Tag entfernt — inklusive aller Übungen darin.`
+            ? t("builder.removeBlock.message", { block: t(removeBlockConfirm === "warmup" ? "block.warmup" : removeBlockConfirm === "skill" ? "block.skill" : removeBlockConfirm === "strength" ? "block.strength" : "block.metcon") })
             : ""
         }
-        confirmLabel="Entfernen"
+        confirmLabel={t("builder.remove")}
         onConfirm={() => removeBlockConfirm && removeBlock(removeBlockConfirm)}
         onCancel={() => setRemoveBlockConfirm(null)}
       />
@@ -659,7 +663,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
         onClose={() => setConfigExerciseId(null)}
         position="absolute"
         zIndex={21}
-        aria-label="Übung konfigurieren"
+        aria-label={t("builder.configureExercise")}
       >
         {configExercise && (
           <>
@@ -671,7 +675,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
             </div>
             {configExercise.blockType === "metcon" && (
               <div style={{ color: M.mut2, fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
-                Ziel-Wdh. pro Runde
+                {t("builder.targetReps")}
               </div>
             )}
             <ExerciseSetConfigurator
@@ -691,7 +695,7 @@ export function PlanBuilderScreen({ planId, onBack, onSave }: PlanBuilderScreenP
               fullWidth
               style={{ marginTop: 16, color: M.danger }}
             >
-              Übung entfernen
+              {t("builder.removeExercise")}
             </MButton>
           </>
         )}

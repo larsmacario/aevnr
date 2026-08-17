@@ -12,6 +12,7 @@ import {
 import { KG_STEP, type SetField } from "../lib/exerciseSets";
 import { M, mMini, mMiniLg } from "../theme";
 import { SetValueStepper } from "./SetValueStepper";
+import { useI18n } from "../lib/i18n";
 
 export interface SetMetricFieldsProps {
   set: SetLike;
@@ -27,13 +28,13 @@ export interface SetMetricFieldsProps {
   muted?: boolean;
 }
 
-export function setFieldHeaders(metric: ExerciseMetric = DEFAULT_EXERCISE_METRIC): { key: SetField | "set"; label: string }[] {
+export function setFieldHeaders(metric: ExerciseMetric = DEFAULT_EXERCISE_METRIC, language: "de" | "en" = "de"): { key: SetField | "set"; label: string }[] {
   const spec = getMetricSpec(metric);
-  const headers: { key: SetField | "set"; label: string }[] = [{ key: "set", label: "SATZ" }];
+  const headers: { key: SetField | "set"; label: string }[] = [{ key: "set", label: language === "en" ? "SET" : "SATZ" }];
   if (spec.showKg) headers.push({ key: "kg", label: spec.kgLabel });
-  if (spec.showReps) headers.push({ key: "reps", label: "WDH" });
+  if (spec.showReps) headers.push({ key: "reps", label: language === "en" ? "REPS" : "WDH" });
   if (spec.showDistance) headers.push({ key: "distanceM", label: "M" });
-  if (spec.showTime) headers.push({ key: "durationSec", label: "ZEIT" });
+  if (spec.showTime) headers.push({ key: "durationSec", label: language === "en" ? "TIME" : "ZEIT" });
   return headers;
 }
 
@@ -80,18 +81,18 @@ function fieldMinWidth(field: SetField, compact: boolean, isLg: boolean): number
   return 40;
 }
 
-function fieldLabel(field: SetField, spec: ReturnType<typeof getMetricSpec>): string {
-  if (field === "reps") return "WDH";
-  if (field === "durationSec") return "ZEIT";
+function fieldLabel(field: SetField, spec: ReturnType<typeof getMetricSpec>, language: "de" | "en"): string {
+  if (field === "reps") return language === "en" ? "REPS" : "WDH";
+  if (field === "durationSec") return language === "en" ? "TIME" : "ZEIT";
   if (field === "distanceM") return "M";
   return spec.kgLabel;
 }
 
-function fieldLabelTrack(field: SetField, spec: ReturnType<typeof getMetricSpec>): string {
-  if (field === "reps") return "Wiederholungen";
-  if (field === "durationSec") return "Zeit";
-  if (field === "distanceM") return "Distanz (m)";
-  return spec.kgLabel === "KG" ? "Gewicht (kg)" : spec.kgLabel;
+function fieldLabelTrack(field: SetField, spec: ReturnType<typeof getMetricSpec>, language: "de" | "en"): string {
+  if (field === "reps") return language === "en" ? "Repetitions" : "Wiederholungen";
+  if (field === "durationSec") return language === "en" ? "Time" : "Zeit";
+  if (field === "distanceM") return language === "en" ? "Distance (m)" : "Distanz (m)";
+  return spec.kgLabel === "KG" ? (language === "en" ? "Weight (kg)" : "Gewicht (kg)") : spec.kgLabel;
 }
 
 export function SetMetricFields({
@@ -105,6 +106,7 @@ export function SetMetricFields({
   areaWidth,
   muted = false,
 }: SetMetricFieldsProps) {
+  const { language } = useI18n();
   const spec = getMetricSpec(metric);
   const isLg = size === "lg";
   const fontSize = compact ? 15 : isLg ? 28 : 21;
@@ -126,8 +128,8 @@ export function SetMetricFields({
       label={
         withLabel
           ? stretch && isLg && labelOnTop
-            ? fieldLabelTrack(field, spec)
-            : fieldLabel(field, spec)
+            ? fieldLabelTrack(field, spec, language)
+            : fieldLabel(field, spec, language)
           : undefined
       }
       value={fieldValue(set, field, metric)}
@@ -200,7 +202,7 @@ export function SetMetricFields({
               <div style={{ textAlign: "center" }}>
                 {renderField(field)}
                 <div style={{ fontSize: 13, letterSpacing: 1, color: M.mut2, fontWeight: 700, marginTop: 2 }}>
-                  {fieldLabel(field, spec)}
+                  {fieldLabel(field, spec, language)}
                 </div>
               </div>
             )}
@@ -230,7 +232,7 @@ export function SetMetricFields({
               <div style={{ textAlign: "center" }}>
                 {renderField(field)}
                 <div style={{ fontSize: 13, letterSpacing: 1, color: M.mut2, fontWeight: 700, marginTop: 2 }}>
-                  {fieldLabel(field, spec)}
+                  {fieldLabel(field, spec, language)}
                 </div>
               </div>
             )}
@@ -274,7 +276,7 @@ export function SetMetricFields({
               <div style={{ textAlign: "center" }}>
                 {renderField(field)}
                 <div style={{ fontSize: 13, letterSpacing: 1, color: M.mut2, fontWeight: 700, marginTop: 2 }}>
-                  {fieldLabel(field, spec)}
+                  {fieldLabel(field, spec, language)}
                 </div>
               </div>
             )}

@@ -39,3 +39,24 @@ src/
 - **Recovery & Körper** — Protein, Wasser, Gewicht, Maße und private Vorher-/Nachher-Fotos
 
 > Hinweis: ÆVNR ist ein Lifestyle- und Präventionsprodukt. Es erstellt keine Diagnosen und ersetzt keine medizinische Beratung.
+
+## iOS-Release vorbereiten
+
+Das iOS-Projekt liegt unter `ios/App`. Nach jeder Web-Änderung wird es mit
+`npm run ios:sync` aktualisiert; der Befehl baut die Web-App und führt den
+Capacitor-/CocoaPods-Sync aus.
+
+Vor einem Upload in App Store Connect:
+
+- In Xcode eine Apple-Developer-Teamzuordnung und das registrierte Bundle-ID
+  `com.larsmacario.rephive` prüfen; für jeden Upload `MARKETING_VERSION` und
+  `CURRENT_PROJECT_VERSION` erhöhen.
+- Einen Release-Archive für ein physisches iPhone erstellen, in Xcode mit
+  **Validate App** prüfen und anschließend zu App Store Connect hochladen.
+- Dort eine öffentlich erreichbare Datenschutz-URL, Support-URL, Screenshots,
+  Altersfreigabe und vollständige Datenschutzangaben hinterlegen. Diese müssen
+  auch die über Supabase verarbeiteten Konto-, Trainings-, Körper-, Ernährungs-
+  und optionalen Foto-/Bluetooth-/Sprachdaten abdecken.
+- Vor dem Upload den von Xcode erzeugten Privacy Report prüfen. Die integrierten
+  Capacitor-Frameworks enthalten Privacy Manifests; weitere native SDKs müssen
+  bei einem Update erneut gegen Apples Vorgaben geprüft werden.

@@ -6,6 +6,7 @@ import { maxHrFromBirthDate } from "../../lib/heartRate/heartRateZones";
 import { Icon } from "../Icon";
 import { MButton } from "../MButton";
 import { HeartRateTrend } from "../HeartRateTrend";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackSessionHeaderProps {
   elapsedSec: number;
@@ -47,6 +48,7 @@ export function TrackSessionHeader({
   progressLabel,
   variant = "default",
 }: TrackSessionHeaderProps) {
+  const { t } = useI18n();
   const isFooter = variant === "exerciseFooter";
   const maxHr = maxHrFromBirthDate(birthDate);
 
@@ -64,7 +66,7 @@ export function TrackSessionHeader({
         >
           <div style={{ flex: "0 0 auto" }}>
             {onBack ? (
-              <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label="Zur Übersicht">
+              <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label={t("track.backOverview")}>
                 <Icon name="chevL" size={22} stroke={2.2} color={M.mut} />
               </MButton>
             ) : null}
@@ -107,7 +109,7 @@ export function TrackSessionHeader({
             variant="secondary"
             size="icon"
             onClick={onToggleTimerPause}
-            aria-label={timerPaused ? "Workout fortsetzen" : "Workout-Timer pausieren"}
+            aria-label={timerPaused ? t("track.resumeWorkout") : t("track.pauseWorkout")}
             style={{
               width: 40,
               height: 40,

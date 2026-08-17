@@ -1,6 +1,7 @@
 import { M } from "../theme";
 import { fmt, type TimerCfg, type TimerMode } from "../lib/engine";
 import { MStepper } from "./widgets";
+import { useI18n } from "../lib/i18n";
 
 export interface TimerConfigPanelProps {
   mode: TimerMode;
@@ -19,6 +20,7 @@ export function TimerConfigPanel({
   layout = "row",
   size = "default",
 }: TimerConfigPanelProps) {
+  const { t } = useI18n();
   const isStack = layout === "stack";
   const stepperSize = size;
 
@@ -65,7 +67,7 @@ export function TimerConfigPanel({
       {mode === "emom" && (
         <>
           {cell(
-            "RUNDEN",
+            t("interval.config.rounds"),
             <MStepper
               value={cfg.rounds!}
               min={1}
@@ -75,7 +77,7 @@ export function TimerConfigPanel({
             />,
           )}
           {cell(
-            "INTERVALL",
+            t("interval.config.interval"),
             <MStepper
               value={cfg.interval!}
               min={15}
@@ -90,7 +92,7 @@ export function TimerConfigPanel({
       )}
       {mode === "amrap" &&
         cell(
-          "DAUER",
+          t("interval.config.duration"),
           <MStepper
             value={cfg.total!}
             min={60}
@@ -104,7 +106,7 @@ export function TimerConfigPanel({
       {mode === "tabata" && (
         <>
           {cell(
-            "WORK",
+            t("interval.config.work"),
             <MStepper
               value={cfg.work!}
               min={5}
@@ -116,7 +118,7 @@ export function TimerConfigPanel({
             />,
           )}
           {cell(
-            "REST",
+            t("interval.config.rest"),
             <MStepper
               value={cfg.rest!}
               min={5}
@@ -128,7 +130,7 @@ export function TimerConfigPanel({
             />,
           )}
           {cell(
-            "RUNDEN",
+            t("interval.config.rounds"),
             <MStepper
               value={cfg.rounds!}
               min={1}
@@ -141,7 +143,7 @@ export function TimerConfigPanel({
       )}
       {mode === "fortime" &&
         cell(
-          "TIME CAP",
+          t("interval.config.timeCap"),
           <MStepper
             value={cfg.cap!}
             min={60}

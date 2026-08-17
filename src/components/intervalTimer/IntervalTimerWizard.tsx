@@ -10,6 +10,7 @@ import { HeartRateConnectSheet } from "../track/HeartRateConnectSheet";
 import { AlertSheet } from "../AlertSheet";
 import { MButton } from "../MButton";
 import { Icon } from "../Icon";
+import { useI18n } from "../../lib/i18n";
 
 export type WizardStep = "type" | "settings" | "run";
 
@@ -34,6 +35,7 @@ export function IntervalTimerWizard({
   initialConfig,
   sessionTags = [],
 }: IntervalTimerWizardProps) {
+  const { t } = useI18n();
   const [step, setStep] = useState<WizardStep>(initialMode ? "settings" : "type");
   const session = useIntervalTimerSession({ onSaveSession: (input) => onSaveSession({ ...input, tags: [...input.tags, ...sessionTags] }), initialMode, initialConfig });
   const {
@@ -82,7 +84,7 @@ export function IntervalTimerWizard({
     });
   };
 
-  const stepLabel = `Schritt ${STEP_INDEX[step]} / 3`;
+  const stepLabel = t("interval.step", { current: STEP_INDEX[step] });
 
   const header = showHeader ? (
     <div
@@ -94,11 +96,11 @@ export function IntervalTimerWizard({
         flexShrink: 0,
       }}
     >
-      <MButton type="button" variant="ghost" size="icon" onClick={handleBack} aria-label="Zurück">
+      <MButton type="button" variant="ghost" size="icon" onClick={handleBack} aria-label={t("interval.back")}>
         <Icon name="chevL" size={20} stroke={2.2} color={M.mut} />
       </MButton>
       <div style={{ textAlign: "center" }}>
-        <span style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>INTERVALL TIMER</span>
+        <span style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("interval.header")}</span>
         <div style={{ fontSize: 11, color: M.mut2, marginTop: 2, fontWeight: 600 }}>{stepLabel}</div>
       </div>
       <span style={{ width: 40 }} aria-hidden />
@@ -152,7 +154,7 @@ export function IntervalTimerWizard({
       />
       <AlertSheet
         open={!!heartRate.error}
-        title="Herzfrequenz"
+        title={t("interval.heartRate")}
         message={heartRate.error ?? ""}
         icon="alertCircle"
         onClose={heartRate.clearError}

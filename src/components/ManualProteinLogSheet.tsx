@@ -5,6 +5,7 @@ import { MButton } from "./MButton";
 import { NutritionStepperStack } from "./NutritionStepperStack";
 import { createProteinLog } from "../lib/db";
 import { calcProteinG } from "../lib/foodProduct";
+import { useI18n } from "../lib/i18n";
 
 export interface ManualProteinLogSheetProps {
   open: boolean;
@@ -14,6 +15,7 @@ export interface ManualProteinLogSheetProps {
 }
 
 export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: ManualProteinLogSheetProps) {
+  const { t } = useI18n();
   const [proteinPer100g, setProteinPer100g] = useState(20);
   const [amountG, setAmountG] = useState(100);
   const [label, setLabel] = useState("");
@@ -41,11 +43,11 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
 
   const handleSave = async () => {
     if (proteinPer100g <= 0 || amountG <= 0) {
-      setError("Protein pro 100 g und Menge müssen größer als 0 sein.");
+      setError(t("recovery.sheet.protein.invalid"));
       return;
     }
     if (previewProtein <= 0) {
-      setError("Berechnetes Protein muss größer als 0 sein.");
+      setError(t("recovery.sheet.protein.calculatedInvalid"));
       return;
     }
     setBusy(true);
@@ -53,24 +55,24 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
     try {
       await createProteinLog(userId, {
         proteinG: previewProtein,
-        label: label.trim() || "Protein",
+        label: label.trim() || t("recovery.protein.fallback"),
         amountG,
         source: "manual",
       });
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("recovery.sheet.protein.saveFailed"));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} aria-label="Protein tracken">
-      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Protein tracken</div>
+    <BottomSheet open={open} onClose={onClose} aria-label={t("recovery.protein.track")}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>{t("recovery.protein.track")}</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
-        Nährwert vom Etikett eingeben — Protein wird aus Menge berechnet.
+        {t("recovery.sheet.protein.description")}
       </p>
 
       {error ? (
@@ -81,7 +83,7 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
         fields={[
           {
             id: "proteinPer100g",
-            label: "Protein pro 100 g",
+            label: t("recovery.sheet.protein.per100"),
             value: Math.round(proteinPer100g * 10) / 10,
             step: 0.5,
             min: 0.5,
@@ -89,7 +91,7 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
           },
           {
             id: "amountG",
-            label: "Menge in g",
+            label: t("recovery.sheet.protein.amount"),
             value: amountG,
             step: 5,
             min: 5,
@@ -101,7 +103,7 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
         type="text"
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="Bezeichnung (optional)"
+        placeholder={t("recovery.sheet.protein.labelPlaceholder")}
         style={{
           width: "100%",
           marginTop: 16,
@@ -114,7 +116,7 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
         }}
       />
       <div style={{ fontSize: 14, color: M.brand, fontWeight: 700, marginTop: 16, marginBottom: 16, textAlign: "center" }}>
-        ≈ {previewProtein} g Protein
+        {t("recovery.sheet.protein.preview", { amount: previewProtein })}
       </div>
       <MButton
         type="button"
@@ -124,7 +126,7 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
         disabled={busy}
         onClick={() => void handleSave()}
       >
-        Hinzufügen
+        {t("recovery.sheet.protein.add")}
       </MButton>
     </BottomSheet>
   );

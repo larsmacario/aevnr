@@ -2,6 +2,7 @@ import { M } from "../theme";
 import { Icon, type IconProps } from "./Icon";
 import { MButton } from "./MButton";
 import type { DashboardQuickActionId } from "../lib/dashboardQuickActions";
+import { useI18n } from "../lib/i18n";
 
 export interface PersonalQuickAction {
   id: DashboardQuickActionId;
@@ -12,10 +13,11 @@ export interface PersonalQuickAction {
 }
 
 export function PersonalQuickActions({ actions }: { actions: PersonalQuickAction[] }) {
+  const { t } = useI18n();
   if (actions.length < 2) return null;
   const hasHero = actions.length === 3;
   return <section style={{ marginTop: 18 }}>
-    <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 10 }}>FÜR DICH</div>
+    <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 10 }}>{t("quickActions.title")}</div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
       {actions.map((action, index) => {
         const hero = hasHero && index === 0;

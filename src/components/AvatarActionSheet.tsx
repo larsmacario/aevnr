@@ -1,6 +1,7 @@
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface AvatarActionSheetProps {
   open: boolean;
@@ -10,9 +11,10 @@ export interface AvatarActionSheetProps {
 }
 
 export function AvatarActionSheet({ open, onClose, onChoosePhoto, onRemovePhoto }: AvatarActionSheetProps) {
+  const { t } = useI18n();
   return (
-    <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={30} aria-label="Profilbild-Aktionen">
-      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 14 }}>Profilbild</div>
+    <BottomSheet open={open} onClose={onClose} position="absolute" zIndex={30} aria-label={t("avatar.actions")}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 14 }}>{t("avatar.title")}</div>
       <MButton
         type="button"
         onClick={() => {
@@ -24,7 +26,7 @@ export function AvatarActionSheet({ open, onClose, onChoosePhoto, onRemovePhoto 
         fullWidth
         style={{ marginBottom: 10 }}
       >
-        Neues Bild wählen
+        {t("avatar.choose")}
       </MButton>
       <MButton
         type="button"
@@ -37,7 +39,7 @@ export function AvatarActionSheet({ open, onClose, onChoosePhoto, onRemovePhoto 
         fullWidth
         style={{ color: M.danger }}
       >
-        Profilbild entfernen
+        {t("avatar.remove")}
       </MButton>
     </BottomSheet>
   );

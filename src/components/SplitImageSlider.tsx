@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface SplitImageSliderProps {
   beforeUrl: string;
@@ -18,6 +19,7 @@ export function SplitImageSlider({
   beforeWeight,
   afterWeight,
 }: SplitImageSliderProps) {
+  const { t } = useI18n();
   const [sliderPosition, setSliderPosition] = useState<number>(50);
 
   return (
@@ -38,7 +40,7 @@ export function SplitImageSlider({
         {/* After Image (Right / Background) */}
         <img
           src={afterUrl}
-          alt="Nachher"
+          alt={t("comparison.afterAlt")}
           style={{
             position: "absolute",
             top: 0,
@@ -53,7 +55,7 @@ export function SplitImageSlider({
         {/* Before Image (Left / Overlay with clipPath) */}
         <img
           src={beforeUrl}
-          alt="Vorher"
+          alt={t("comparison.beforeAlt")}
           style={{
             position: "absolute",
             top: 0,
@@ -123,7 +125,7 @@ export function SplitImageSlider({
             letterSpacing: 0.5,
           }}
         >
-          VORHER
+          {t("comparison.before")}
         </div>
 
         <div
@@ -142,7 +144,7 @@ export function SplitImageSlider({
             letterSpacing: 0.5,
           }}
         >
-          NACHHER
+          {t("comparison.after")}
         </div>
 
         {/* Invisible Input Range for dragging */}
@@ -171,9 +173,9 @@ export function SplitImageSlider({
       {/* Info Details Row */}
       <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px 8px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>VORHER-MESSUNG</span>
+          <span style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("comparison.beforeMeasurement")}</span>
           <span style={{ fontSize: 13, color: M.fg, fontWeight: 600 }}>
-            {beforeDate || "Kein Datum"}
+            {beforeDate || t("comparison.noDate")}
           </span>
           {beforeWeight && (
             <span style={{ fontSize: 13, color: M.mut2, fontWeight: 600 }}>
@@ -183,9 +185,9 @@ export function SplitImageSlider({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end", textAlign: "right" }}>
-          <span style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>NACHHER-MESSUNG</span>
+          <span style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("comparison.afterMeasurement")}</span>
           <span style={{ fontSize: 13, color: M.acc, fontWeight: 600 }}>
-            {afterDate || "Kein Datum"}
+            {afterDate || t("comparison.noDate")}
           </span>
           {afterWeight && (
             <span style={{ fontSize: 13, color: M.mut2, fontWeight: 600 }}>

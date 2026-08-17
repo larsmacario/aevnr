@@ -4,65 +4,23 @@ import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
 import {
   BLOCK_ACCENT,
-  BLOCK_GUIDE_HINTS,
-  BLOCK_LABELS,
   BLOCK_ORDER,
-  type TrainingBlockType,
 } from "../lib/planBlocks";
+import { useI18n } from "../lib/i18n";
 
 export interface AboutScreenProps {
   onBack: () => void;
 }
 
-const BLOCK_ABOUT: Record<
-  TrainingBlockType,
-  { what: string; why: string; efficient: string }
-> = {
-  warmup: {
-    what: "Leichtes Cardio — Rudergerät, Laufband, Fahrrad oder Seilspringen. Du steigerst Puls und Körpertemperatur langsam, ohne dich vor dem eigentlichen Training zu erschöpfen.",
-    why: "Ein gutes Warm-up bereitet Gelenke, Sehnen und das Nervensystem auf Belastung vor. Du bewegst dich sicherer, die Technik sitzt schneller — und das Verletzungsrisiko sinkt spürbar, besonders bei schweren Hauptübungen.",
-    efficient:
-      "Plane 5–8 Minuten (10–12 Min ab 50+). Intensität: du kannst noch locker sprechen. Im Track einfach abhaken — nicht überspringen, auch wenn du „schon warm“ bist.",
-  },
-  skill: {
-    what: "Gezieltes Üben von Bewegungsmustern aus dem Kraft-Block — z. B. Kniebeuge-Tiefe, Hinge-Technik oder Schulterposition beim Drücken. Leichte Last oder nur Körpergewicht, Fokus auf saubere Wiederholungen.",
-    why: "Schwere Sätze verzeihen schlechte Technik nicht. Der Skill-Block schafft Muskelgedächtnis und Stabilität, bevor es ernst wird — so überträgst du mehr Kraft und trainierst langfristig gesünder.",
-    efficient:
-      "Kein Ego-Lifting: lieber leichter und langsam als schnell und unsauber. 2–3 Übungen reichen. Wenn die Zeit knapp ist, Skill nicht streichen — lieber eine Übung weniger im Kraft-Block.",
-  },
-  strength: {
-    what: "Hauptübungen (Squat, Bankdrücken, Kreuzheben o. Ä.) plus Assistance-Arbeit für Schwachstellen. Hier zählst du Sätze, Wiederholungen und Gewicht — der Kern deines Trainings für Kraft und Muskelaufbau.",
-    why: "Progressive Überladung passiert hier: mehr Gewicht, mehr Wiederholungen oder mehr Qualität über die Wochen. Das ist der Baustein, der deinen Körper wirklich verändert — alles andere unterstützt ihn.",
-    efficient:
-      "Auto-Pilot schlägt Sätze aus deiner letzten Session vor — ein Tap zum Bestätigen. Fokus auf Hauptlifts, Assistance nur wo nötig. Pausen-Timer startet automatisch nach jedem Satz.",
-  },
-  metcon: {
-    what: "Kondition zum Abschluss — typisch als AMRAP (so viele Runden wie möglich), EMOM (jede Minute eine Aufgabe) oder Circuit. Kurz, intensiv, oft mit Körpergewicht oder leichten Gewichten.",
-    why: "MetCon verbessert Ausdauer, Work Capacity und Fettstoffwechsel — ohne dein Krafttraining zu ersetzen. Je nach Ziel dosiert: ergänzend bei Muskelaufbau, etwas kräftiger bei Fettabbau.",
-    efficient:
-      "Bei wenig Zeit oder reinem Kraft-Fokus: weglassen oder im Tracking überspringen. Im manuellen Plan-Builder ist MetCon opt-in. Bei Reha oder Schmerzen lieber ganz weg — Kraft und Skill reichen.",
-  },
-};
-
-const EFFICIENCY_TIPS = [
-  {
-    title: "Reihenfolge einhalten",
-    text: "Warm-up → Skill → Kraft → MetCon — so ist jede Einheit komplett und vorhersehbar.",
-  },
-  {
-    title: "Bausteine flexibel",
-    text: "Im Tracking einzelne Bausteine überspringen, wenn die Zeit knapp ist.",
-  },
-  {
-    title: "MetCon nach Bedarf",
-    text: "Standard in KI-Plänen; im manuellen Builder ohne MetCon starten und bei Bedarf hinzufügen.",
-  },
-];
-
 export function AboutScreen({ onBack }: AboutScreenProps) {
+  const { t } = useI18n();
+  const efficiencyTips = [1, 2, 3].map((index) => ({
+    title: t(`about.tip${index}.title` as "about.tip1.title"),
+    text: t(`about.tip${index}.text` as "about.tip1.text"),
+  }));
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title={`UEBER ${APP_NAME.toUpperCase()}`} />
+      <ScreenBackHeader onBack={onBack} title={t("about.title", { app: APP_NAME.toUpperCase() })} />
 
       <div
         style={{
@@ -84,9 +42,9 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
               color: M.fg,
             }}
           >
-            Keine Ausreden.
+            {t("about.tagline1")}
             <br />
-            <span style={{ color: M.acc }}>Nur Ergebnisse.</span>
+            <span style={{ color: M.acc }}>{t("about.tagline2")}</span>
           </p>
         </div>
 
@@ -108,22 +66,16 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
               marginBottom: 10,
             }}
           >
-            WARUM {APP_NAME.toUpperCase()}?
+            {t("about.whyTitle", { app: APP_NAME.toUpperCase() })}
           </div>
           <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.6, color: M.mut }}>
-            Training soll wirken, nicht Zeit fressen. {APP_NAME} bündelt Plan, Live-Tracking, Timer und Fortschritt
-            an einem Ort — ohne jedes Mal neu zu planen. Mit{" "}
-            <strong style={{ color: M.fg }}>ExpressTracking</strong> startest du über den Plus-Button in Sekunden:
-            letztes Workout wiederholen oder Übungen aus der Bibliothek — auch ohne festen Plan.
+            {t("about.why1", { app: APP_NAME })}
           </p>
           <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.6, color: M.mut }}>
-            Jede Einheit folgt derselben Struktur aus vier Bausteinen. Der{" "}
-            <strong style={{ color: M.fg }}>Auto-Pilot</strong> übernimmt die Progression im Kraft-Block — du
-            bestätigst nur.
+            {t("about.why2")}
           </p>
           <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: M.mut }}>
-            {APP_NAME} ist im <strong style={{ color: M.fg }}>Early Access</strong> und wächst noch. Feedback hilft,
-            das Richtige als Nächstes zu bauen.
+            {t("about.why3", { app: APP_NAME })}
           </p>
         </div>
 
@@ -136,13 +88,13 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
             marginBottom: 12,
           }}
         >
-          DIE 4 BAUSTEINE
+          {t("about.blocks")}
         </div>
 
         <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
           {BLOCK_ORDER.map((block, index) => {
             const accent = BLOCK_ACCENT[block];
-            const about = BLOCK_ABOUT[block];
+            const prefix = `about.block.${block}` as const;
             return (
               <div
                 key={block}
@@ -183,7 +135,7 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
                         color: accent,
                       }}
                     >
-                      {BLOCK_LABELS[block]}
+                      {t(`${prefix}.label` as "about.block.warmup.label")}
                     </div>
                     <div
                       style={{
@@ -193,16 +145,19 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
                         lineHeight: 1.4,
                       }}
                     >
-                      {BLOCK_GUIDE_HINTS[block]}
+                      {t(`${prefix}.hint` as "about.block.warmup.hint")}
                     </div>
                     <p style={{ margin: "10px 0 8px", fontSize: 14, lineHeight: 1.55, color: M.mut }}>
-                      <strong style={{ color: M.fg, fontWeight: 600 }}>Was:</strong> {about.what}
+                      <strong style={{ color: M.fg, fontWeight: 600 }}>{t("about.what")}</strong>{" "}
+                      {t(`${prefix}.what` as "about.block.warmup.what")}
                     </p>
                     <p style={{ margin: "0 0 8px", fontSize: 14, lineHeight: 1.55, color: M.mut }}>
-                      <strong style={{ color: M.fg, fontWeight: 600 }}>Warum:</strong> {about.why}
+                      <strong style={{ color: M.fg, fontWeight: 600 }}>{t("about.why")}</strong>{" "}
+                      {t(`${prefix}.why` as "about.block.warmup.why")}
                     </p>
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: M.mut2 }}>
-                      <strong style={{ color: M.fg, fontWeight: 600 }}>Effizient:</strong> {about.efficient}
+                      <strong style={{ color: M.fg, fontWeight: 600 }}>{t("about.efficient")}</strong>{" "}
+                      {t(`${prefix}.efficient` as "about.block.warmup.efficient")}
                     </p>
                   </div>
                 </div>
@@ -220,11 +175,11 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
             marginBottom: 12,
           }}
         >
-          EFFIZIENT NUTZEN
+          {t("about.tips")}
         </div>
 
         <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
-          {EFFICIENCY_TIPS.map((tip) => (
+          {efficiencyTips.map((tip) => (
             <div
               key={tip.title}
               style={{
@@ -249,7 +204,7 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
             margin: 0,
           }}
         >
-          Version {__APP_VERSION__} · Made for the iron
+          {t("about.version", { version: __APP_VERSION__ })}
         </p>
         <p
           style={{
@@ -259,7 +214,7 @@ export function AboutScreen({ onBack }: AboutScreenProps) {
             color: M.mut2,
           }}
         >
-          Entwickelt von Lars Macario
+          {t("about.author")}
         </p>
       </div>
     </div>

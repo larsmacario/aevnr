@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BottomSheet } from "../BottomSheet";
 import { MButton } from "../MButton";
 import { M } from "../../theme";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackExerciseNoteSheetProps {
   open: boolean;
@@ -18,6 +19,7 @@ export function TrackExerciseNoteSheet({
   onClose,
   onSave,
 }: TrackExerciseNoteSheetProps) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState(note);
 
   useEffect(() => {
@@ -25,15 +27,15 @@ export function TrackExerciseNoteSheet({
   }, [open, note]);
 
   return (
-    <BottomSheet open={open} onClose={onClose} aria-label={`Notizen · ${exerciseName}`} fitContent>
+    <BottomSheet open={open} onClose={onClose} aria-label={t("exercise.notesAria", { name: exerciseName })} fitContent>
       <div style={{ padding: "4px 20px 24px" }}>
         <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 18, color: M.fg, marginBottom: 12 }}>
-          Notizen
+          {t("exercise.notes")}
         </div>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="z. B. Tempo, Fokus, Schmerzen…"
+          placeholder={t("exercise.notesPlaceholder")}
           rows={4}
           style={{
             width: "100%",
@@ -61,7 +63,7 @@ export function TrackExerciseNoteSheet({
           }}
           style={{ marginTop: 14, fontFamily: M.label, letterSpacing: 0.4 }}
         >
-          Speichern
+          {t("exercise.save")}
         </MButton>
       </div>
     </BottomSheet>

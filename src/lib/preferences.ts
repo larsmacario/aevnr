@@ -7,6 +7,7 @@ import { supabase } from "./supabase";
 import { normalizeDailyHealthspanRecommendation, type DailyHealthspanRecommendation } from "./healthspan";
 import { normalizeFactTimezone, normalizeFactTopics, type FactTopic } from "./facts";
 import { DEFAULT_DASHBOARD_PREFERENCES, normalizeDashboardPreferences, type DashboardPreferences } from "./dashboardPersonalization";
+import { detectAppLanguage, normalizeAppLanguage, type AppLanguage } from "./language";
 
 export type TrainingStructure = "full_body" | "split";
 export type TrainingSplitDays = 2 | 3 | 4 | 5 | 6;
@@ -162,6 +163,8 @@ export function createAiConsentGrant(): AiConsent {
 }
 
 export interface UserPreferences {
+  /** App display language, shared by web and the Capacitor iOS app. */
+  language: AppLanguage;
   restSeconds: number;
   autoRest: boolean;
   timerSounds: boolean;
@@ -220,6 +223,7 @@ function cloneTimerDefaults(): Record<TimerMode, TimerCfg> {
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
+  language: detectAppLanguage(),
   restSeconds: 90,
   autoRest: true,
   timerSounds: true,
@@ -277,6 +281,7 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
   }
   const obj = raw as Record<string, unknown>;
   return {
+    language: normalizeAppLanguage(obj.language) ?? detectAppLanguage(),
     restSeconds:
       typeof obj.restSeconds === "number" ? obj.restSeconds : DEFAULT_PREFERENCES.restSeconds,
     autoRest: typeof obj.autoRest === "boolean" ? obj.autoRest : DEFAULT_PREFERENCES.autoRest,
@@ -379,6 +384,7 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
 
 export function preferencesToJson(prefs: UserPreferences): Json {
   return {
+    language: prefs.language,
     restSeconds: prefs.restSeconds,
     autoRest: prefs.autoRest,
     timerSounds: prefs.timerSounds,

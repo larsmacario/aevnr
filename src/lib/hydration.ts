@@ -63,6 +63,7 @@ export function sumWaterLogs(logs: Pick<WaterLogLike, "amountMl">[]): number {
 export function aggregateWaterLastSevenDays(
   logs: WaterLogLike[],
   referenceDate: Date = new Date(),
+  locale = "de-DE",
 ): HydrationDay[] {
   const start = getRollingSevenDayStart(referenceDate);
   const totals = new Map<string, number>();
@@ -80,7 +81,7 @@ export function aggregateWaterLastSevenDays(
     const dateKey = toLocalDateKey(date);
     return {
       dateKey,
-      label: date.toLocaleDateString("de-DE", { weekday: "short" }).slice(0, 1),
+      label: date.toLocaleDateString(locale, { weekday: "short" }).slice(0, 1),
       amountMl: totals.get(dateKey) ?? 0,
     };
   });
@@ -99,9 +100,9 @@ export function shouldShowHydrationHint(params: {
   return params.loggedMl < params.targetMl * 0.5;
 }
 
-export function formatWaterAmount(amountMl: number): string {
+export function formatWaterAmount(amountMl: number, locale = "de-DE"): string {
   if (amountMl >= 1000) {
-    return `${(amountMl / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 })} l`;
+    return `${(amountMl / 1000).toLocaleString(locale, { maximumFractionDigits: 2 })} l`;
   }
   return `${amountMl} ml`;
 }

@@ -6,6 +6,7 @@ import { Icon } from "../components/Icon";
 import { MStat } from "../components/widgets";
 import { floatNavContentInset } from "../components/FloatNav";
 import { MButton } from "../components/MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface HistoryScreenProps {
   onOpenSession: (sessionId: string) => void;
@@ -14,6 +15,7 @@ export interface HistoryScreenProps {
 }
 
 export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: HistoryScreenProps) {
+  const { t } = useI18n();
   const { data: history, loading, error, reload } = useSessions();
 
   useEffect(() => {
@@ -28,16 +30,16 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "4px 22px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>Verlauf</div>
+          <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1 }}>{t("history.title")}</div>
           <MButton type="button" onClick={onOpenStats} variant="secondary" size="sm" style={{ flexShrink: 0, color: M.fg }}>
-            Statistik
+            {t("history.stats")}
             <Icon name="chevR" size={12} color={M.mut} stroke={2.2} />
           </MButton>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-          <MStat label="SESSIONS" value={list.length} sub="gesamt" />
-          <MStat label="VOLUMEN" value={`${totV.toFixed(1)}t`} sub="gesamt" />
-          <MStat label="ZEIT" value={list.length ? `${(totT / 60).toFixed(1)}h` : "0h"} sub="trainiert" />
+          <MStat label={t("home.stats.sessions").toLocaleUpperCase()} value={list.length} sub={t("history.total")} />
+          <MStat label={t("home.stats.volume")} value={`${totV.toFixed(1)}t`} sub={t("history.total")} />
+          <MStat label={t("history.time")} value={list.length ? `${(totT / 60).toFixed(1)}h` : "0h"} sub={t("history.trained")} />
         </div>
       </div>
 
@@ -52,7 +54,7 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
           gap: 8,
         }}
       >
-        {loading && <div style={{ color: M.mut, fontSize: 14 }}>Verlauf wird geladen…</div>}
+        {loading && <div style={{ color: M.mut, fontSize: 14 }}>{t("history.loading")}</div>}
         {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && list.length === 0 && (
           <div
@@ -69,8 +71,8 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
             }}
           >
             <Icon name="list" size={32} color={M.mut2} stroke={2} />
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Noch keine Sessions</div>
-            <div style={{ fontSize: 13 }}>Starte ein Workout oder schließe einen Timer ab — dein Verlauf erscheint hier.</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{t("history.empty")}</div>
+            <div style={{ fontSize: 13 }}>{t("history.emptyDetail")}</div>
           </div>
         )}
         {list.map((h) => (
@@ -125,7 +127,7 @@ export function HistoryScreen({ onOpenSession, onOpenStats, refreshKey = 0 }: Hi
                 {h.day} · {h.date} ·{" "}
                 {isTimerSession(h.tags)
                   ? formatTimerHistorySubtitle(h)
-                  : `${h.dur} Min · ${h.vol.toFixed(1)}t · ${h.sets} Sätze`}
+                  : t("history.sessionMeta", { minutes: h.dur, volume: h.vol.toFixed(1), sets: h.sets })}
               </div>
             </div>
             <Icon name="chevR" size={20} color={M.mut2} stroke={2.2} />

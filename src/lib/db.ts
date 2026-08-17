@@ -57,6 +57,7 @@ import { normalizeDailyCheckin, type DailyCheckin, type DailyCheckinInput } from
 import { normalizeMetabolicLog, type MetabolicLog, type MetabolicLogInput } from "./metabolic";
 import type { CoachRecommendation } from "./healthspan";
 import { localDb } from "./offline/localDb";
+import type { AppLanguage } from "./language";
 
 /** Entfernt KI-typische Präfixe wie „Tag 1 – …“ aus Workout-Namen. */
 export function sanitizeAiWorkoutName(name: string): string {
@@ -2572,6 +2573,7 @@ export async function assertAiTrainingPlanConsent(userId: string): Promise<void>
 export async function generateAndSaveAITrainingPlan(
   userId: string,
   input: {
+    language: AppLanguage;
     gender: "male" | "female" | "other" | null;
     birthDate?: string | null;
     heightCm: number | null;
@@ -2600,7 +2602,9 @@ export async function generateAndSaveAITrainingPlan(
             throw new Error(
               typeof payload.message === "string"
                 ? payload.message
-                : "Für die KI-Planerstellung ist deine Einwilligung zur Datenübermittlung an Anthropic erforderlich.",
+                : input.language === "en"
+                  ? "Your consent to share data with Anthropic is required to create an AI plan."
+                  : "Für die KI-Planerstellung ist deine Einwilligung zur Datenübermittlung an Anthropic erforderlich.",
             );
           }
           if (typeof payload.error === "string") {
@@ -2620,15 +2624,13 @@ export async function generateAndSaveAITrainingPlan(
       const cause = error.context as Error | undefined;
       const causeName = cause?.name ?? "";
       if (causeName === "AbortError" || causeName === "TimeoutError") {
-        throw new Error(
-          "Die KI-Planerstellung hat zu lange gedauert. Bitte erneut versuchen und die App geöffnet lassen.",
-        );
+        throw new Error(input.language === "en"
+          ? "Creating the AI plan took too long. Please try again and keep the app open."
+          : "Die KI-Planerstellung hat zu lange gedauert. Bitte erneut versuchen und die App geöffnet lassen.");
       }
-      throw new Error(
-        cause?.message
-          ? `Verbindung zur KI-Planerstellung fehlgeschlagen: ${cause.message}`
-          : "Verbindung zur KI-Planerstellung fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.",
-      );
+      throw new Error(cause?.message
+        ? input.language === "en" ? `Could not connect to AI plan creation: ${cause.message}` : `Verbindung zur KI-Planerstellung fehlgeschlagen: ${cause.message}`
+        : input.language === "en" ? "Could not connect to AI plan creation. Check your internet connection and try again." : "Verbindung zur KI-Planerstellung fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.");
     }
     throw new Error(error.message || "Fehler beim Aufruf der Edge Function");
   }
@@ -2848,6 +2850,7 @@ export type DailyAiSession = { mode: "strength"; rationale: string; exercises: {
 export type DailyAiHealthspanRecommendation = Pick<CoachRecommendation, "action" | "title" | "detail" | "trainingAlternative">;
 
 export async function generateDailyAiHealthspanRecommendation(input: {
+  language: AppLanguage;
   checkin: DailyCheckinInput;
   week: { completedStrengthDays: number; strengthTargetDays: number; zone2Minutes: number; zone2TargetMinutes: number; proteinG: number; proteinTargetG: number; waterMl: number; waterTargetMl: number };
   history: HistoryEntry[];
@@ -2860,6 +2863,7 @@ export async function generateDailyAiHealthspanRecommendation(input: {
 }
 
 export async function generateDailyAiSession(input: {
+  language: AppLanguage;
   readiness: "ready" | "reduce";
   preferences: string[];
   history: HistoryEntry[];

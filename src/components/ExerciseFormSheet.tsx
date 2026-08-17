@@ -20,6 +20,7 @@ import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { isValidYouTubeUrl, normalizeYouTubeUrl } from "../lib/youtube";
 import { Icon } from "./Icon";
 import { MButton } from "./MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface ExerciseFormSheetProps {
   open: boolean;
@@ -29,6 +30,7 @@ export interface ExerciseFormSheetProps {
 }
 
 export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: ExerciseFormSheetProps) {
+  const { language, t } = useI18n();
   const { user, profile } = useAuth();
   const owner = isAppOwner(profile);
   const isGlobalEdit = Boolean(exercise && exercise.userId === null && owner);
@@ -82,7 +84,7 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Löschen fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("exerciseForm.errorDelete"));
       setDeleteConfirmOpen(false);
     } finally {
       setDeleting(false);
@@ -92,22 +94,22 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
   const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("Bitte einen Namen eingeben.");
+      setError(t("exerciseForm.errorName"));
       return;
     }
     if (!muscleGroup.trim()) {
-      setError("Bitte eine Muskelgruppe wählen.");
+      setError(t("exerciseForm.errorMuscle"));
       return;
     }
     if (!equipment.trim()) {
-      setError("Bitte ein Gerät wählen.");
+      setError(t("exerciseForm.errorEquipment"));
       return;
     }
     const youtubeTrimmed = youtubeUrl.trim();
     let normalizedYoutube: string | null = null;
     if (youtubeTrimmed) {
       if (!isValidYouTubeUrl(youtubeTrimmed)) {
-        setError("Ungültiger YouTube-Link.");
+        setError(t("exerciseForm.errorYoutube"));
         return;
       }
       normalizedYoutube = normalizeYouTubeUrl(youtubeTrimmed);
@@ -132,13 +134,13 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("exerciseForm.errorSave"));
     } finally {
       setSaving(false);
     }
   };
 
-  const formTitle = isEdit ? "Übung bearbeiten" : "Übung anlegen";
+  const formTitle = isEdit ? t("exerciseForm.editTitle") : t("exerciseForm.createTitle");
   const legacyHint =
     muscleGroupRaw && muscleGroupRaw !== muscleGroup && isLegacyMuscleGroup(muscleGroupRaw)
       ? muscleGroupRaw
@@ -153,12 +155,12 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
         </div>
         <label style={{ display: "block", marginBottom: 14, flexShrink: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 6 }}>
-            NAME
+            {t("exerciseForm.name")}
           </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="z. B. Bankdrücken"
+            placeholder={t("exerciseForm.namePlaceholder")}
             style={{
               width: "100%",
               padding: "12px 14px",
@@ -175,12 +177,12 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
 
         <label style={{ display: "block", marginBottom: 14, flexShrink: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 6 }}>
-            BESCHREIBUNG (DE)
+            {t("exerciseForm.description")}
           </div>
           <textarea
             value={descriptionDe}
             onChange={(e) => setDescriptionDe(e.target.value)}
-            placeholder="Kurze Beschreibung der Übung…"
+            placeholder={t("exerciseForm.descriptionPlaceholder")}
             rows={3}
             style={{
               width: "100%",
@@ -214,13 +216,13 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
         </div>
         {legacyHint && (
           <div style={{ fontSize: 13, color: M.mut2, marginBottom: 14, flexShrink: 0 }}>
-            Früher: {legacyHint}
+            {t("catalog.formerly", { value: legacyHint })}
           </div>
         )}
 
         <label style={{ display: "block", marginBottom: 14, flexShrink: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 6 }}>
-            YOUTUBE-LINK (OPTIONAL)
+            {t("exerciseForm.youtube")}
           </div>
           <input
             value={youtubeUrl}
@@ -245,7 +247,7 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
 
         <div style={{ marginBottom: 14, flexShrink: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 6 }}>
-            KATEGORIE
+            {t("exerciseForm.category")}
           </div>
           <MButton
             type="button"
@@ -261,7 +263,7 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
             }}
           >
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {metricLabel(metric)}
+              {metricLabel(metric, language)}
             </span>
             <Icon name="chevR" size={18} color={M.mut2} stroke={2.2} />
           </MButton>
@@ -284,14 +286,14 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
             size="md"
             style={{ flex: 1 }}
           >
-            {saving ? "Speichern…" : "SPEICHERN"}
+            {saving ? t("exerciseForm.saving") : t("exerciseForm.save")}
           </MButton>
           {canDelete && (
             <MButton
               type="button"
               disabled={saving || deleting}
               onClick={() => setDeleteConfirmOpen(true)}
-              aria-label="Übung löschen"
+              aria-label={t("exerciseForm.deleteAria")}
               variant="secondary"
               size="icon"
               style={{ flexShrink: 0, width: 40, height: 40 }}
@@ -304,11 +306,11 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
     </BottomSheet>
     <DeleteConfirmDialog
       open={deleteConfirmOpen && !!exercise}
-      title="Übung löschen?"
+      title={t("exerciseForm.deleteTitle")}
       message={
         exercise ? (
           <>
-            Möchtest du <strong style={{ color: M.fg }}>{exercise.name}</strong> wirklich löschen?
+            {t("exerciseForm.deleteMessage", { name: language === "en" ? exercise.nameEn?.trim() || exercise.name : exercise.name })}
           </>
         ) : null
       }

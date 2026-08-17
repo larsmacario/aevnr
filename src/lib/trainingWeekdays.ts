@@ -3,8 +3,10 @@ import type { LibraryPlan, PlanSummary } from "../data";
 /** ISO: 0 = Montag … 6 = Sonntag */
 export const TRAINING_WEEKDAY_LABELS = ["Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa.", "So."] as const;
 
-export function trainingWeekdayLabel(index: number): string {
-  return TRAINING_WEEKDAY_LABELS[index] ?? "";
+export function trainingWeekdayLabel(index: number, locale = "de-DE"): string {
+  if (index < 0 || index > 6) return "";
+  const monday = new Date(2024, 0, 1 + index);
+  return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(monday);
 }
 
 export function defaultTrainingWeekdays(count: number): number[] {
@@ -74,18 +76,18 @@ export function toggleTrainingWeekday(selected: number[], day: number): number[]
   return [...selected, day].sort((a, b) => a - b);
 }
 
-export function formatTrainingWeekdays(days: number[]): string {
-  return days.map(trainingWeekdayLabel).join(", ");
+export function formatTrainingWeekdays(days: number[], locale = "de-DE"): string {
+  return days.map((day) => trainingWeekdayLabel(day, locale)).join(", ");
 }
 
-export function weekdayLabelsFromTrainingWeekdays(days: number[] | undefined | null): string[] | undefined {
+export function weekdayLabelsFromTrainingWeekdays(days: number[] | undefined | null, locale = "de-DE"): string[] | undefined {
   if (!days || days.length === 0) return undefined;
-  return days.map(trainingWeekdayLabel);
+  return days.map((day) => trainingWeekdayLabel(day, locale));
 }
 
-export function weekdayLabelsFromSummary(summary: PlanSummary | null | undefined): string[] | undefined {
+export function weekdayLabelsFromSummary(summary: PlanSummary | null | undefined, locale = "de-DE"): string[] | undefined {
   if (!summary?.inputs) return undefined;
-  return weekdayLabelsFromTrainingWeekdays(summary.inputs.trainingWeekdays);
+  return weekdayLabelsFromTrainingWeekdays(summary.inputs.trainingWeekdays, locale);
 }
 
 /** Liest trainingWeekdays direkt aus dem JSONB, auch ohne vollständige KI-Summary. */
@@ -186,6 +188,7 @@ export function getPlanDayIndexForIsoWeekday(
 export function getCurrentCalendarWeek(
   trainingWeekdays?: number[] | null,
   referenceDate: Date = new Date(),
+  locale = "de-DE",
 ): CalendarWeekDay[] {
   const trainingSet =
     trainingWeekdays && trainingWeekdays.length > 0 ? new Set(trainingWeekdays) : null;
@@ -204,7 +207,7 @@ export function getCurrentCalendarWeek(
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     return {
-      weekdayLabel: TRAINING_WEEKDAY_LABELS[i].replace(".", ""),
+      weekdayLabel: trainingWeekdayLabel(i, locale).replace(".", ""),
       dateNumber: d.getDate(),
       date: d,
       isToday: d.getTime() === today.getTime(),

@@ -9,6 +9,7 @@ import {
   ONE_RM_DEFAULT_REPS,
   ONE_RM_DEFAULT_WEIGHT,
 } from "../lib/oneRepMax";
+import { useI18n } from "../lib/i18n";
 
 export interface OneRmCalculatorBodyProps {
   initialWeight?: number;
@@ -27,6 +28,7 @@ interface CalculatorStepperProps {
 }
 
 function CalculatorStepper({ label, value, displayValue, step, min, max, onChange }: CalculatorStepperProps) {
+  const { t } = useI18n();
   const dec = () => onChange(Math.max(min, +(value - step).toFixed(2)));
   const inc = () => onChange(Math.min(max, +(value + step).toFixed(2)));
 
@@ -52,7 +54,7 @@ function CalculatorStepper({ label, value, displayValue, step, min, max, onChang
           onClick={dec}
           variant="secondary"
           size="icon"
-          aria-label={`${label} verringern`}
+          aria-label={t("oneRm.decrease", { label })}
           style={{ width: 36, height: 36, minHeight: 36, background: M.panel }}
         >
           <span style={{ fontWeight: 700 }}>−</span>
@@ -87,7 +89,7 @@ function CalculatorStepper({ label, value, displayValue, step, min, max, onChang
           onClick={inc}
           variant="secondary"
           size="icon"
-          aria-label={`${label} erhöhen`}
+          aria-label={t("oneRm.increase", { label })}
           style={{ width: 36, height: 36, minHeight: 36, background: M.panel }}
         >
           <span style={{ fontWeight: 700 }}>+</span>
@@ -102,6 +104,7 @@ export function OneRmCalculatorBody({
   initialReps = ONE_RM_DEFAULT_REPS,
   compact = false,
 }: OneRmCalculatorBodyProps) {
+  const { t } = useI18n();
   const [weightInput, setWeightInput] = useState(initialWeight);
   const [repsInput, setRepsInput] = useState(initialReps);
   const [showFormulas, setShowFormulas] = useState(false);
@@ -139,7 +142,7 @@ export function OneRmCalculatorBody({
       >
         <div style={{ display: "flex", gap: 12 }}>
           <CalculatorStepper
-            label="GEWICHT (KG)"
+            label={t("oneRm.weight")}
             value={weightInput}
             displayValue={formatKgDisplay(weightInput)}
             step={KG_STEP}
@@ -148,7 +151,7 @@ export function OneRmCalculatorBody({
             onChange={handleWeightChange}
           />
           <CalculatorStepper
-            label="WIEDERHOLUNGEN"
+            label={t("oneRm.reps")}
             value={repsInput}
             displayValue={String(repsInput)}
             step={1}
@@ -171,7 +174,7 @@ export function OneRmCalculatorBody({
         }}
       >
         <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 600 }}>
-          GESCHÄTZTES MAXIMUM (1RM)
+          {t("oneRm.estimated")}
         </div>
         <div
           style={{
@@ -185,7 +188,7 @@ export function OneRmCalculatorBody({
         >
           {estimates.epley} <span style={{ fontSize: compact ? 20 : 24, fontWeight: 600 }}>kg</span>
         </div>
-        <div style={{ fontSize: 13, color: M.mut, marginTop: 8 }}>Berechnet nach der Epley-Formel</div>
+        <div style={{ fontSize: 13, color: M.mut, marginTop: 8 }}>{t("oneRm.epley")}</div>
       </div>
 
       <div
@@ -214,7 +217,7 @@ export function OneRmCalculatorBody({
             color: M.fg,
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: M.fg }}>Formel-Vergleich</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: M.fg }}>{t("oneRm.compare")}</span>
           <Icon name={showFormulas ? "chevD" : "chevR"} size={16} color={M.mut} />
         </button>
 
@@ -255,7 +258,7 @@ export function OneRmCalculatorBody({
                 marginTop: 2,
               }}
             >
-              <span style={{ color: M.mut, fontWeight: 700 }}>Durchschnitt:</span>
+              <span style={{ color: M.mut, fontWeight: 700 }}>{t("oneRm.average")}</span>
               <span style={{ color: M.acc, fontWeight: 700 }}>{estimates.average} kg</span>
             </div>
           </div>
@@ -272,7 +275,7 @@ export function OneRmCalculatorBody({
             marginBottom: 10,
           }}
         >
-          BELASTUNGSGRENZEN & WIEDERHOLUNGEN
+          {t("oneRm.loads")}
         </div>
         <div
           style={{
@@ -310,7 +313,7 @@ export function OneRmCalculatorBody({
                   >
                     {row.percentage}%
                   </span>
-                  <span style={{ fontSize: 13, color: isMax ? M.acc : M.mut }}>des 1RM</span>
+                  <span style={{ fontSize: 13, color: isMax ? M.acc : M.mut }}>{t("oneRm.ofMax")}</span>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
                   <div
@@ -324,7 +327,7 @@ export function OneRmCalculatorBody({
                     {formatKgDisplay(row.weight)} kg
                   </div>
                   <div style={{ fontSize: 13, color: repsColor, fontWeight: 600, marginTop: 2 }}>
-                    ~ {row.reps} Wdh.
+                    {t("oneRm.repsShort", { count: row.reps })}
                   </div>
                 </div>
               </div>

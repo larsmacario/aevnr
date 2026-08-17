@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { prefersReducedMotion, triggerTapHaptic } from "../lib/haptics";
 import { M } from "../theme";
 import { DotIndicators } from "./track/DotIndicators";
+import { useI18n } from "../lib/i18n";
 
 const SWIPE_THRESHOLD_PX = 50;
 const AXIS_LOCK_PX = 10;
@@ -34,8 +35,8 @@ export function HorizontalSlidePager({
   activeIndex,
   onIndexChange,
   children,
-  ariaLabel = "Tages-Karussell",
-  tabLabel = (i) => `Tag ${i + 1}`,
+  ariaLabel,
+  tabLabel,
   showIndicators = true,
   indicatorVariant = "tabs",
   footerBeforeIndicators,
@@ -43,6 +44,9 @@ export function HorizontalSlidePager({
   tabSize = "md",
   tabBarTrailing,
 }: HorizontalSlidePagerProps) {
+  const { t } = useI18n();
+  const resolvedAriaLabel = ariaLabel ?? t("pager.carousel");
+  const resolvedTabLabel = tabLabel ?? ((i: number) => t("plan.day", { number: i + 1 }));
   const isLgTabs = tabSize === "lg";
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const axisLockRef = useRef<"x" | "y" | null>(null);
@@ -148,8 +152,8 @@ export function HorizontalSlidePager({
       <div
         ref={viewportRef}
         role="region"
-        aria-roledescription="Karussell"
-        aria-label={ariaLabel}
+        aria-roledescription={t("pager.role")}
+        aria-label={resolvedAriaLabel}
         style={{
           flex: 1,
           minHeight: 0,
@@ -199,13 +203,13 @@ export function HorizontalSlidePager({
           count={count}
           activeIndex={safeIndex}
           onSelect={goTo}
-          ariaLabel={ariaLabel}
+          ariaLabel={resolvedAriaLabel}
         />
       ) : null}
       {showIndicators && indicatorVariant === "tabs" && (count > 1 || tabBarTrailing) ? (
         <div
           role="tablist"
-          aria-label="Plan-Navigation"
+          aria-label={t("pager.navigation")}
           style={{
             flexShrink: 0,
             padding: tabListPadding,
@@ -219,7 +223,7 @@ export function HorizontalSlidePager({
         >
           {Array.from({ length: count }, (_, i) => {
             const isActive = safeIndex === i;
-            const label = tabLabel(i, count);
+            const label = resolvedTabLabel(i, count);
             return (
               <button
                 key={i}

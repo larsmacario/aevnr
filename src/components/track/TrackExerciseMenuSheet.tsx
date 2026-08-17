@@ -1,6 +1,7 @@
 import { BottomSheet } from "../BottomSheet";
 import { Icon } from "../Icon";
 import { M } from "../../theme";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackExerciseMenuSheetProps {
   open: boolean;
@@ -73,10 +74,11 @@ export function TrackExerciseMenuSheet({
   onToggleSuperset,
   variant = "full",
 }: TrackExerciseMenuSheetProps) {
+  const { t } = useI18n();
   const compact = variant === "actions";
 
   return (
-    <BottomSheet open={open} onClose={onClose} aria-label={`Menü · ${exerciseName}`} fitContent>
+    <BottomSheet open={open} onClose={onClose} aria-label={t("exerciseMenu.aria", { name: exerciseName })} fitContent>
       <div style={{ padding: "4px 20px 20px" }}>
         <div
           style={{
@@ -95,7 +97,7 @@ export function TrackExerciseMenuSheet({
         </div>
         {hasVideo && onVideo && !compact ? (
           <MenuAction
-            label="Video ansehen"
+            label={t("exerciseMenu.video")}
             icon="play"
             onClick={() => {
               onClose();
@@ -105,7 +107,7 @@ export function TrackExerciseMenuSheet({
         ) : null}
         {onEditSets ? (
           <MenuAction
-            label="Sätze bearbeiten"
+            label={t("exerciseMenu.editSets")}
             icon="edit"
             onClick={() => {
               onClose();
@@ -115,7 +117,7 @@ export function TrackExerciseMenuSheet({
         ) : null}
         {onGuide ? (
           <MenuAction
-            label="Anleitung"
+            label={t("exerciseMenu.guide")}
             icon="list"
             onClick={() => {
               onClose();
@@ -125,7 +127,7 @@ export function TrackExerciseMenuSheet({
         ) : null}
         {onNotes ? (
           <MenuAction
-            label="Notizen"
+            label={t("exerciseMenu.notes")}
             icon="edit"
             onClick={() => {
               onClose();
@@ -134,7 +136,7 @@ export function TrackExerciseMenuSheet({
           />
         ) : null}
         <MenuAction
-          label="Verlauf"
+          label={t("exerciseMenu.history")}
           icon="history"
           onClick={() => {
             onClose();
@@ -143,7 +145,7 @@ export function TrackExerciseMenuSheet({
         />
         {showSupersetAction && onToggleSuperset && !compact ? (
           <MenuAction
-            label={linkedToPrevious ? "Supersatz lösen" : "Mit vorheriger verknüpfen"}
+            label={linkedToPrevious ? t("exerciseMenu.unlinkSuperset") : t("exerciseMenu.linkPrevious")}
             icon="layers"
             onClick={() => {
               onClose();
@@ -152,7 +154,7 @@ export function TrackExerciseMenuSheet({
           />
         ) : null}
         <MenuAction
-          label="Aus Session entfernen"
+          label={t("exerciseMenu.remove")}
           icon="trash"
           danger
           onClick={() => {

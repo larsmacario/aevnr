@@ -4,12 +4,15 @@ import "./index.css";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
 import { PreferencesProvider } from "./lib/preferences";
+import { I18nProvider } from "./lib/i18n";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <PreferencesProvider>
-        <App />
+        <I18nProvider>
+          <App />
+        </I18nProvider>
       </PreferencesProvider>
     </AuthProvider>
   </StrictMode>,

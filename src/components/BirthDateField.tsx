@@ -1,26 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface BirthDateFieldProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
 }
-
-const MONTHS: { value: string; label: string }[] = [
-  { value: "01", label: "Jan" },
-  { value: "02", label: "Feb" },
-  { value: "03", label: "Mär" },
-  { value: "04", label: "Apr" },
-  { value: "05", label: "Mai" },
-  { value: "06", label: "Jun" },
-  { value: "07", label: "Jul" },
-  { value: "08", label: "Aug" },
-  { value: "09", label: "Sep" },
-  { value: "10", label: "Okt" },
-  { value: "11", label: "Nov" },
-  { value: "12", label: "Dez" },
-];
 
 function parseIsoDate(iso: string): { day: string; month: string; year: string } {
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
@@ -75,7 +61,8 @@ const selectStyle: React.CSSProperties = {
 
 const placeholderColor = M.mut;
 
-export function BirthDateField({ value, onChange, label = "Geburtsdatum (optional)" }: BirthDateFieldProps) {
+export function BirthDateField({ value, onChange, label }: BirthDateFieldProps) {
+  const { locale, t } = useI18n();
   const parsed = parseIsoDate(value);
   const [day, setDay] = useState(parsed.day);
   const [month, setMonth] = useState(parsed.month);
@@ -97,6 +84,11 @@ export function BirthDateField({ value, onChange, label = "Geburtsdatum (optiona
     return list;
   }, []);
 
+  const months = useMemo(() => Array.from({ length: 12 }, (_, index) => ({
+    value: String(index + 1).padStart(2, "0"),
+    label: new Intl.DateTimeFormat(locale, { month: "short" }).format(new Date(2024, index, 1)),
+  })), [locale]);
+
   const dayOptions = useMemo(() => {
     const max = daysInMonth(month, year);
     return Array.from({ length: max }, (_, i) => String(i + 1).padStart(2, "0"));
@@ -113,16 +105,16 @@ export function BirthDateField({ value, onChange, label = "Geburtsdatum (optiona
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", minWidth: 0 }}>
       <label style={{ fontSize: 13, color: M.mut, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-        {label}
+        {label ?? t("date.birth")}
       </label>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.15fr 1.15fr", gap: 8, width: "100%" }}>
         <select
-          aria-label="Tag"
+          aria-label={t("date.day")}
           value={day}
           onChange={(e) => emit(e.target.value, month, year)}
           style={{ ...selectStyle, color: day ? M.fg : placeholderColor }}
         >
-          <option value="">Tag</option>
+          <option value="">{t("date.day")}</option>
           {dayOptions.map((d) => (
             <option key={d} value={d}>
               {d}
@@ -131,13 +123,13 @@ export function BirthDateField({ value, onChange, label = "Geburtsdatum (optiona
         </select>
 
         <select
-          aria-label="Monat"
+          aria-label={t("date.month")}
           value={month}
           onChange={(e) => emit(day, e.target.value, year)}
           style={{ ...selectStyle, color: month ? M.fg : placeholderColor }}
         >
-          <option value="">Monat</option>
-          {MONTHS.map((m) => (
+          <option value="">{t("date.month")}</option>
+          {months.map((m) => (
             <option key={m.value} value={m.value}>
               {m.label}
             </option>
@@ -145,12 +137,12 @@ export function BirthDateField({ value, onChange, label = "Geburtsdatum (optiona
         </select>
 
         <select
-          aria-label="Jahr"
+          aria-label={t("date.year")}
           value={year}
           onChange={(e) => emit(day, month, e.target.value)}
           style={{ ...selectStyle, color: year ? M.fg : placeholderColor }}
         >
-          <option value="">Jahr</option>
+          <option value="">{t("date.year")}</option>
           {years.map((y) => (
             <option key={y} value={y}>
               {y}

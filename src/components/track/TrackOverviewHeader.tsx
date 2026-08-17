@@ -1,5 +1,6 @@
 import { M } from "../../theme";
 import { Icon } from "../Icon";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackOverviewHeaderProps {
   elapsedSec: number;
@@ -23,6 +24,7 @@ export function TrackOverviewHeader({
   onSessionNameChange,
   onPause,
 }: TrackOverviewHeaderProps) {
+  const { t } = useI18n();
   return (
     <div style={{ padding: "2px 18px 10px" }}>
       <div
@@ -37,7 +39,7 @@ export function TrackOverviewHeader({
           <button
             type="button"
             onClick={onPause}
-            aria-label="Workout pausieren"
+            aria-label={t("exercise.pauseWorkout")}
             style={{ background: "none", border: "none", cursor: "pointer", color: M.mut, display: "flex", padding: 0 }}
           >
             <Icon name="chevD" size={24} stroke={2.2} />

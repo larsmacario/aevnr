@@ -1,7 +1,8 @@
 import { M } from "../../theme";
-import { TIMER_MODES, type TimerCfg, type TimerMode } from "../../lib/engine";
+import { type TimerCfg, type TimerMode } from "../../lib/engine";
 import { TimerConfigPanel } from "../TimerConfigPanel";
 import { MButton } from "../MButton";
+import { useI18n } from "../../lib/i18n";
 
 export interface TimerSettingsStepProps {
   mode: TimerMode;
@@ -13,16 +14,15 @@ export interface TimerSettingsStepProps {
 }
 
 export function TimerSettingsStep({ mode, cfg, setCfg, disabled, onBack, onNext }: TimerSettingsStepProps) {
-  const modeMeta = TIMER_MODES.find((m) => m.id === mode)!;
-
+  const { t } = useI18n();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minHeight: 0 }}>
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, marginBottom: 6 }}>
-          Einstellung
+          {t("interval.settings.title")}
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, color: M.mut }}>
-          {modeMeta.name} — {modeMeta.blurb}
+          {t(`interval.mode.${mode}.name` as "interval.mode.emom.name")} — {t(`interval.mode.${mode}.blurb` as "interval.mode.emom.blurb")}
         </p>
       </div>
 
@@ -58,10 +58,10 @@ export function TimerSettingsStep({ mode, cfg, setCfg, disabled, onBack, onNext 
 
       <div style={{ flexShrink: 0, display: "flex", gap: 10, paddingTop: 8 }}>
         <MButton type="button" variant="secondary" size="md" style={{ flex: 1 }} onClick={onBack}>
-          Zurück
+          {t("interval.back")}
         </MButton>
         <MButton type="button" variant="primary" size="md" style={{ flex: 2 }} onClick={onNext}>
-          Zum Timer
+          {t("interval.settings.next")}
         </MButton>
       </div>
     </div>

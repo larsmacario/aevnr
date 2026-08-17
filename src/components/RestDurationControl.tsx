@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { M } from "../theme";
 import { Icon } from "./Icon";
 import { MStepper } from "./widgets";
+import { useI18n } from "../lib/i18n";
 
 const PANEL_WIDTH = 248;
 const PANEL_Z = 200;
@@ -21,6 +22,7 @@ export interface RestDurationControlProps {
 }
 
 export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }: RestDurationControlProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -94,7 +96,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
             return next;
           });
         }}
-        aria-label="Pausendauer ändern"
+        aria-label={t("rest.change")}
         aria-haspopup="dialog"
         aria-expanded={open}
         style={{
@@ -115,7 +117,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
         }}
       >
         <Icon name="clock" size={14} stroke={2} color={M.mut2} />
-        Pausendauer · {fmtRestSec(value)}
+        {t("rest.trigger", { time: fmtRestSec(value) })}
         <Icon name="chevD" size={14} stroke={2.2} color={M.mut2} />
       </button>
       {open && pos
@@ -123,7 +125,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
             <div
               ref={panelRef}
               role="dialog"
-              aria-label="Pausendauer"
+              aria-label={t("rest.duration")}
               style={{
                 position: "fixed",
                 top: pos.top,
@@ -138,7 +140,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
               }}
             >
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: M.mut2, marginBottom: 10 }}>
-                PAUSE
+                {t("rest.title")}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                 {REST_PRESETS.map((preset) => {
@@ -191,7 +193,7 @@ export function RestDurationControl({ value, onChangeExercise, onChangeWorkout }
                   textAlign: "left",
                 }}
               >
-                Für ganzes Workout übernehmen
+                {t("rest.applyWorkout")}
               </button>
             </div>,
             document.body,

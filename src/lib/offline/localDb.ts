@@ -42,6 +42,15 @@ class RephiveLocalDb extends Dexie {
       metabolicLogs: "id, userId, loggedAt, updatedAt",
       facts: "id, userId, assignmentId, [userId+localDate], updatedAt",
     });
+    this.version(5).stores({
+      plans: "planId, userId, updatedAt",
+      exercises: "userId, updatedAt",
+      syncQueue: "id, userId, createdAt",
+      meta: "userId",
+      dailyCheckins: "id, userId, [userId+checkinDate], updatedAt",
+      metabolicLogs: "id, userId, loggedAt, updatedAt",
+      facts: "id, userId, assignmentId, [userId+language], [userId+language+localDate], updatedAt",
+    });
   }
 }
 

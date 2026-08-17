@@ -1,11 +1,13 @@
 import { type ReactNode } from "react";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface PlanAdviceCollapsibleProps {
   children: ReactNode;
 }
 
 export function PlanAdviceCollapsible({ children }: PlanAdviceCollapsibleProps) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -24,7 +26,7 @@ export function PlanAdviceCollapsible({ children }: PlanAdviceCollapsibleProps) 
           color: M.fg,
         }}
       >
-        Tipps & Hinweise
+        {t("plan.tipsAndNotes")}
       </div>
       <div
         style={{

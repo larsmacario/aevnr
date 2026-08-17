@@ -3,6 +3,7 @@ import { Icon } from "./Icon";
 import { BottomSheet } from "./BottomSheet";
 import { useExerciseHistory } from "../lib/db";
 import { formatSetLine } from "../lib/exerciseCatalog";
+import { useI18n } from "../lib/i18n";
 
 export interface ExerciseHistorySheetProps {
   open: boolean;
@@ -10,22 +11,23 @@ export interface ExerciseHistorySheetProps {
   exerciseName: string | null;
 }
 
-function formatHistoryDate(iso: string): string {
+function formatHistoryDate(iso: string, locale: string, today: string, yesterday: string): string {
   const d = new Date(iso);
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfTarget = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.round((startOfToday.getTime() - startOfTarget.getTime()) / 86400000);
 
-  if (diffDays === 0) return "Heute";
-  if (diffDays === 1) return "Gestern";
+  if (diffDays === 0) return today;
+  if (diffDays === 1) return yesterday;
 
-  const weekday = d.toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
-  const dateStr = d.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+  const weekday = d.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+  const dateStr = d.toLocaleDateString(locale, { day: "numeric", month: "short" });
   return `${weekday}, ${dateStr}`;
 }
 
 export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHistorySheetProps) {
+  const { language, locale, t } = useI18n();
   const { data: history, loading, error } = useExerciseHistory(open ? exerciseName : null);
 
   if (!exerciseName) return null;
@@ -35,12 +37,12 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
       open={open}
       onClose={onClose}
       zIndex={40}
-      aria-label="Übungsverlauf"
+      aria-label={t("exerciseHistory.aria")}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexShrink: 0 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.acc, fontWeight: 700, textTransform: "uppercase" }}>
-            ÜBUNGSVERLAUF
+            {t("exerciseHistory.title")}
           </div>
           <div
             style={{
@@ -80,13 +82,13 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {loading && (
           <div style={{ color: M.mut, fontSize: 14, textAlign: "center", padding: "24px 0" }}>
-            Verlauf wird geladen…
+            {t("exerciseHistory.loading")}
           </div>
         )}
 
         {error && (
           <div style={{ color: M.danger, fontSize: 14, textAlign: "center", padding: "24px 0" }}>
-            Fehler beim Laden des Verlaufs: {error}
+            {t("exerciseHistory.error", { error })}
           </div>
         )}
 
@@ -104,9 +106,9 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
             }}
           >
             <Icon name="list" size={28} color={M.mut2} stroke={2} />
-            <div style={{ fontSize: 15, fontWeight: 600, color: M.fg }}>Noch kein Verlauf</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: M.fg }}>{t("exerciseHistory.emptyTitle")}</div>
             <div style={{ fontSize: 13, maxWidth: 240, lineHeight: 1.4 }}>
-              Sobald du diese Übung in einem Workout ausführst und abschließt, erscheint der Verlauf hier.
+              {t("exerciseHistory.emptyText")}
             </div>
           </div>
         )}
@@ -139,19 +141,19 @@ export function ExerciseHistorySheet({ open, onClose, exerciseName }: ExerciseHi
                   {entry.sessionName}
                 </div>
                 <div style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>
-                  {formatHistoryDate(entry.performedAt)}
+                  {formatHistoryDate(entry.performedAt, locale, t("exerciseHistory.today"), t("exerciseHistory.yesterday"))}
                 </div>
               </div>
 
               {entry.note && (
                 <div style={{ fontSize: 13, color: M.mut, marginBottom: 8, fontStyle: "italic" }}>
-                  Hinweis: {entry.note}
+                  {t("exerciseHistory.note")} {entry.note}
                 </div>
               )}
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {entry.sets.map((set, sIdx) => {
-                  const line = formatSetLine(set, entry.metric);
+                  const line = formatSetLine(set, entry.metric, language);
                   return (
                     <div
                       key={sIdx}

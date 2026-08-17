@@ -9,6 +9,7 @@ import { useAuth } from "../auth";
 import { useHeartRateMonitor } from "../heartRate/useHeartRateMonitor";
 import { maxHrFromBirthDate, type HeartRateSample } from "../heartRate/heartRateZones";
 import { mKind } from "../../theme";
+import { useI18n } from "../i18n";
 
 export type TimerLeaveAction = { kind: "back" } | { kind: "reset" };
 
@@ -19,6 +20,7 @@ export interface UseIntervalTimerSessionOptions {
 }
 
 export function useIntervalTimerSession({ onSaveSession, initialMode = "emom", initialConfig }: UseIntervalTimerSessionOptions) {
+  const { t } = useI18n();
   const { profile } = useAuth();
   const { preferences, updatePreferences } = usePreferences();
   const heartRate = useHeartRateMonitor();
@@ -93,13 +95,13 @@ export function useIntervalTimerSession({ onSaveSession, initialMode = "emom", i
   const leaveCopy =
     leaveAction?.kind === "back"
       ? {
-          message: "Ein Timer läuft. Beim Verlassen wird der Timer gestoppt.",
-          confirmLabel: "STOPPEN",
+          message: t("interval.leave.running"),
+          confirmLabel: t("interval.leave.stop"),
         }
       : leaveAction?.kind === "reset"
         ? {
-            message: "Ein Timer läuft. Beim Zurücksetzen geht der aktuelle Fortschritt verloren.",
-            confirmLabel: "ZURÜCKSETZEN",
+            message: t("interval.leave.resetMessage"),
+            confirmLabel: t("interval.leave.reset"),
           }
         : null;
 
@@ -152,7 +154,7 @@ export function useIntervalTimerSession({ onSaveSession, initialMode = "emom", i
         if (cancelled) return;
         savedRunRef.current = false;
         setSaveStatus("error");
-        setSaveError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+        setSaveError(e instanceof Error ? e.message : t("interval.saveFailed"));
       }
     })();
 

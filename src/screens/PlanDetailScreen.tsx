@@ -14,6 +14,7 @@ import { PlanDaySlide } from "../components/PlanDaySlide";
 import { OneRmPercentInfoCard } from "../components/OneRmPercentInfoCard";
 import { MStat, MTag } from "../components/widgets";
 import { MButton } from "../components/MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface PlanDetailScreenProps {
   planId: string;
@@ -23,6 +24,7 @@ export interface PlanDetailScreenProps {
 }
 
 export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDetailScreenProps) {
+  const { locale, t } = useI18n();
   const { user } = useAuth();
   const { data: plan, loading, error, reload } = usePlan(planId);
   const [busy, setBusy] = useState(false);
@@ -43,7 +45,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
       await setActivePlan(user.id, plan.id);
       reload();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Aktivieren fehlgeschlagen");
+      setActionError(e instanceof Error ? e.message : t("plan.activateFailed"));
     } finally {
       setBusy(false);
     }
@@ -58,7 +60,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
       setDeleteConfirmOpen(false);
       onDeleted();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+      setActionError(e instanceof Error ? e.message : t("plan.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -67,7 +69,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
   if (loading && !plan) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: M.mut, fontSize: 14 }}>
-        Plan wird geladen…
+        {t("plan.loading")}
       </div>
     );
   }
@@ -75,16 +77,16 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
   if (error || !plan) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 22 }}>
-        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? "Plan nicht gefunden."}</div>
+        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? t("plan.notFound")}</div>
         <MButton onClick={onBack} variant="primary" size="sm">
-          Zurück
+          {t("common.back")}
         </MButton>
       </div>
     );
   }
 
   const planDays = plan.days ?? [];
-  const weekdayLabels = weekdayLabelsFromSummary(plan.summary);
+  const weekdayLabels = weekdayLabelsFromSummary(plan.summary, locale);
   const totalExercises = planDays.reduce(
     (sum, d) => sum + (d.exercises?.length ?? 0),
     0,
@@ -92,8 +94,8 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
 
   const slideCount = 1 + planDays.length;
   const tabLabel = (index: number) => {
-    if (index === 0) return "Übersicht";
-    return `Tag ${index}`;
+    if (index === 0) return t("plan.overview");
+    return t("plan.day", { number: index });
   };
 
   const summarySlide = (
@@ -119,7 +121,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{plan.name}</div>
-          {plan.isActive && <MTag>Aktiv</MTag>}
+          {plan.isActive && <MTag>{t("plan.active")}</MTag>}
         </div>
         {plan.sub && <div style={{ fontSize: 13, color: M.mut, marginTop: 8, fontWeight: 600 }}>{plan.sub}</div>}
 
@@ -136,11 +138,11 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name="layers" size={15} stroke={2} color={M.mut} />
-            {planDays.length} Tage
+            {t("plan.days", { count: planDays.length })}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name="dumbbell" size={15} stroke={2} color={M.mut} />
-            {totalExercises} Übungen
+            {t("plan.exercises", { count: totalExercises })}
           </span>
         </div>
 
@@ -156,24 +158,24 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
               fontWeight: 700,
             }}
           >
-            Aktiver Plan · aktuell Tag {plan.currentDay + 1}
+            {t("plan.activeDay", { number: plan.currentDay + 1 })}
           </div>
         )}
 
         {plan.summary && (
           <div style={{ marginTop: 18 }}>
-            <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>DEINE EMPFEHLUNG</div>
+            <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("plan.recommendation")}</div>
 
             <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
               <MStat
-                label="NUTZUNGSDAUER"
+                label={t("plan.duration")}
                 value={`${plan.summary.advice.planDuration.weeksMin}–${plan.summary.advice.planDuration.weeksMax}`}
-                sub="Wochen"
+                sub={t("plan.weeks")}
               />
               <MStat
-                label="KALORIEN"
+                label={t("plan.calories")}
                 value={String(plan.summary.nutrition.targetKcal)}
-                sub="kcal / Tag"
+                sub={t("plan.perDayKcal")}
               />
             </div>
 
@@ -182,39 +184,39 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
             </p>
 
             <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <MStat label="PROTEIN" value={`${plan.summary.nutrition.protein_g}g`} />
-              <MStat label="KH" value={`${plan.summary.nutrition.carbs_g}g`} />
-              <MStat label="FETT" value={`${plan.summary.nutrition.fat_g}g`} />
+              <MStat label={t("plan.protein")} value={`${plan.summary.nutrition.protein_g}g`} />
+              <MStat label={t("plan.carbs")} value={`${plan.summary.nutrition.carbs_g}g`} />
+              <MStat label={t("plan.fat")} value={`${plan.summary.nutrition.fat_g}g`} />
               <MStat
-                label="TRINKEN"
+                label={t("plan.water")}
                 value={
                   plan.summary.nutrition.water_ml >= 1000
                     ? `${(plan.summary.nutrition.water_ml / 1000).toFixed(1)}l`
                     : `${plan.summary.nutrition.water_ml}ml`
                 }
-                sub="pro Tag"
+                sub={t("plan.perDay")}
               />
             </div>
 
             <PlanAdviceCollapsible>
               <div>
-                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>TRAININGSFOKUS</div>
+                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{t("plan.trainingFocus")}</div>
                 <p style={{ margin: 0, fontSize: 13, color: M.fg, lineHeight: 1.5 }}>{plan.summary.advice.trainingFocus}</p>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ERNÄHRUNG</div>
+                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{t("plan.nutrition")}</div>
                 <p style={{ margin: 0, fontSize: 13, color: M.fg, lineHeight: 1.5 }}>{plan.summary.advice.nutritionTips}</p>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>REGENERATION</div>
+                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{t("plan.recovery")}</div>
                 <p style={{ margin: 0, fontSize: 13, color: M.fg, lineHeight: 1.5 }}>{plan.summary.advice.recoveryTips}</p>
               </div>
               <div>
-                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>HYDRATION</div>
+                <div style={{ fontSize: 13, color: M.brand, fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>{t("plan.hydration")}</div>
                 <p style={{ margin: 0, fontSize: 13, color: M.fg, lineHeight: 1.5 }}>{plan.summary.advice.hydrationTips}</p>
               </div>
               <p style={{ margin: 0, fontSize: 13, color: M.mut2, lineHeight: 1.4 }}>
-                Richtwerte basierend auf deinen Angaben — kein medizinischer oder ernährungstherapeutischer Rat.
+                {t("plan.disclaimer")}
               </p>
             </PlanAdviceCollapsible>
 
@@ -240,7 +242,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
       >
         <PlanDaySlide
           dayNumber={day.position + 1}
-          label={planDayDisplayName(day, weekdayLabels)}
+          label={planDayDisplayName(day, weekdayLabels, t("plan.day", { number: day.position + 1 }))}
           isCurrent={isCurrent}
           isActive={activeSlideIndex === dayIndex + 1}
           exercises={day.exercises}
@@ -254,7 +256,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title="PLAN" />
+      <ScreenBackHeader onBack={onBack} title={t("plan.title")} />
 
       {actionError && (
         <div style={{ padding: `0 ${CONTENT_HORIZONTAL_PADDING}px 8px`, color: M.danger, fontSize: 13 }}>
@@ -278,7 +280,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
           count={slideCount}
           activeIndex={activeSlideIndex}
           onIndexChange={setActiveSlideIndex}
-          ariaLabel="Plan-Übersicht und Tage"
+          ariaLabel={t("plan.pagerAria")}
           tabLabel={tabLabel}
           tabSize="lg"
           tabListPadding="6px 0 0"
@@ -307,7 +309,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
             size="sm"
             style={{ flex: 1, minWidth: 0, background: M.brandSoft, color: M.fg, opacity: 1 }}
           >
-            Aktiv
+            {t("plan.active")}
           </MButton>
         ) : (
           <MButton
@@ -318,7 +320,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
             size="sm"
             style={{ flex: 1, minWidth: 0 }}
           >
-            Aktivieren
+            {t("plan.activate")}
           </MButton>
         )}
         <MButton
@@ -330,7 +332,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
           style={{ flex: 1, minWidth: 0, background: M.card }}
         >
           <Icon name="edit" size={16} stroke={2} color={M.fg} />
-          Bearbeiten
+          {t("plan.edit")}
         </MButton>
         <MButton
           type="button"
@@ -338,7 +340,7 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
           onClick={() => setDeleteConfirmOpen(true)}
           variant="danger"
           size="icon"
-          aria-label="Plan löschen"
+          aria-label={t("plan.deleteAria")}
           style={{ flexShrink: 0 }}
         >
           <Icon name="trash" size={16} stroke={2} color={M.mut2} />
@@ -347,23 +349,10 @@ export function PlanDetailScreen({ planId, onBack, onEdit, onDeleted }: PlanDeta
 
       <DeleteConfirmDialog
         open={deleteConfirmOpen && !!plan}
-        title="Plan löschen?"
-        message={
-          plan ? (
-            <>
-              Möchtest du <strong style={{ color: M.fg }}>{plan.name}</strong> wirklich löschen?
-            </>
-          ) : null
-        }
-        step2Title="Endgültig löschen?"
-        step2Message={
-          plan ? (
-            <>
-              Diese Aktion kann nicht rückgängig gemacht werden. Plan{" "}
-              <strong style={{ color: M.fg }}>{plan.name}</strong> unwiderruflich entfernen?
-            </>
-          ) : null
-        }
+        title={t("plan.delete.title")}
+        message={plan ? t("plan.delete.message", { name: plan.name }) : null}
+        step2Title={t("plan.delete.step2Title")}
+        step2Message={plan ? t("plan.delete.step2Message", { name: plan.name }) : null}
         busy={busy}
         onCancel={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}

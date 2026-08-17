@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { M } from "../theme";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 export interface OneRmPercentInfoCardProps {
   compact?: boolean;
@@ -9,6 +10,7 @@ export interface OneRmPercentInfoCardProps {
 }
 
 export function OneRmPercentInfoCard({ compact = false, style, defaultOpen = false }: OneRmPercentInfoCardProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -52,7 +54,7 @@ export function OneRmPercentInfoCard({ compact = false, style, defaultOpen = fal
               color: M.acc,
             }}
           >
-            Was bedeutet % 1RM?
+            {t("oneRm.infoTitle")}
           </span>
         </div>
         <Icon name={open ? "chevD" : "chevR"} size={16} color={M.mut2} stroke={2.2} style={{ flexShrink: 0 }} />
@@ -68,9 +70,7 @@ export function OneRmPercentInfoCard({ compact = false, style, defaultOpen = fal
           }}
         >
           <p style={{ margin: 0, fontSize: compact ? 12.5 : 13.5, lineHeight: 1.55, color: M.fg }}>
-            <strong style={{ color: M.fg }}>1RM</strong> ist dein geschätztes Maximalgewicht für eine Wiederholung.
-            Vorgaben wie „75% 1RM“ bedeuten: Du trainierst mit 75&nbsp;% dieses Maximums — die Wdh.-Zahl steht in der
-            Übungs-Note.
+            {t("oneRm.infoText")}
           </p>
 
           <div
@@ -83,14 +83,12 @@ export function OneRmPercentInfoCard({ compact = false, style, defaultOpen = fal
               color: M.fg,
             }}
           >
-            <span style={{ fontWeight: 700, color: M.acc }}>So findest du dein kg:</span> Öffne den{" "}
-            <strong>1RM-Rechner</strong> auf der Startseite → trage Gewicht und Wdh. aus deinem letzten Training ein →
-            die Prozent-Tabelle zeigt dir das passende kg. Alternativ: 1RM × Prozent (z.&nbsp;B. 100&nbsp;kg × 0,75 =
-            75&nbsp;kg).
+            <span style={{ fontWeight: 700, color: M.acc }}>{t("oneRm.howTitle")}</span>{" "}
+            {t("oneRm.howText")}
           </div>
 
           <p style={{ margin: 0, fontSize: compact ? 11.5 : 12, lineHeight: 1.45, color: M.mut }}>
-            Im KI-Plan steht bei den Sätzen kg = 0 — trage dein berechnetes Gewicht beim ersten Training selbst ein.
+            {t("oneRm.planHint")}
           </p>
         </div>
       )}

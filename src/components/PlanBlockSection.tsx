@@ -3,10 +3,9 @@ import { Icon } from "./Icon";
 import { M } from "../theme";
 import {
   BLOCK_ACCENT,
-  BLOCK_GUIDE_HINTS,
-  BLOCK_LABELS,
   type TrainingBlockType,
 } from "../lib/planBlocks";
+import { useI18n } from "../lib/i18n";
 
 export interface PlanBlockSectionProps {
   block: TrainingBlockType;
@@ -41,12 +40,13 @@ export function PlanBlockSection({
   blockIndex,
   style,
 }: PlanBlockSectionProps) {
+  const { t } = useI18n();
   const accent = BLOCK_ACCENT[block];
   const subtitle = skipped
-    ? "Für diese Einheit übersprungen"
+    ? t("planBlock.skipped")
     : collapsed && collapsedSummary
       ? collapsedSummary
-      : BLOCK_GUIDE_HINTS[block];
+      : t(block === "warmup" ? "planBlock.warmupHint" : block === "skill" ? "planBlock.skillHint" : block === "strength" ? "planBlock.strengthHint" : "planBlock.metconHint");
 
   const headerInner = (
     <>
@@ -86,7 +86,7 @@ export function PlanBlockSection({
             color: skipped ? M.mut2 : accent,
           }}
         >
-          {BLOCK_LABELS[block]}
+          {t(block === "warmup" ? "block.warmup" : block === "skill" ? "block.skill" : block === "strength" ? "block.strength" : "block.metcon")}
         </div>
         <div
           style={{

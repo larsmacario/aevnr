@@ -98,15 +98,17 @@ export function defaultPlanDayName(dayNumber: number): string {
 export function isDefaultPlanDayName(name: string | undefined | null, dayNumber: number): boolean {
   const trimmed = (name ?? "").trim();
   if (!trimmed) return true;
-  return trimmed.toLowerCase() === defaultPlanDayName(dayNumber).toLowerCase();
+  const normalized = trimmed.toLowerCase();
+  return normalized === defaultPlanDayName(dayNumber).toLowerCase() || normalized === `day ${dayNumber}`;
 }
 
 export function planDayDisplayName(
   day: Pick<PlanDay, "name" | "position">,
   weekdayLabels?: string[],
+  fallbackName = defaultPlanDayName(day.position + 1),
 ): string {
   const trimmed = day.name.trim();
-  const base = trimmed || defaultPlanDayName(day.position + 1);
+  const base = trimmed || fallbackName;
   const wd = weekdayLabels?.[day.position];
   return wd ? `${wd} · ${base}` : base;
 }

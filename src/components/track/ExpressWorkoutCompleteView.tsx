@@ -6,6 +6,7 @@ import { ExerciseListRow } from "../ExerciseListRow";
 import { Icon } from "../Icon";
 import { MButton } from "../MButton";
 import { MStat } from "../widgets";
+import { useI18n } from "../../lib/i18n";
 
 export interface ExpressWorkoutCompleteViewProps {
   exercises: Exercise[];
@@ -20,15 +21,15 @@ function fmtElapsed(sec: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function summarizeExerciseSets(ex: Exercise): string {
+function summarizeExerciseSets(ex: Exercise, setCount: (count: number) => string, loggedSets: (count: number) => string): string {
   const doneSets = ex.sets.filter((s) => s.done);
-  if (doneSets.length === 0) return `${ex.sets.length} Sätze`;
+  if (doneSets.length === 0) return setCount(ex.sets.length);
   const sample = doneSets[0]!;
   const uniform =
     doneSets.length === ex.sets.length &&
     doneSets.every((s) => s.kg === sample.kg && s.reps === sample.reps);
   if (uniform) return `${doneSets.length}× ${formatExpressSetDisplay(sample.kg, sample.reps)}`;
-  return `${doneSets.length} Sätze geloggt`;
+  return loggedSets(doneSets.length);
 }
 
 function CompleteLeadingIcon() {
@@ -57,6 +58,7 @@ export function ExpressWorkoutCompleteView({
   elapsedSec,
   onBack,
 }: ExpressWorkoutCompleteViewProps) {
+  const { t } = useI18n();
   const doneSets = exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0);
   const totalSets = exercises.reduce((a, e) => a + e.sets.length, 0);
   const volumeKg = exercises.reduce(
@@ -76,7 +78,7 @@ export function ExpressWorkoutCompleteView({
           flexShrink: 0,
         }}
       >
-        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label="Zur Übersicht">
+        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label={t("track.backOverview")}>
           <Icon name="chevL" size={22} stroke={2.2} color={M.mut} />
         </MButton>
         <span
@@ -119,7 +121,7 @@ export function ExpressWorkoutCompleteView({
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, lineHeight: 1.15 }}>
-              Workout abgeschlossen
+              {t("track.complete")}
             </div>
             <div
               style={{
@@ -137,9 +139,9 @@ export function ExpressWorkoutCompleteView({
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <MStat label="SÄTZE" value={`${doneSets}/${totalSets}`} />
-          <MStat label="VOLUMEN" value={`${(volumeKg / 1000).toFixed(1)}t`} />
-          <MStat label="ÜBUNGEN" value={String(exercises.length)} />
+          <MStat label={t("track.stats.sets")} value={`${doneSets}/${totalSets}`} />
+          <MStat label={t("track.stats.volume")} value={`${(volumeKg / 1000).toFixed(1)}t`} />
+          <MStat label={t("track.stats.exercises")} value={String(exercises.length)} />
         </div>
       </div>
 
@@ -163,14 +165,14 @@ export function ExpressWorkoutCompleteView({
             marginBottom: 10,
           }}
         >
-          Übersicht
+          {t("track.overview")}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {exercises.map((ex) => (
             <ExerciseListRow
               key={ex.id}
               title={ex.name}
-              subtitle={summarizeExerciseSets(ex)}
+              subtitle={summarizeExerciseSets(ex, (count) => t("track.setCount", { count }), (count) => t("track.loggedSets", { count }))}
               leading={<CompleteLeadingIcon />}
               background="card"
             />

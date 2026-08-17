@@ -5,6 +5,7 @@ import { useActiveTimer } from "../lib/activeTimer";
 import { contentColumnStyle, useBreakpoint } from "../lib/responsive";
 import { M } from "../theme";
 import { IntervalTimerWizard } from "./intervalTimer/IntervalTimerWizard";
+import { useI18n } from "../lib/i18n";
 
 const DISMISS_OFFSET_PX = 72;
 const DISMISS_VELOCITY = 500;
@@ -17,6 +18,7 @@ export interface IntervalTimerSheetProps {
 }
 
 export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTimerSheetProps) {
+  const { t } = useI18n();
   const breakpoint = useBreakpoint();
   const columnStyle = contentColumnStyle(breakpoint);
   const dragControls = useDragControls();
@@ -44,7 +46,7 @@ export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTim
         {open && (
           <motion.button
             type="button"
-            aria-label="Intervall-Timer schließen"
+            aria-label={t("interval.close")}
             key="interval-timer-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -67,7 +69,7 @@ export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTim
         role="dialog"
         aria-modal={open}
         aria-hidden={!open}
-        aria-label="Intervall-Timer"
+        aria-label={t("interval.dialog")}
         drag={open && !timerActive ? "y" : false}
         dragControls={dragControls}
         dragListener={false}
@@ -130,7 +132,7 @@ export function IntervalTimerSheet({ open, onClose, onSaveSession }: IntervalTim
               flexShrink: 0,
             }}
           >
-            Intervall-Timer
+            {t("interval.title")}
           </div>
           <IntervalTimerWizard
             variant="sheet"

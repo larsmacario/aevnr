@@ -22,6 +22,7 @@ import { SetValueStepper } from "./SetValueStepper";
 import { WarmUpSetToggle } from "./WarmUpSetToggle";
 import { SetTable } from "./SetTable";
 import { useBreakpoint } from "../lib/responsive";
+import { useI18n } from "../lib/i18n";
 
 const UNIFORM_ROW_WIDTH = "min(300px, 100%)";
 
@@ -49,6 +50,7 @@ export function SetModeToggle({
   setMode: SetMode;
   onChange: (mode: SetMode) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -77,7 +79,7 @@ export function SetModeToggle({
             cursor: "pointer",
           }}
         >
-          {mode === "uniform" ? "GLEICH" : "INDIVIDUELL"}
+          {mode === "uniform" ? t("sets.uniform") : t("sets.individual")}
         </button>
       ))}
     </div>
@@ -93,6 +95,7 @@ export function ExerciseSetConfigurator({
   compact = false,
   maxSets,
 }: ExerciseSetConfiguratorProps) {
+  const { t } = useI18n();
   const isMobile = useBreakpoint() === "mobile";
   const handleModeChange = (mode: SetMode) => {
     if (mode === setMode) return;
@@ -152,7 +155,7 @@ export function ExerciseSetConfigurator({
               {!singleSetOnly && (
                 <>
                   <UniformStepper
-                    label="SÄTZE"
+                    label={t("sets.count")}
                     value={count}
                     size={uiSize}
                     onDec={() => bumpUniform("count", -1)}
@@ -198,7 +201,7 @@ export function ExerciseSetConfigurator({
             {!singleSetOnly && (
               <div style={{ width: UNIFORM_ROW_WIDTH }}>
                 <SetValueStepper
-                  label="SÄTZE"
+                  label={t("sets.count")}
                   value={count}
                   step={1}
                   min={1}
@@ -257,13 +260,14 @@ function UniformStepper({
   onInc: () => void;
   size?: "md" | "lg";
 }) {
+  const { t } = useI18n();
   const isLg = size === "lg";
   const btn = isLg ? mMiniLg : mMini;
 
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: isLg ? 8 : 5 }}>
-        <button type="button" onClick={onDec} style={btn} aria-label={`${label} verringern`}>
+        <button type="button" onClick={onDec} style={btn} aria-label={t("sets.decrease", { label })}>
           –
         </button>
         <span
@@ -278,7 +282,7 @@ function UniformStepper({
         >
           {value}
         </span>
-        <button type="button" onClick={onInc} style={btn} aria-label={`${label} erhöhen`}>
+        <button type="button" onClick={onInc} style={btn} aria-label={t("sets.increase", { label })}>
           +
         </button>
       </div>

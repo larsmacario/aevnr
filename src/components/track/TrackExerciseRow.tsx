@@ -1,6 +1,7 @@
 import { EXERCISE_ROW, exerciseRowStyle, M } from "../../theme";
 import { ExerciseListRowText } from "../ExerciseListRow";
 import { Icon } from "../Icon";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackExerciseRowProps {
   index: number;
@@ -19,6 +20,7 @@ export function TrackExerciseRow({
   onOpen,
   onOpenMenu,
 }: TrackExerciseRowProps) {
+  const { t } = useI18n();
   const complete = totalSets > 0 && doneSets === totalSets;
 
   return (
@@ -60,12 +62,12 @@ export function TrackExerciseRow({
         </div>
         <ExerciseListRowText
           title={name}
-          subtitle={`${doneSets}/${totalSets} Sätze abgeschlossen`}
+          subtitle={t("exercise.setsComplete", { done: doneSets, total: totalSets })}
         />
       </button>
       <button
         type="button"
-        aria-label="Übungsmenü"
+        aria-label={t("track.exerciseMenu")}
         onClick={(e) => {
           e.stopPropagation();
           onOpenMenu();

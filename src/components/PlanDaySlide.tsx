@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { defaultPlanDayName, isDefaultPlanDayName, type PlanDayBlock, type PlanDayExercise } from "../data";
+import { isDefaultPlanDayName, type PlanDayBlock, type PlanDayExercise } from "../data";
 import { prefersReducedMotion } from "../lib/haptics";
 import type { TrainingBlockType } from "../lib/planBlocks";
 import { M } from "../theme";
 import { PlanDayExercisePreview } from "./PlanDayAccordion";
+import { useI18n } from "../lib/i18n";
 
 const ENTRANCE_EASE = [0.25, 0.1, 0.25, 1] as const;
 
@@ -67,6 +68,7 @@ export function PlanDaySlide({
   footer,
   scrollHeader,
 }: PlanDaySlideProps) {
+  const { t } = useI18n();
   const highlighted = isCurrent;
   const reducedMotion = prefersReducedMotion();
   const animateEntrance = isActive && !reducedMotion;
@@ -117,7 +119,7 @@ export function PlanDaySlide({
           lineHeight: 1.5,
         }}
       >
-        Noch keine Übungen — füge welche hinzu.
+        {t("planDay.emptyHint")}
       </p>
     );
 
@@ -150,14 +152,14 @@ export function PlanDaySlide({
         {variant === "builder" ? (
           <>
             {hasCustomDayName ? (
-              <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>TAG {dayNumber}</div>
+              <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>{t("planDay.label", { number: dayNumber })}</div>
             ) : null}
             {editableName && onNameChange ? (
               <input
                 value={hasCustomDayName ? (nameValue ?? "") : ""}
-                placeholder={defaultPlanDayName(dayNumber)}
+                placeholder={t("plan.day", { number: dayNumber })}
                 onChange={(e) => onNameChange(e.target.value)}
-                aria-label={`Name für ${defaultPlanDayName(dayNumber)}`}
+                aria-label={t("planDay.nameAria", { day: t("plan.day", { number: dayNumber }) })}
                 style={{
                   width: "100%",
                   marginTop: hasCustomDayName ? 2 : 0,
@@ -184,8 +186,7 @@ export function PlanDaySlide({
                 fontWeight: 700,
               }}
             >
-              TAG {dayNumber}
-              {highlighted ? " · AKTUELL" : ""}
+              {t(highlighted ? "planDay.current" : "planDay.label", { number: dayNumber })}
             </div>
             <div style={{ fontWeight: 600, fontSize: 15, marginTop: 2, color: M.fg }}>{label}</div>
           </>

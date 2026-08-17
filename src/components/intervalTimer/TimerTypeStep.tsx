@@ -1,6 +1,7 @@
 import { M } from "../../theme";
 import { TIMER_MODES, type TimerMode } from "../../lib/engine";
 import { TIMER_MODE_COLORS } from "../../lib/intervalTimer/timerModeColors";
+import { useI18n } from "../../lib/i18n";
 
 export interface TimerTypeStepProps {
   mode: TimerMode;
@@ -24,14 +25,15 @@ function tileStyle(id: TimerMode, selected: boolean): React.CSSProperties {
 }
 
 export function TimerTypeStep({ mode, onSelect }: TimerTypeStepProps) {
+  const { t } = useI18n();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1, minHeight: 0 }}>
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, color: M.fg, marginBottom: 6 }}>
-          Timer-Typ
+          {t("interval.type.title")}
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, color: M.mut }}>
-          Wähle das Format für dein Intervall-Training.
+          {t("interval.type.description")}
         </p>
       </div>
 
@@ -65,7 +67,7 @@ export function TimerTypeStep({ mode, onSelect }: TimerTypeStepProps) {
                     color: selected ? colors.accent : M.fg,
                   }}
                 >
-                  {m.name}
+                  {t(`interval.mode.${m.id}.name` as "interval.mode.emom.name")}
                 </div>
                 <div
                   style={{
@@ -76,7 +78,7 @@ export function TimerTypeStep({ mode, onSelect }: TimerTypeStepProps) {
                     lineHeight: 1.35,
                   }}
                 >
-                  {m.blurb}
+                  {t(`interval.mode.${m.id}.blurb` as "interval.mode.emom.blurb")}
                 </div>
               </button>
             );

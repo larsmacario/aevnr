@@ -21,6 +21,7 @@ import {
   sanitizeSupersetIds,
   unlinkFromSuperset,
 } from "../lib/superset";
+import { useI18n } from "../lib/i18n";
 
 export interface SessionExerciseEditorProps {
   exercises: SessionExercise[];
@@ -45,6 +46,7 @@ export function SessionExerciseEditor({
   defaultSets = 3,
   defaultReps = 10,
 }: SessionExerciseEditorProps) {
+  const { language, t } = useI18n();
   const [open, setOpen] = useState<string>(exercises[0]?.id ?? "");
   const [picker, setPicker] = useState(false);
   const [setModes, setSetModes] = useState<Record<string, SetMode>>({});
@@ -83,7 +85,7 @@ export function SessionExerciseEditor({
   const addExercise = (ex: LibraryExercise) => {
     const item: SessionExercise = {
       id: newId(),
-      name: ex.name,
+      name: language === "en" ? ex.nameEn?.trim() || ex.name : ex.name,
       note: `${ex.group} · ${ex.equip}`,
       metric: ex.metric,
       sets: buildUniformTrackedSets(
@@ -103,8 +105,8 @@ export function SessionExerciseEditor({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", gap: 10 }}>
-        <MStat label="SÄTZE" value={String(metrics.setCount)} />
-        <MStat label="VOLUMEN" value={`${(metrics.volumeKg / 1000).toFixed(1)}t`} />
+        <MStat label={t("sessionEditor.sets")} value={String(metrics.setCount)} />
+        <MStat label={t("sessionEditor.volume")} value={`${(metrics.volumeKg / 1000).toFixed(1)}t`} />
       </div>
 
       {segmentExercises(exercises).map((seg) => {
@@ -174,7 +176,7 @@ export function SessionExerciseEditor({
                   </div>
                   <div style={{ color: M.mut, fontSize: 13, marginTop: 1 }}>
                     {ex.note ? `${ex.note} · ` : ""}
-                    {done}/{ex.sets.length} Sätze
+                    {t("sessionEditor.progress", { done, total: ex.sets.length })}
                   </div>
                 </div>
                 <Icon name={isOpen ? "chevD" : "chevR"} size={18} color={M.mut2} stroke={2.2} />
@@ -213,7 +215,7 @@ export function SessionExerciseEditor({
                       }
                       style={supersetLinkButtonStyle(linked)}
                     >
-                      {linked ? "Supersatz lösen" : "Mit vorheriger verknüpfen"}
+                      {linked ? t("sessionEditor.unlinkSuperset") : t("sessionEditor.linkPrevious")}
                     </button>
                   </div>
                 )}
@@ -257,7 +259,7 @@ export function SessionExerciseEditor({
           cursor: "pointer",
         }}
       >
-        + Übung hinzufügen
+        {t("sessionEditor.add")}
       </button>
 
       <ExercisePickerSheet

@@ -11,6 +11,7 @@ import {
   type MetconFormat,
 } from "../lib/metcon";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 const METCON_FORMATS: MetconFormat[] = ["amrap", "emom", "circuit"];
 
@@ -26,6 +27,7 @@ function configFromDraft(format: MetconFormat, draft: Partial<MetconConfig>): Me
 }
 
 export function MetconConfigSheet({ open, initialConfig, onClose, onConfirm }: MetconConfigSheetProps) {
+  const { language, t } = useI18n();
   const [format, setFormat] = useState<MetconFormat>("amrap");
   const [durationMin, setDurationMin] = useState(10);
   const [rounds, setRounds] = useState(12);
@@ -88,10 +90,10 @@ export function MetconConfigSheet({ open, initialConfig, onClose, onConfirm }: M
   );
 
   return (
-    <BottomSheet open={open} onClose={onClose} zIndex={25} aria-label="MetCon konfigurieren">
+    <BottomSheet open={open} onClose={onClose} zIndex={25} aria-label={t("metconConfig.aria")}>
       <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 4 }}>MetCon</div>
       <div style={{ color: M.mut, fontSize: 13, marginBottom: 16 }}>
-        Format und Timer — {formatMetconBlockBadge(previewConfig())}
+        {t("metconConfig.description", { preview: formatMetconBlockBadge(previewConfig(), language) })}
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -104,33 +106,33 @@ export function MetconConfigSheet({ open, initialConfig, onClose, onConfirm }: M
             onClick={() => setFormat(f)}
             style={{ flex: "1 1 auto", minWidth: 88 }}
           >
-            {FORMAT_LABELS[f as BlockFormat]}
+            {f === "circuit" ? t("metconConfig.circuit") : FORMAT_LABELS[f as BlockFormat]}
           </MButton>
         ))}
       </div>
 
-      {format === "amrap" && fieldRow("Dauer (Min)", <MStepper value={durationMin} onChange={setDurationMin} min={5} max={30} />)}
+      {format === "amrap" && fieldRow(t("metconConfig.duration"), <MStepper value={durationMin} onChange={setDurationMin} min={5} max={30} />)}
       {format === "emom" && (
         <>
-          {fieldRow("Runden", <MStepper value={rounds} onChange={setRounds} min={4} max={30} />)}
-          {fieldRow("Intervall (Sek.)", <MStepper value={intervalSec} onChange={setIntervalSec} min={30} max={120} step={5} />)}
+          {fieldRow(t("metconConfig.rounds"), <MStepper value={rounds} onChange={setRounds} min={4} max={30} />)}
+          {fieldRow(t("metconConfig.interval"), <MStepper value={intervalSec} onChange={setIntervalSec} min={30} max={120} step={5} />)}
         </>
       )}
       {format === "circuit" && (
         <>
-          {fieldRow("Runden", <MStepper value={circuitRounds} onChange={setCircuitRounds} min={2} max={8} />)}
-          {fieldRow("Work (Sek.)", <MStepper value={workSec} onChange={setWorkSec} min={20} max={90} step={5} />)}
-          {fieldRow("Rest (Sek.)", <MStepper value={restSec} onChange={setRestSec} min={5} max={60} step={5} />)}
+          {fieldRow(t("metconConfig.rounds"), <MStepper value={circuitRounds} onChange={setCircuitRounds} min={2} max={8} />)}
+          {fieldRow(t("metconConfig.work"), <MStepper value={workSec} onChange={setWorkSec} min={20} max={90} step={5} />)}
+          {fieldRow(t("metconConfig.rest"), <MStepper value={restSec} onChange={setRestSec} min={5} max={60} step={5} />)}
           {fieldRow(
-            "Pause zwischen Runden (Sek.)",
+            t("metconConfig.roundRest"),
             <MStepper value={restBetweenRoundsSec} onChange={setRestBetweenRoundsSec} min={15} max={120} step={5} />,
           )}
         </>
       )}
-      {fieldRow("Prep (Sek.)", <MStepper value={prepSec} onChange={setPrepSec} min={0} max={15} />)}
+      {fieldRow(t("metconConfig.prep"), <MStepper value={prepSec} onChange={setPrepSec} min={0} max={15} />)}
 
       <MButton type="button" variant="primary" size="md" fullWidth onClick={handleConfirm} style={{ marginTop: 20 }}>
-        Übernehmen
+        {t("metconConfig.apply")}
       </MButton>
     </BottomSheet>
   );

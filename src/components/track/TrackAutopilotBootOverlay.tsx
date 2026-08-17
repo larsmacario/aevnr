@@ -1,6 +1,8 @@
 import { M } from "../../theme";
+import { useI18n } from "../../lib/i18n";
 
 export function TrackAutopilotBootOverlay() {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -35,10 +37,10 @@ export function TrackAutopilotBootOverlay() {
           lineHeight: 1.25,
         }}
       >
-        Auto-Pilot bereitet deine Sätze vor…
+        {t("autopilot.preparing")}
       </div>
       <div style={{ fontSize: 13, color: M.mut, marginTop: 8, lineHeight: 1.45, maxWidth: 260 }}>
-        Vorschläge aus deiner Trainingshistorie werden geladen.
+        {t("autopilot.loading")}
       </div>
       <style>{`
         @keyframes trackAutopilotSpin {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { M } from "../theme";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 const MENU_WIDTH = 168;
 const MENU_Z = 200;
@@ -50,8 +51,10 @@ export function InlineDisclosureMenu({
   onDelete,
   triggerSize = 44,
   triggerMarginLeft = 0,
-  ariaLabel = "Aktionen",
+  ariaLabel,
 }: InlineDisclosureMenuProps) {
+  const { t } = useI18n();
+  const resolvedAriaLabel = ariaLabel ?? t("actions.label");
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -117,7 +120,7 @@ export function InlineDisclosureMenu({
             return next;
           });
         }}
-        aria-label={ariaLabel}
+        aria-label={resolvedAriaLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         style={{
@@ -142,7 +145,7 @@ export function InlineDisclosureMenu({
             <div
               ref={menuRef}
               role="menu"
-              aria-label={ariaLabel}
+              aria-label={resolvedAriaLabel}
               style={{
                 position: "fixed",
                 top: pos.top,
@@ -194,7 +197,7 @@ export function InlineDisclosureMenu({
                     style={menuItemStyle(deleteDisabled, true)}
                   >
                     <Icon name="trash" size={16} stroke={2} color={deleteDisabled ? M.mut2 : M.danger} />
-                    Löschen
+                    {t("common.delete")}
                   </button>
                 </>
               ) : null}

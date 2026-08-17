@@ -4,6 +4,7 @@ import { useAuth } from "../../lib/auth";
 import { useContentColumnStyle } from "../../lib/responsive";
 import { AppLogo } from "../../components/AppLogo";
 import { MButton } from "../../components/MButton";
+import { useI18n } from "../../lib/i18n";
 
 export type AuthStep = "login" | "signup" | "forgot" | "reset";
 
@@ -36,6 +37,7 @@ type AuthFlowProps = {
 };
 
 export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
+  const { t } = useI18n();
   const auth = useAuth();
   const columnStyle = useContentColumnStyle();
   const [step, setStep] = useState<AuthStep>(initialStep);
@@ -84,7 +86,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
       setError(err);
       return;
     }
-    setInfo("Code wurde an deine E-Mail gesendet.");
+    setInfo(t("auth.codeSent"));
     setStep("reset");
   };
 
@@ -103,17 +105,17 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
       setError(pwErr);
       return;
     }
-    setInfo("Passwort aktualisiert. Du bist eingeloggt.");
+    setInfo(t("auth.passwordUpdated"));
     setStep("login");
     setToken("");
     setNewPassword("");
   };
 
   const titles: Record<AuthStep, string> = {
-    login: "Anmelden",
-    signup: "Registrieren",
-    forgot: "Passwort vergessen",
-    reset: "Neues Passwort",
+    login: t("auth.title.login"),
+    signup: t("auth.title.signup"),
+    forgot: t("auth.title.forgot"),
+    reset: t("auth.title.reset"),
   };
 
   return (
@@ -172,7 +174,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           {(step === "login" || step === "signup" || step === "forgot" || step === "reset") && (
             <input
               type="email"
-              placeholder="E-Mail"
+              placeholder={t("auth.email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -183,7 +185,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           {step === "signup" && (
             <input
               type="text"
-              placeholder="Anzeigename (optional)"
+              placeholder={t("auth.displayName")}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               autoComplete="name"
@@ -194,7 +196,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           {(step === "login" || step === "signup") && (
             <input
               type="password"
-              placeholder="Passwort"
+              placeholder={t("auth.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={step === "signup" ? "new-password" : "current-password"}
@@ -206,7 +208,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
             <>
               <input
                 type="text"
-                placeholder="6-stelliger Code aus der E-Mail"
+                placeholder={t("auth.resetCode")}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 inputMode="numeric"
@@ -215,7 +217,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
               />
               <input
                 type="password"
-                placeholder="Neues Passwort"
+                placeholder={t("auth.newPassword")}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
@@ -228,14 +230,14 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
         {step === "login" && (
           <>
             <MButton disabled={busy} onClick={submitLogin} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
-              ANMELDEN
+              {t("auth.action.login")}
             </MButton>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
               <button type="button" style={linkBtn} onClick={() => setStep("forgot")}>
-                Passwort vergessen?
+                {t("auth.forgot")}
               </button>
               <button type="button" style={linkBtn} onClick={() => setStep("signup")}>
-                Konto erstellen
+                {t("auth.create")}
               </button>
             </div>
           </>
@@ -244,11 +246,11 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
         {step === "signup" && (
           <>
             <MButton disabled={busy} onClick={submitSignup} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
-              REGISTRIEREN
+              {t("auth.action.signup")}
             </MButton>
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button type="button" style={linkBtn} onClick={() => setStep("login")}>
-                Bereits ein Konto? Anmelden
+                {t("auth.hasAccount")}
               </button>
             </div>
           </>
@@ -257,11 +259,11 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
         {step === "forgot" && (
           <>
             <MButton disabled={busy} onClick={submitForgot} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
-              CODE SENDEN
+              {t("auth.action.sendCode")}
             </MButton>
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button type="button" style={linkBtn} onClick={() => setStep("login")}>
-                Zurück zur Anmeldung
+                {t("auth.backToLogin")}
               </button>
             </div>
           </>
@@ -270,11 +272,11 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
         {step === "reset" && (
           <>
             <MButton disabled={busy} onClick={submitReset} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
-              PASSWORT SPEICHERN
+              {t("auth.action.savePassword")}
             </MButton>
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button type="button" style={linkBtn} onClick={() => setStep("login")}>
-                Zurück zur Anmeldung
+                {t("auth.backToLogin")}
               </button>
             </div>
           </>

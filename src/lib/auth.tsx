@@ -77,19 +77,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      activeUserIdRef.current = data.session?.user?.id ?? null;
-      if (data.session?.user) {
-        loadProfile(data.session.user.id).finally(() => mounted && setLoading(false));
-      } else {
-        setProfile(null);
-        setProfileReady(true);
-        setLoading(false);
+    const resetUnauthenticated = () => {
+      activeUserIdRef.current = null;
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setProfileReady(true);
+      setLoading(false);
+    };
+
+    const restoreSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        // A revoked or expired refresh token must never leave the native
+        // WebView on a permanent splash/blank screen. Remove only the local
+        // token and continue through the normal unauthenticated gate.
+        if (error) {
+          console.warn("Ungültige lokale Sitzung wurde entfernt:", error.message);
+          await supabase.auth.signOut({ scope: "local" });
+          if (mounted) resetUnauthenticated();
+          return;
+        }
+
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        activeUserIdRef.current = data.session?.user?.id ?? null;
+        if (data.session?.user) {
+          loadProfile(data.session.user.id).finally(() => mounted && setLoading(false));
+        } else {
+          setProfile(null);
+          setProfileReady(true);
+          setLoading(false);
+        }
+      } catch (error) {
+        if (!mounted) return;
+        console.warn("Lokale Sitzung konnte nicht wiederhergestellt werden:", error);
+        resetUnauthenticated();
       }
-    });
+    };
+
+    void restoreSession();
 
     const {
       data: { subscription },

@@ -2,6 +2,7 @@ import { M } from "../theme";
 import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { BottomSheet } from "./BottomSheet";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 export interface ExerciseVideoSheetProps {
   open: boolean;
@@ -11,10 +12,11 @@ export interface ExerciseVideoSheetProps {
 }
 
 export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: ExerciseVideoSheetProps) {
+  const { t } = useI18n();
   const embedUrl = toYouTubeEmbedUrl(youtubeUrl);
 
   return (
-    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label={`Video: ${exerciseName}`}>
+    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label={t("exerciseVideo.aria", { name: exerciseName })}>
       <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div
           style={{
@@ -26,7 +28,7 @@ export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: 
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700 }}>VIDEO</div>
+            <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700 }}>{t("exerciseVideo.title")}</div>
             <div
               style={{
                 fontFamily: M.label,
@@ -43,7 +45,7 @@ export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={t("exerciseDetail.close")}
             style={{
               background: "none",
               border: "none",
@@ -71,7 +73,7 @@ export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: 
             }}
           >
             <iframe
-              title={`YouTube: ${exerciseName}`}
+              title={t("exerciseVideo.youtubeTitle", { name: exerciseName })}
               src={embedUrl}
               style={{
                 position: "absolute",
@@ -86,12 +88,12 @@ export function ExerciseVideoSheet({ open, exerciseName, youtubeUrl, onClose }: 
           </div>
         ) : (
           <div style={{ color: M.mut, fontSize: 14, lineHeight: 1.45 }}>
-            Dieses Video kann hier nicht eingebettet werden. Prüfe den Link in der Übungsbearbeitung.
+            {t("exerciseVideo.invalid")}
           </div>
         )}
 
         <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.4, marginTop: 12, marginBottom: 0 }}>
-          Manche Videos erlauben keine Wiedergabe in der App.
+          {t("exerciseVideo.playbackHint")}
         </p>
       </div>
     </BottomSheet>

@@ -17,6 +17,7 @@ import { Ring } from "../Ring";
 import { MButton } from "../MButton";
 import { fmt, fmtUp } from "../../lib/engine";
 import { FORMAT_LABELS } from "../../lib/planBlocks";
+import { useI18n } from "../../lib/i18n";
 
 export interface MetconBlockViewProps {
   block: PlanDayBlock;
@@ -33,6 +34,7 @@ export function MetconBlockView({
   onBack,
   onComplete,
 }: MetconBlockViewProps) {
+  const { t } = useI18n();
   const { preferences } = usePreferences();
   const rawConfig = configFromPlanDayBlock(block);
   const config = normalizeMetconConfig(
@@ -107,7 +109,7 @@ export function MetconBlockView({
         <button
           type="button"
           onClick={onBack}
-          aria-label="Zur Übersicht"
+          aria-label={t("track.backOverview")}
           style={{ background: "none", border: "none", cursor: "pointer", color: M.mut, display: "flex", padding: 0, flexShrink: 0 }}
         >
           <Icon name="chevL" size={24} stroke={2.2} />
@@ -163,7 +165,7 @@ export function MetconBlockView({
                 color: col,
               }}
             >
-              {T.label}
+              {T.label === "VORBEREITUNG" ? t("metcon.prep") : T.label === "ARBEIT" ? t("metcon.work") : T.label === "PAUSE" ? t("metcon.rest") : T.label === "FERTIG" ? t("metcon.done") : T.label}
             </span>
             <span
               style={{
@@ -189,7 +191,7 @@ export function MetconBlockView({
                   marginTop: 6,
                 }}
               >
-                {T.roundsCompleted} <span style={{ color: M.mut2 }}>RUNDEN</span>
+                {T.roundsCompleted} <span style={{ color: M.mut2 }}>{t("metcon.rounds")}</span>
               </span>
             )}
             {(config.format === "emom" || config.format === "circuit") && T.phase !== "prep" && !T.idle && (
@@ -205,8 +207,7 @@ export function MetconBlockView({
                   padding: "0 8px",
                 }}
               >
-                RUNDE {String(T.round).padStart(2, "0")}
-                <span style={{ color: M.mut2 }}> / {String(T.rounds).padStart(2, "0")}</span>
+                {t("metcon.round", { current: String(T.round).padStart(2, "0"), total: String(T.rounds).padStart(2, "0") })}
               </span>
             )}
           </Ring>
@@ -250,7 +251,7 @@ export function MetconBlockView({
                   color: T.running ? M.fg : M.mut2,
                 }}
               >
-                + Runde abschließen
+                {t("metcon.completeRound")}
               </MButton>
               <MButton
                 onClick={T.dropRound}
@@ -258,7 +259,7 @@ export function MetconBlockView({
                 variant="ghost"
                 size="md"
                 style={{ flex: "0 0 auto", minWidth: 52, color: M.mut }}
-                aria-label="Runde korrigieren"
+                aria-label={t("metcon.correctRound")}
               >
                 −
               </MButton>
@@ -272,7 +273,7 @@ export function MetconBlockView({
               fullWidth
               style={{ color: M.mut, fontSize: 12 }}
             >
-              Station überspringen
+              {t("metcon.skipStation")}
             </MButton>
           )}
         </div>
@@ -290,12 +291,12 @@ export function MetconBlockView({
               color: M.fg,
             }}
           >
-            Jetzt: {activeExercise.name}
+            {t("metcon.now", { name: activeExercise.name })}
           </div>
         )}
 
         <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700, marginBottom: 8 }}>
-          ÜBUNGEN
+          {t("metcon.exercises")}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {exercises.map((ex, idx) => {
@@ -320,7 +321,7 @@ export function MetconBlockView({
                 <span>{ex.name}</span>
                 {targetReps != null && targetReps > 0 ? (
                   <span style={{ color: M.mut2, fontWeight: 500, flexShrink: 0 }}>
-                    {targetReps} Wdh.
+                    {t("metcon.targetReps", { count: targetReps })}
                   </span>
                 ) : null}
               </div>
@@ -339,7 +340,7 @@ export function MetconBlockView({
           flexShrink: 0,
         }}
       >
-        <MButton onClick={T.reset} variant="secondary" size="icon" aria-label="Zurücksetzen">
+        <MButton onClick={T.reset} variant="secondary" size="icon" aria-label={t("metcon.reset")}>
           <Icon name="reset" size={16} stroke={2} color={M.mut} />
         </MButton>
         <button

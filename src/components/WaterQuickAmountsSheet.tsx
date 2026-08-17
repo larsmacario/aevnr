@@ -10,6 +10,7 @@ import { M } from "../theme";
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { NutritionStepperStack } from "./NutritionStepperStack";
+import { useI18n } from "../lib/i18n";
 
 export interface WaterQuickAmountsSheetProps {
   open: boolean;
@@ -19,6 +20,7 @@ export interface WaterQuickAmountsSheetProps {
 }
 
 export function WaterQuickAmountsSheet({ open, amountsMl, onClose, onSave }: WaterQuickAmountsSheetProps) {
+  const { t } = useI18n();
   const [values, setValues] = useState<WaterQuickAmounts>(amountsMl);
   const [busy, setBusy] = useState(false);
 
@@ -47,15 +49,15 @@ export function WaterQuickAmountsSheet({ open, amountsMl, onClose, onSave }: Wat
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} aria-label="Schnellmengen anpassen">
-      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>Schnellmengen</div>
+    <BottomSheet open={open} onClose={onClose} aria-label={t("recovery.sheet.quick.aria")}>
+      <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 8 }}>{t("recovery.sheet.quick.title")}</div>
       <p style={{ margin: "0 0 16px", fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
-        Lege die drei Mengen fest, die du mit einem Tap hinzufügen kannst.
+        {t("recovery.sheet.quick.description")}
       </p>
       <NutritionStepperStack
         fields={values.map((value, index) => ({
           id: `quickAmount${index}`,
-          label: `Schnellmenge ${index + 1} in ml`,
+          label: t("recovery.sheet.quick.amount", { number: index + 1 }),
           value,
           step: WATER_TARGET_STEP_ML,
           min: WATER_QUICK_AMOUNT_MIN_ML,
@@ -71,10 +73,10 @@ export function WaterQuickAmountsSheet({ open, amountsMl, onClose, onSave }: Wat
           onClick={() => setValues([...DEFAULT_WATER_QUICK_AMOUNTS_ML])}
           style={{ flex: 1 }}
         >
-          Standard
+          {t("recovery.sheet.quick.default")}
         </MButton>
         <MButton type="button" variant="primary" size="md" disabled={busy} onClick={() => void save(values)} style={{ flex: 1 }}>
-          Speichern
+          {t("recovery.sheet.save")}
         </MButton>
       </div>
     </BottomSheet>

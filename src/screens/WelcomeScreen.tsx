@@ -4,6 +4,7 @@ import { PhoneShell } from "../components/PhoneShell";
 import { AppLogo } from "../components/AppLogo";
 import { APP_NAME, displayStyle, M } from "../theme";
 import { MButton } from "../components/MButton";
+import { useI18n } from "../lib/i18n";
 
 export type WelcomeExit = "signup" | "login";
 
@@ -18,6 +19,7 @@ type WelcomeScreenProps = {
 };
 
 function SlideBrand() {
+  const { t } = useI18n();
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
       <AppLogo size={56} />
@@ -33,7 +35,7 @@ function SlideBrand() {
           lineHeight: 1.45,
         }}
       >
-        Dein Begleiter für Training, Erholung und langfristige Gesundheit.
+        {t("welcome.tagline")}
       </p>
     </div>
   );
@@ -99,6 +101,7 @@ function ArrowIcon() {
 }
 
 export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
+  const { t } = useI18n();
   const [index, setIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
@@ -124,13 +127,13 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
     <SlideBrand key="brand" />,
     <SlideFeature
       key="foundation"
-      title="Deine Basis stärken"
-      body="Baue Kraft und Ausdauer auf – in einem Rhythmus, der zu deinem Alltag passt."
+      title={t("welcome.foundation.title")}
+      body={t("welcome.foundation.body")}
     />,
     <SlideFeature
       key="decision"
-      title="Heute passend entscheiden"
-      body="ÆVNR verbindet Training, Erholung und Gewohnheiten zu einem klaren nächsten Schritt für deinen Tag."
+      title={t("welcome.decision.title")}
+      body={t("welcome.decision.body")}
     />,
   ];
 
@@ -162,8 +165,8 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
 
         <div
           role="region"
-          aria-roledescription="Karussell"
-          aria-label={`Willkommen bei ${APP_NAME}`}
+          aria-roledescription={t("welcome.carousel")}
+          aria-label={t("welcome.aria", { app: APP_NAME })}
           style={{
             flex: 1,
             minHeight: 0,
@@ -222,7 +225,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
         >
           <div
             role="tablist"
-            aria-label="Onboarding-Folien"
+            aria-label={t("welcome.slides")}
             style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}
           >
             {Array.from({ length: SLIDE_COUNT }, (_, i) => (
@@ -232,7 +235,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
                 role="tab"
                 aria-selected={index === i}
                 aria-current={index === i ? "true" : undefined}
-                aria-label={`Folie ${i + 1} von ${SLIDE_COUNT}`}
+                aria-label={t("welcome.slide", { current: i + 1, total: SLIDE_COUNT })}
                 onClick={() => goTo(i)}
                 style={{
                   width: index === i ? 28 : 10,
@@ -270,7 +273,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
             size="lg"
             fullWidth
           >
-            Los geht&apos;s
+            {t("welcome.start")}
             <ArrowIcon />
           </MButton>
 
@@ -281,8 +284,8 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
             size="sm"
             style={{ fontFamily: M.body, fontWeight: 500, color: M.mut }}
           >
-            Ich habe bereits ein Konto —{" "}
-            <span style={{ color: M.fg, fontWeight: 700 }}>Anmelden</span>
+            {t("welcome.hasAccount")}{" "}
+            <span style={{ color: M.fg, fontWeight: 700 }}>{t("welcome.login")}</span>
           </MButton>
         </div>
       </div>

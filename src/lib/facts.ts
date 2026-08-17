@@ -1,3 +1,5 @@
+import type { AppLanguage } from "./language";
+
 export const FACT_TOPICS = [
   "gut_health",
   "nutrition",
@@ -69,6 +71,7 @@ export interface FactAction {
 
 export interface DailyFact {
   id: string;
+  language: AppLanguage;
   topic: FactTopic;
   title: string;
   body: string;

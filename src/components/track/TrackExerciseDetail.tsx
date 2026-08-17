@@ -4,6 +4,7 @@ import { fmtUp } from "../../lib/engine";
 import { HorizontalSlidePager } from "../HorizontalSlidePager";
 import { Icon } from "../Icon";
 import { MButton } from "../MButton";
+import { useI18n } from "../../lib/i18n";
 
 export interface TrackExerciseDetailProps {
   activeIndex: number;
@@ -26,6 +27,7 @@ export function TrackExerciseDetail({
   onOpenTimer,
   metricsFooter,
 }: TrackExerciseDetailProps) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -49,7 +51,7 @@ export function TrackExerciseDetail({
           <button
             type="button"
             onClick={onBack}
-            aria-label="Zur Übersicht"
+            aria-label={t("track.backOverview")}
             style={{ background: "none", border: "none", cursor: "pointer", color: M.mut, display: "flex", padding: 0 }}
           >
             <Icon name="chevL" size={24} stroke={2.2} />
@@ -72,7 +74,7 @@ export function TrackExerciseDetail({
         <div style={{ justifySelf: "end", display: "flex", alignItems: "center", gap: 8, gridColumn: "3" }}>
           <MButton
             type="button"
-            aria-label="1RM-Rechner"
+            aria-label={t("exercise.oneRm")}
             onClick={onOpenOneRm}
             variant="secondary"
             size="icon"
@@ -82,7 +84,7 @@ export function TrackExerciseDetail({
           </MButton>
           <MButton
             type="button"
-            aria-label="Intervall-Timer"
+            aria-label={t("exercise.intervalTimer")}
             onClick={onOpenTimer}
             variant="secondary"
             size="icon"
@@ -97,7 +99,7 @@ export function TrackExerciseDetail({
         count={slides.length}
         activeIndex={activeIndex}
         onIndexChange={onIndexChange}
-        ariaLabel="Übungen"
+        ariaLabel={t("exercise.carousel")}
         indicatorVariant="dots"
         showIndicators={slides.length > 1}
         footerBeforeIndicators={metricsFooter}

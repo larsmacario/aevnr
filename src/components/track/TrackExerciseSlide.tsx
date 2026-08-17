@@ -8,6 +8,7 @@ import { Icon } from "../Icon";
 import { MButton } from "../MButton";
 import { RestDurationControl } from "../RestDurationControl";
 import { SetTable } from "../SetTable";
+import { useI18n } from "../../lib/i18n";
 
 function blockBadgeForExercise(exercise: Exercise): { index: number; accent: string } {
   const block = exercise.blockType ?? "strength";
@@ -64,6 +65,7 @@ export function TrackExerciseSlide({
   onWarmUpChange,
   onOpenMenu,
 }: TrackExerciseSlideProps) {
+  const { t } = useI18n();
   const { index: blockIndex, accent: blockAccent } = blockBadgeForExercise(exercise);
   const pillStyle: CSSProperties = {
     padding: "7px 14px",
@@ -141,12 +143,12 @@ export function TrackExerciseSlide({
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 13, color: M.mut }}>
                   <Icon name="clock" size={14} stroke={2} color={M.mut2} />
-                  Pausendauer · {fmtRestSec(restSeconds)}
+                  {t("exercise.restDuration", { duration: fmtRestSec(restSeconds) })}
                 </div>
               )}
             </div>
             {onOpenMenu ? (
-              <MButton type="button" variant="ghost" size="icon" onClick={onOpenMenu} aria-label="Übungsmenü" style={{ flexShrink: 0, color: M.mut2 }}>
+              <MButton type="button" variant="ghost" size="icon" onClick={onOpenMenu} aria-label={t("track.exerciseMenu")} style={{ flexShrink: 0, color: M.mut2 }}>
                 <Icon name="moreH" size={20} stroke={2.2} />
               </MButton>
             ) : null}
@@ -171,13 +173,13 @@ export function TrackExerciseSlide({
             flexShrink: 0,
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 600, color: M.fg }}>{plateauReason ?? "Kein Fortschritt"}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: M.fg }}>{plateauReason ?? t("exercise.noProgress")}</div>
           <div style={{ fontSize: 13, color: M.mut, marginTop: 4, lineHeight: 1.4 }}>
-            Deload oder Übung tauschen kann helfen.
+            {t("exercise.deloadHint")}
           </div>
           {onApplyDeload ? (
             <MButton type="button" variant="secondary" size="sm" onClick={onApplyDeload} style={{ marginTop: 10 }}>
-              Deload anwenden
+              {t("exercise.applyDeload")}
             </MButton>
           ) : null}
         </div>
@@ -186,7 +188,7 @@ export function TrackExerciseSlide({
       {hasSuggested && onConfirmAllSuggested ? (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexShrink: 0, flexWrap: "wrap" }}>
           <button type="button" onClick={onConfirmAllSuggested} style={{ ...pillStyle, borderColor: M.brandBorder, color: M.brand }}>
-            Alle bestätigen ✓
+            {t("exercise.confirmAll")}
           </button>
         </div>
       ) : null}
@@ -206,12 +208,12 @@ export function TrackExerciseSlide({
         onRemove={onRemoveSet}
         onWarmUpChange={onWarmUpChange}
         onAddSet={onAddSet}
-        addSetLabel="+ Satz hinzufügen"
+        addSetLabel={t("exerciseSets.add")}
       />
 
       {allDone && onPerceivedEffort ? (
         <div style={{ marginTop: 14, flexShrink: 0 }}>
-          <div style={{ fontSize: 13, color: M.mut, marginBottom: 8 }}>Wie lief&apos;s?</div>
+          <div style={{ fontSize: 13, color: M.mut, marginBottom: 8 }}>{t("exercise.effortQuestion")}</div>
           <div style={{ display: "flex", gap: 8 }}>
             {(["easy", "ok", "hard"] as PerceivedEffort[]).map((effort) => {
               const selected = exercise.perceivedEffort === effort;
@@ -228,7 +230,7 @@ export function TrackExerciseSlide({
                       : undefined
                   }
                 >
-                  {effort === "easy" ? "Leicht" : effort === "ok" ? "Passt" : "Schwer"}
+                  {effort === "easy" ? t("exercise.effort.easy") : effort === "ok" ? t("exercise.effort.ok") : t("exercise.effort.hard")}
                 </MButton>
               );
             })}

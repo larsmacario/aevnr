@@ -1,4 +1,4 @@
-import { hasCronSecret, localParts, normalizeTopics, selectUnseenFact, serviceClient } from "../_shared/facts.ts";
+import { hasCronSecret, localParts, normalizeLanguage, normalizeTopics, selectUnseenFact, serviceClient } from "../_shared/facts.ts";
 
 const headers = { "Content-Type": "application/json" };
 
@@ -12,16 +12,17 @@ Deno.serve(async (req) => {
     for (const profile of profiles ?? []) {
       const preferences = profile.preferences as Record<string, unknown> | null;
       const topics = normalizeTopics(preferences?.factTopics);
+      const language = normalizeLanguage(preferences?.language);
       const timezone = typeof preferences?.factTimezone === "string" ? preferences.factTimezone : "Europe/Berlin";
       let local;
       try { local = localParts(timezone); } catch { continue; }
       if (local.hour !== 6 || local.minute > 1 || topics.length === 0) continue;
-      const { data: existing, error: existingError } = await db.from("user_daily_facts").select("id").eq("user_id", profile.id).eq("local_date", local.date).maybeSingle();
+      const { data: existing, error: existingError } = await db.from("user_daily_facts").select("id").eq("user_id", profile.id).eq("local_date", local.date).eq("language", language).maybeSingle();
       if (existingError) throw existingError;
       if (existing) continue;
-      const fact = await selectUnseenFact(profile.id, topics);
+      const fact = await selectUnseenFact(profile.id, topics, language);
       if (!fact) continue;
-      const { error: insertError } = await db.from("user_daily_facts").insert({ user_id: profile.id, fact_id: fact.id, local_date: local.date, timezone });
+      const { error: insertError } = await db.from("user_daily_facts").insert({ user_id: profile.id, fact_id: fact.id, local_date: local.date, language, timezone });
       if (insertError && insertError.code !== "23505") throw insertError;
       assigned += 1;
     }

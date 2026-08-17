@@ -1,4 +1,5 @@
 import { M } from "../../theme";
+import { useI18n } from "../../lib/i18n";
 
 export interface DotIndicatorsProps {
   count: number;
@@ -25,8 +26,9 @@ export function DotIndicators({
   count,
   activeIndex,
   onSelect,
-  ariaLabel = "Navigation",
+  ariaLabel,
 }: DotIndicatorsProps) {
+  const { t } = useI18n();
   if (count <= 1) return null;
 
   const safeIndex = Math.max(0, Math.min(count - 1, activeIndex));
@@ -43,7 +45,7 @@ export function DotIndicators({
     >
       <div
         role="tablist"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? t("pager.navigation")}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -64,7 +66,7 @@ export function DotIndicators({
               role="tab"
               aria-selected={isActive}
               aria-current={isActive ? "true" : undefined}
-              aria-label={`Übung ${i + 1} von ${count}`}
+              aria-label={t("pager.exercise", { current: i + 1, total: count })}
               onClick={() => onSelect(i)}
               style={{
                 width: hit,

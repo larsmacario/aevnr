@@ -6,6 +6,8 @@ import { submitSupportRequest, type SupportCategory } from "../lib/support";
 import { MButton } from "../components/MButton";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useI18n } from "../lib/i18n";
+import type { TranslationKey } from "../locales/de";
 
 const CATEGORIES = [
   { id: "bug", label: "Bug" },
@@ -44,6 +46,7 @@ export interface SupportScreenProps {
 }
 
 export function SupportScreen({ onBack }: SupportScreenProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [category, setCategory] = useState<CategoryId>("question");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -64,15 +67,15 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
     const trimmedMessage = message.trim();
 
     if (!trimmedEmail.includes("@")) {
-      setError("Bitte gib eine gültige E-Mail-Adresse ein.");
+      setError(t("support.error.email"));
       return;
     }
     if (trimmedMessage.length < 10) {
-      setError("Bitte beschreibe dein Anliegen etwas genauer (mindestens 10 Zeichen).");
+      setError(t("support.error.message"));
       return;
     }
     if (!user?.id) {
-      setError("Du musst angemeldet sein, um eine Anfrage zu senden.");
+      setError(t("support.error.auth"));
       return;
     }
 
@@ -86,7 +89,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
       });
       setSent(true);
     } catch {
-      setError("Die Anfrage konnte nicht gesendet werden. Bitte versuche es später erneut.");
+      setError(t("support.error.send"));
     } finally {
       setSubmitting(false);
     }
@@ -94,7 +97,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title="SUPPORT" />
+      <ScreenBackHeader onBack={onBack} title={t("support.title")} />
 
       <div
         style={{
@@ -125,25 +128,24 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
                 color: M.fg,
               }}
             >
-              Danke!
+              {t("support.thanks")}
             </p>
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: M.mut }}>
-              Deine Anfrage ist bei uns eingegangen. Wir melden uns per E-Mail an{" "}
-              {email.trim() || "deine Adresse"}.
+              {t("support.received", { email: email.trim() || t("support.yourAddress") })}
             </p>
             <MButton type="button" onClick={onBack} variant="primary" size="md" fullWidth style={{ marginTop: 20 }}>
-              Zurück
+              {t("common.back")}
             </MButton>
           </div>
         ) : (
           <>
             <p style={{ margin: "0 0 20px", fontSize: 15, lineHeight: 1.55, color: M.mut }}>
-              Beschreib kurz dein Anliegen — wir melden uns per E-Mail.
+              {t("support.intro")}
             </p>
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 18 }}>
-                <span style={labelStyle}>THEMA</span>
+                <span style={labelStyle}>{t("support.topic")}</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {CATEGORIES.map((c) => {
                     const active = category === c.id;
@@ -163,7 +165,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
                           cursor: "pointer",
                         }}
                       >
-                        {c.label}
+                        {t(`support.category.${c.id}` as TranslationKey)}
                       </button>
                     );
                   })}
@@ -172,7 +174,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
 
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle} htmlFor="support-email">
-                  DEINE E-MAIL
+                  {t("support.email")}
                 </label>
                 <input
                   id="support-email"
@@ -187,7 +189,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
 
               <div style={{ marginBottom: 16 }}>
                 <label style={labelStyle} htmlFor="support-message">
-                  NACHRICHT
+                  {t("support.message")}
                 </label>
                 <textarea
                   id="support-message"
@@ -195,7 +197,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
                   onChange={(e) => setMessage(e.target.value)}
                   required
                   rows={6}
-                  placeholder="Was ist passiert? Was hast du erwartet?"
+                  placeholder={t("support.placeholder")}
                   style={{
                     ...inputStyle,
                     resize: "vertical",
@@ -210,7 +212,7 @@ export function SupportScreen({ onBack }: SupportScreenProps) {
               ) : null}
 
               <MButton type="submit" disabled={submitting} variant="primary" size="md" fullWidth loading={submitting}>
-                {submitting ? "Wird gesendet …" : "Absenden"}
+                {submitting ? t("support.sending") : t("support.send")}
               </MButton>
             </form>
           </>

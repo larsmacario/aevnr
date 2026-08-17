@@ -198,7 +198,9 @@ serve(async (req) => {
       anamnesis,
       recentSessions,
       exerciseFeedback,
+      language: requestedLanguage,
     } = await req.json();
+    const language = requestedLanguage === "en" ? "en" : "de";
 
     const ageYears = ageFromBirthDate(birthDate);
     const ageBand = getAgeBand(ageYears);
@@ -216,6 +218,7 @@ serve(async (req) => {
       experienceLevel,
       weeklyDays: resolvedWeeklyDays,
       anamnesis,
+      language,
     };
 
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
@@ -261,8 +264,13 @@ serve(async (req) => {
       const trainingWeekdaysText = formatTrainingWeekdaysFromAnamnesis(anamnesis);
 
       // Prompt für KI vorbereiten
+      const outputLanguageRule = language === "en"
+        ? "OUTPUT LANGUAGE: Write every user-visible field in English, including plan name, subtitle, day names, exercise names, notes and every advice field."
+        : "AUSGABESPRACHE: Schreibe alle nutzersichtbaren Felder auf Deutsch, einschließlich Planname, Untertitel, Tagesnamen, Übungsnamen, Notizen und aller Empfehlungsfelder.";
       const prompt = `Du bist ein hochqualifizierter Personal Trainer und Sportwissenschaftler. 
 Erstelle einen komplett neuen, maßgeschneiderten Trainingsplan.
+
+${outputLanguageRule}
 
 Hier sind die Anamnesedaten des Nutzers:
 - Geschlecht: ${gender || "Keine Angabe"}
@@ -311,7 +319,7 @@ Wichtige Regeln:
 2. ${exerciseCountRule} (gilt nur für den strength-Block; Warm-up/Skill/MetCon separat.)
 3. note PFLICHT pro Übung — nur name + note liefern (kein sets[], metric, equipment, muscleGroup). note kurz halten (≤40 Zeichen): Kraft z.B. 3x8 @ 75% 1RM; Cardio z.B. 5 min; MetCon z.B. 10 Wdh./Runde. Richtwerte Kraft-%: Kraft 85–95%, Hypertrophie 70–80%, Ausdauer/Technik 60–70%, Anfänger 65–75%.
 4. Schmerzzonen und Feedback (Dislike/Schmerzen) strikt beachten. Bei Reha/Einschränkung MetCon weglassen (metcon-Block einfach weglassen).
-5. MetCon: nur format (amrap|emom|circuit) + 3–4 Übungen — kein config, kein enabledBlocks, kein day.note. Übungsnamen auf Deutsch.
+5. MetCon: nur format (amrap|emom|circuit) + 3–4 Übungen — kein config, kein enabledBlocks, kein day.note. Übungsnamen in der geforderten Ausgabesprache.
 6. Wenig Schlaf (<7h) oder Stress ≥ 8/10 → konservativeres Volumen in den notes.
 7. Trainingsstruktur strikt umsetzen: full_body → jeder Tag Ganzkörper (z. B. „Ganzkörper A/B“); split + N → genau N Split-Einheiten rotieren. days[].name beschreibt die Einheit, nicht den Wochentag.
 8. days[].name NIEMALS mit „Tag 1“, „Tag 2“ o. Ä. beginnen. Erlaubt: „Unterkörper“, „Push“. Verboten: „Tag 3 – Brust“.
@@ -330,6 +338,9 @@ Wichtige Regeln:
           model: ANTHROPIC_MODEL,
           max_tokens: MAX_OUTPUT_TOKENS,
           temperature: 0.2,
+          system: language === "en"
+            ? "You are an elite sports scientist and personal trainer creating customized training plans. The user's active language is ENGLISH ('en'). You must output every user-visible string (plan name, subtitle, day names, exercise names, notes, and all advice fields) strictly in English. Never use German."
+            : "Du bist ein hochqualifizierter Sportwissenschaftler und Personal Trainer für maßgeschneiderte Trainingspläne. Die aktive Sprache des Nutzers ist DEUTSCH ('de'). Du musst alle nutzersichtbaren Texte (Planname, Untertitel, Tagesnamen, Übungsnamen, Notizen und alle Empfehlungsfelder) vollständig auf Deutsch verfassen.",
           tools: [TRAINING_PLAN_TOOL],
           tool_choice: { type: "tool", name: "create_training_plan" },
           messages: [{ role: "user", content: prompt }],
@@ -368,7 +379,7 @@ Wichtige Regeln:
       sanitizePlanDayNames(data);
       data.advice = mergePlanAdvice(
         data.advice,
-        buildDefaultAdvice(experienceLevel, fitnessGoal, anamnesis, resolvedWeeklyDays, ageYears),
+        buildDefaultAdvice(experienceLevel, fitnessGoal, anamnesis, resolvedWeeklyDays, ageYears, language),
       );
       return data;
     };
@@ -716,7 +727,37 @@ function buildDefaultAdvice(
   anamnesis?: any,
   weeklyDays = 3,
   ageYears = 35,
+  language: "de" | "en" = "de",
 ): any {
+  if (language === "en") {
+    const goalName = fitnessGoal === "muscle_building" ? "muscle building" : fitnessGoal === "fat_loss" ? "fat loss" : fitnessGoal === "strength" ? "strength" : "general fitness";
+    const experience = experienceLevel === "advanced" ? "advanced" : experienceLevel === "intermediate" ? "intermediate" : "beginner";
+    const sessionMins = anamnesis?.minutesPerSession ?? 60;
+    let weeksMin = 8;
+    let weeksMax = 12;
+    let durationNote = "Use this plan for about 8–12 weeks. If progress stalls or fatigue builds, use a deload week or change the plan.";
+    if (experienceLevel === "beginner" || isHighStress(anamnesis?.stressLevel) || (anamnesis?.sleepHours != null && anamnesis.sleepHours < 7)) {
+      weeksMin = 10;
+      weeksMax = 14;
+      durationNote = "As a beginner or with high daily strain, use 10–14 weeks to build consistency, then review your goal or deload.";
+    } else if (experienceLevel === "advanced") {
+      weeksMin = 4;
+      weeksMax = 8;
+      durationNote = "Use a shorter 4–8 week mesocycle, then vary the stimulus, deload or adjust the plan to avoid stagnation.";
+    }
+    const allergies = anamnesis?.dietAllergies?.length ? ` Account for allergies or intolerances: ${anamnesis.dietAllergies.join(", ")}.` : "";
+    const sleep = anamnesis?.sleepHours != null
+      ? anamnesis.sleepHours < 7 ? `Sleep is only about ${anamnesis.sleepHours} hours; keep volume moderate and prioritize an earlier bedtime.` : `Use about ${anamnesis.sleepHours} hours of sleep per night for recovery.`
+      : "Prioritize sleep and keep rest days.";
+    const stress = isHighStress(anamnesis?.stressLevel) ? " High stress: reduce optional cardio and take rest days seriously." : "";
+    return {
+      trainingFocus: `${goalName}, ${experience} level — about ${sessionMins} minutes per session, ${weeklyDays} times per week. Prioritize technique, then progress the strength block gradually.`,
+      nutritionTips: `Choose protein-rich meals that support ${goalName} and keep meal timing consistent.${allergies} Calorie guidance is shown in the plan.`,
+      recoveryTips: `${sleep}${stress}${ageYears >= 50 ? " Allow a longer warm-up, progress gradually and protect your joints." : ""}`,
+      hydrationTips: weeklyDays >= 4 ? `With ${weeklyDays} training days per week, drink regularly throughout the day and add fluids before and after each session.` : "Drink regularly throughout the day, especially before and after training.",
+      planDuration: { weeksMin, weeksMax, note: durationNote },
+    };
+  }
   const goalName = translateGoal(fitnessGoal);
   const diet = translateDiet(anamnesis?.dietPreference);
   const structure = translateTrainingSplitPreference(anamnesis);
@@ -1525,8 +1566,13 @@ function translateEquip(id: string): string {
 
 // Fallback Mock-Planerstellung
 function generateMockPlan(data: any): any {
-  const goalName = translateGoal(data.fitnessGoal);
-  const locationName = translateLocation(data.anamnesis?.trainingLocation);
+  const isEnglish = data.language === "en";
+  const goalName = isEnglish
+    ? data.fitnessGoal === "muscle_building" ? "Muscle Building" : data.fitnessGoal === "fat_loss" ? "Fat Loss" : data.fitnessGoal === "strength" ? "Strength" : "Fitness"
+    : translateGoal(data.fitnessGoal);
+  const locationName = isEnglish
+    ? data.anamnesis?.trainingLocation === "home_equipment" ? "home gym" : data.anamnesis?.trainingLocation === "bodyweight" ? "bodyweight training" : "gym"
+    : translateLocation(data.anamnesis?.trainingLocation);
   const weeklyDays = data.weeklyDays || 3;
   const painZones = data.anamnesis?.painZones || [];
 
@@ -1564,13 +1610,25 @@ function generateMockPlan(data: any): any {
   };
 
   const activePool = exercisePool[data.anamnesis?.trainingLocation || "gym"] || exercisePool.gym;
+  const englishTerms: Record<string, string> = {
+    "Bankdrücken": "Bench Press", "Kniebeugen": "Squat", "Kreuzheben": "Deadlift", "Latziehen": "Lat Pulldown",
+    "Schulterdrücken": "Overhead Press", "Beinstrecker": "Leg Extension", "Rudern am Kabelzug": "Cable Row",
+    "Bizepscurls": "Biceps Curl", "Trizepsdrücken": "Triceps Pushdown", "Liegestütze": "Push-up",
+    "Kurzhantel Kniebeugen": "Dumbbell Squat", "Kurzhantel Schulterdrücken": "Dumbbell Shoulder Press",
+    "Kurzhantel Rudern": "Dumbbell Row", "Ausfallschritte": "Lunge", "Seitheben": "Lateral Raise",
+    "Klimmzüge": "Pull-up", "Kniebeugen (Körpergewicht)": "Bodyweight Squat", "Dips an Stuhl": "Chair Dip",
+    "Mountain Climbers": "Mountain Climbers", "Brust": "Chest", "Beine": "Legs", "Rücken": "Back", "Schultern": "Shoulders",
+    "Arme": "Arms", "Bauch": "Core", "Ganzkörper": "Full body", "Langhantel": "Barbell", "Kabel": "Cable",
+    "Maschine": "Machine", "Kurzhantel": "Dumbbell", "Körpergewicht": "Bodyweight",
+  };
+  const localizeTerm = (value: string) => isEnglish ? (englishTerms[value] ?? value) : value;
   const sessionMins = data.anamnesis?.minutesPerSession ?? 60;
   const ageYears = ageFromBirthDate(data.birthDate);
 
   // Erstelle nur Trainingstage (keine Ruhetage)
   for (let i = 0; i < weeklyDays; i++) {
       const workoutNum = i + 1;
-      const dayLabel = getSplitWorkoutLabel(data.anamnesis, workoutNum);
+      const dayLabel = isEnglish ? `Workout ${workoutNum}` : getSplitWorkoutLabel(data.anamnesis, workoutNum);
 
       // Filtere Übungen nach Schmerzpunkten
       let exercises = [...activePool];
@@ -1592,12 +1650,12 @@ function generateMockPlan(data: any): any {
         ageYears,
       });
       const selectedExs = exercises.slice(0, bounds.max).map(item => {
-        const painHint = painZones.length > 0 ? " · saubere Technik" : "";
+        const painHint = painZones.length > 0 ? (isEnglish ? " · controlled technique" : " · saubere Technik") : "";
         return {
-          name: item.name,
+          name: localizeTerm(item.name),
           metric: "weight_reps",
-          muscleGroup: item.group,
-          equipment: item.equip,
+          muscleGroup: localizeTerm(item.group),
+          equipment: localizeTerm(item.equip),
           note: `3x${reps} @ ${pct}% 1RM${painHint}`.slice(0, 90),
           sets: [
             { reps, kg: 0 },
@@ -1608,11 +1666,11 @@ function generateMockPlan(data: any): any {
       });
 
       const cardioWarmup = {
-        name: "Rudergerät Warm-up",
+        name: isEnglish ? "Rowing Warm-up" : "Rudergerät Warm-up",
         metric: "time",
-        muscleGroup: "Ganzkörper",
+        muscleGroup: isEnglish ? "Full body" : "Ganzkörper",
         equipment: CARDIO_EQUIPMENT,
-        note: "5 min leichtes Tempo, Puls aufbauen",
+        note: isEnglish ? "5 min easy pace, raise heart rate" : "5 min leichtes Tempo, Puls aufbauen",
         sets: [{ reps: 0, kg: 0, durationSec: 300 }],
       };
 
@@ -1622,7 +1680,7 @@ function generateMockPlan(data: any): any {
             metric: "weight_reps",
             muscleGroup: selectedExs[0].muscleGroup,
             equipment: selectedExs[0].equipment,
-            note: "2x5 leicht, Technik @ 50% 1RM, langsames Tempo",
+            note: isEnglish ? "2x5 light, technique @ 50% 1RM" : "2x5 leicht, Technik @ 50% 1RM, langsames Tempo",
             sets: [
               { reps: 5, kg: 0 },
               { reps: 5, kg: 0 },
@@ -1636,25 +1694,25 @@ function generateMockPlan(data: any): any {
         {
           name: "Burpees",
           metric: "reps",
-          muscleGroup: "Ganzkörper",
-          equipment: "Körpergewicht",
-          note: "Ziel-Wdh. pro Runde",
+          muscleGroup: isEnglish ? "Full body" : "Ganzkörper",
+          equipment: isEnglish ? "Bodyweight" : "Körpergewicht",
+          note: isEnglish ? "Target reps per round" : "Ziel-Wdh. pro Runde",
           sets: [{ reps: 8, kg: 0 }],
         },
         {
-          name: "Liegestütze",
+          name: isEnglish ? "Push-up" : "Liegestütze",
           metric: "reps",
-          muscleGroup: "Brust",
-          equipment: "Körpergewicht",
-          note: "Ziel-Wdh. pro Runde",
+          muscleGroup: isEnglish ? "Chest" : "Brust",
+          equipment: isEnglish ? "Bodyweight" : "Körpergewicht",
+          note: isEnglish ? "Target reps per round" : "Ziel-Wdh. pro Runde",
           sets: [{ reps: 12, kg: 0 }],
         },
         {
-          name: "Ausfallschritte",
+          name: isEnglish ? "Lunge" : "Ausfallschritte",
           metric: "reps",
-          muscleGroup: "Beine",
-          equipment: "Körpergewicht",
-          note: "Ziel-Wdh. pro Runde",
+          muscleGroup: isEnglish ? "Legs" : "Beine",
+          equipment: isEnglish ? "Bodyweight" : "Körpergewicht",
+          note: isEnglish ? "Target reps per round" : "Ziel-Wdh. pro Runde",
           sets: [{ reps: 10, kg: 0 }],
         },
       ];
@@ -1679,15 +1737,15 @@ function generateMockPlan(data: any): any {
 
       days.push({
         name: dayLabel,
-        note: `Trainingseinheit ${workoutNum} für dein Ziel: ${goalName}`,
+        note: isEnglish ? `Workout ${workoutNum} for your goal: ${goalName}` : `Trainingseinheit ${workoutNum} für dein Ziel: ${goalName}`,
         enabledBlocks: blocks.map((b) => b.type),
         blocks,
       });
   }
 
   return {
-    name: `KI ${goalName.split(" ")[0]} Plan`,
-    sub: `Individuell erstellt für ${locationName}. Rücksicht auf Schmerzpunkte: ${painZones.length > 0 ? painZones.join(", ") : "Keine"}.`,
+    name: isEnglish ? `AI ${goalName} Plan` : `KI ${goalName.split(" ")[0]} Plan`,
+    sub: isEnglish ? `Created for ${locationName}. Areas to protect: ${painZones.length > 0 ? painZones.join(", ") : "none"}.` : `Individuell erstellt für ${locationName}. Rücksicht auf Schmerzpunkte: ${painZones.length > 0 ? painZones.join(", ") : "Keine"}.`,
     days,
     advice: buildDefaultAdvice(
       data.experienceLevel,
@@ -1695,6 +1753,7 @@ function generateMockPlan(data: any): any {
       data.anamnesis,
       data.weeklyDays || 3,
       ageYears,
+      data.language === "en" ? "en" : "de",
     ),
   };
 }

@@ -4,6 +4,7 @@ import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { M } from "../theme";
 import { cropImageToBlob } from "../lib/cropImage";
+import { useI18n } from "../lib/i18n";
 
 export interface AvatarCropSheetProps {
   open: boolean;
@@ -14,6 +15,7 @@ export interface AvatarCropSheetProps {
 }
 
 export function AvatarCropSheet({ open, imageSrc, busy = false, onClose, onSave }: AvatarCropSheetProps) {
+  const { t } = useI18n();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -42,14 +44,14 @@ export function AvatarCropSheet({ open, imageSrc, busy = false, onClose, onSave 
       onClose={onClose}
       position="absolute"
       zIndex={35}
-      aria-label="Profilbild zuschneiden"
+      aria-label={t("avatarCrop.title")}
       fitContent={false}
       wrapScroll={false}
       lockBodyScroll
       maxHeight="min(92dvh, 92vh)"
     >
       <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, marginBottom: 14, flexShrink: 0 }}>
-        Profilbild zuschneiden
+        {t("avatarCrop.title")}
       </div>
 
       <div
@@ -86,14 +88,14 @@ export function AvatarCropSheet({ open, imageSrc, busy = false, onClose, onSave 
           step={0.01}
           value={zoom}
           onChange={(e) => setZoom(Number(e.target.value))}
-          aria-label="Zoom"
+          aria-label={t("avatarCrop.zoom")}
           style={{ width: "100%", accentColor: M.acc }}
         />
       </div>
 
       <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
         <MButton type="button" onClick={onClose} variant="ghost" size="md" fullWidth disabled={isBusy}>
-          Abbrechen
+          {t("common.cancel")}
         </MButton>
         <MButton
           type="button"
@@ -103,7 +105,7 @@ export function AvatarCropSheet({ open, imageSrc, busy = false, onClose, onSave 
           fullWidth
           disabled={isBusy || !croppedAreaPixels}
         >
-          {isBusy ? "Speichern…" : "Speichern"}
+          {isBusy ? t("avatarCrop.saving") : t("avatarCrop.save")}
         </MButton>
       </div>
     </BottomSheet>

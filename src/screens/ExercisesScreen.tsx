@@ -15,6 +15,7 @@ import { ExerciseDetailSheet } from "../components/ExerciseDetailSheet";
 import { ExerciseFormSheet } from "../components/ExerciseFormSheet";
 import { FLOAT_NAV_SCROLL_BOTTOM_GAP } from "../components/FloatNav";
 import { MButton } from "../components/MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface ExercisesScreenProps {
   refreshKey?: number;
@@ -22,6 +23,7 @@ export interface ExercisesScreenProps {
 }
 
 export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { data: exercises, loading, error, reload } = useExercises();
   const [query, setQuery] = useState("");
@@ -70,8 +72,8 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
       reload();
     } catch (e) {
       setAlertSheet({
-        title: "Löschen fehlgeschlagen",
-        message: e instanceof Error ? e.message : "Löschen fehlgeschlagen.",
+        title: t("exercises.deleteFailed"),
+        message: e instanceof Error ? e.message : t("exercises.deleteFailedMessage"),
       });
     } finally {
       setDeleteBusy(false);
@@ -82,10 +84,10 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}>
       <ScreenBackHeader
         onBack={onBack}
-        title="ÜBUNGEN"
+        title={t("exercises.title")}
         backHidden={!onBack}
         trailing={
-          <MButton onClick={openCreate} variant="primary" size="icon" aria-label="Übung erstellen">
+          <MButton onClick={openCreate} variant="primary" size="icon" aria-label={t("exercises.create")}>
             <Icon name="plus" size={18} stroke={2.6} color={M.accInk} />
           </MButton>
         }
@@ -93,12 +95,12 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
 
       <div style={{ padding: "0 22px 10px" }}>
         <div style={{ fontSize: 14, color: M.mut, marginBottom: 10, fontWeight: 600 }}>
-          {loading ? "…" : `${list.length} Übungen · ${ownedCount} eigene`}
+          {loading ? "…" : t("exercises.summary", { count: list.length, owned: ownedCount })}
         </div>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suchen…"
+          placeholder={t("exercises.search")}
           style={{
             width: "100%",
             padding: "11px 14px",
@@ -127,11 +129,11 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
           gap: 8,
         }}
       >
-        {loading && <div style={{ color: M.mut, fontSize: 14 }}>Übungen werden geladen…</div>}
+        {loading && <div style={{ color: M.mut, fontSize: 14 }}>{t("exercises.loading")}</div>}
         {error && <div style={{ color: M.danger, fontSize: 14 }}>{error}</div>}
         {!loading && filtered.length === 0 && (
           <div style={{ color: M.mut, fontSize: 14, textAlign: "center", marginTop: 24 }}>
-            Keine Übungen gefunden.
+            {t("exercises.empty")}
           </div>
         )}
         {filtered.map((ex) => {
@@ -180,7 +182,7 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
                   onClick={() => setDeleteTarget(ex)}
                   variant="ghost"
                   size="icon"
-                  aria-label="Löschen"
+                  aria-label={t("common.delete")}
                   style={{ color: M.mut2 }}
                 >
                   <Icon name="trash" size={16} stroke={2} />
@@ -213,11 +215,11 @@ export function ExercisesScreen({ refreshKey = 0, onBack }: ExercisesScreenProps
       />
       <DeleteConfirmDialog
         open={!!deleteTarget}
-        title="Übung löschen?"
+        title={t("exercises.deleteTitle")}
         message={
           deleteTarget ? (
             <>
-              Möchtest du <strong style={{ color: M.fg }}>{deleteTarget.name}</strong> wirklich löschen?
+              {t("exercises.deleteMessage", { name: deleteTarget.name })}
             </>
           ) : null
         }

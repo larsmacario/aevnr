@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { brandSelectionStyle, M } from "../theme";
-import { TRAINING_WEEKDAY_LABELS } from "../lib/trainingWeekdays";
+import { trainingWeekdayLabel } from "../lib/trainingWeekdays";
+import { useI18n } from "../lib/i18n";
 
 const weekdayTileStyle = (selected: boolean, disabled: boolean): CSSProperties => ({
   padding: "12px 2px",
@@ -37,12 +38,14 @@ export function PlanDayWeekdayPicker({
   value,
   disabledWeekdays,
   onChange,
-  label = "TRAININGSTAG",
+  label,
   compact = false,
 }: PlanDayWeekdayPickerProps) {
+  const { locale, t } = useI18n();
+  const resolvedLabel = label ?? t("planDay.trainingDay");
   return (
     <div style={{ flexShrink: 0, padding: compact ? "0" : "0 0 10px" }}>
-      {label ? (
+      {resolvedLabel ? (
         <span
           style={{
             display: "block",
@@ -53,11 +56,11 @@ export function PlanDayWeekdayPicker({
             marginBottom: 8,
           }}
         >
-          {label}
+          {resolvedLabel}
         </span>
       ) : null}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-        {TRAINING_WEEKDAY_LABELS.map((wdLabel, weekdayIndex) => {
+        {Array.from({ length: 7 }, (_, weekdayIndex) => trainingWeekdayLabel(weekdayIndex, locale)).map((wdLabel, weekdayIndex) => {
           const isSelected = value === weekdayIndex;
           const isDisabled = !isSelected && disabledWeekdays.includes(weekdayIndex);
           return (
@@ -72,8 +75,8 @@ export function PlanDayWeekdayPicker({
               style={weekdayTileStyle(isSelected, isDisabled)}
               aria-label={
                 isDisabled
-                  ? `${wdLabel} bereits einem anderen Workout zugeordnet`
-                  : `${wdLabel} als Trainingstag wählen`
+                  ? t("planDay.weekdayAssigned", { weekday: wdLabel })
+                  : t("planDay.chooseWeekday", { weekday: wdLabel })
               }
               aria-pressed={isSelected}
               aria-disabled={isDisabled}

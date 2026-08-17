@@ -16,23 +16,25 @@ import { Icon } from "../components/Icon";
 import { TimerClockDisplay } from "../components/intervalTimer/TimerClockDisplay";
 import { TimerLeaveSheet } from "../components/TimerLeaveSheet";
 import { AlertSheet } from "../components/AlertSheet";
+import { useI18n } from "../lib/i18n";
 
 export interface BreathingScreenProps {
   onBack: () => void;
   onSaveSession: (input: SaveSessionInput) => Promise<void>;
 }
 
-const phaseLabels: Array<{ key: "inhale" | "hold" | "exhale" | "pause"; label: string; required?: boolean }> = [
-  { key: "inhale", label: "EINATMEN", required: true },
-  { key: "hold", label: "HALTEN" },
-  { key: "exhale", label: "AUSATMEN", required: true },
-  { key: "pause", label: "PAUSE" },
+const phaseLabels: Array<{ key: "inhale" | "hold" | "exhale" | "pause"; required?: boolean }> = [
+  { key: "inhale", required: true },
+  { key: "hold" },
+  { key: "exhale", required: true },
+  { key: "pause" },
 ];
 
 const boxPath = (topBottomInset: number, sideInset: number, radius: number) =>
   `inset(${topBottomInset}px ${sideInset}px ${topBottomInset}px ${sideInset}px round ${radius}px)`;
 
 export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps) {
+  const { t } = useI18n();
   const columnStyle = useContentColumnStyle();
   const breakpoint = useBreakpoint();
   const [viewport, setViewport] = useState(() => ({
@@ -49,7 +51,9 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   const [settledSurface, setSettledSurface] = useState<string>(M.bg);
   const [breathCircle, setBreathCircle] = useState<{ key: string; direction: "expand" | "contract" | "rest" | "full"; duration: number } | null>(null);
   const circleControls = useAnimationControls();
-  const preset = BREATHING_PRESETS[presetId];
+  const presetName = t(presetId === "box" ? "breathing.preset.box.name" : presetId === "calm" ? "breathing.preset.relax.name" : "breathing.preset.focus.name");
+  const presetDescription = (id: BreathingPresetId) => t(id === "box" ? "breathing.preset.box.description" : id === "calm" ? "breathing.preset.relax.description" : "breathing.preset.focus.description");
+  const displayPhase = (label: string) => label === "EINATMEN" ? t("breathing.phase.inhale") : label === "HALTEN" ? t("breathing.phase.hold") : label === "AUSATMEN" ? t("breathing.phase.exhale") : label === "PAUSE" ? t("breathing.phase.pause") : label;
   const cfg = preferences.breathingPresets[presetId];
   const T = useTimer("breathe", cfg);
   const savedRef = useRef(false);
@@ -64,9 +68,9 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   }, []);
 
   const targetSummary = useMemo(() => {
-    if (cfg.breathTarget === "duration") return `${fmt(cfg.total ?? 0)} Gesamtzeit`;
-    return `${cfg.rounds ?? 0} Zyklen · ca. ${fmt((cfg.rounds ?? 0) * breathingCycleDuration(cfg))}`;
-  }, [cfg]);
+    if (cfg.breathTarget === "duration") return t("breathing.summary.duration", { duration: fmt(cfg.total ?? 0) });
+    return t("breathing.summary.rounds", { rounds: cfg.rounds ?? 0, duration: fmt((cfg.rounds ?? 0) * breathingCycleDuration(cfg)) });
+  }, [cfg, t]);
   const clockFontSize = breakpoint === "mobile"
     ? "min(172px, calc((100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 4.6))"
     : "min(210px, calc((100vw - 44px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 4.6))";
@@ -170,16 +174,16 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
           cfg.breathTarget === "duration"
             ? Math.floor(Math.max(0, T.elapsedSec - (cfg.prep ?? 0)) / breathingCycleDuration(cfg))
             : T.round;
-        await onSaveSession(buildBreathingSessionInput(presetId, preset.name, cfg, T.elapsedSec, completedRounds));
-        setSavedMessage("Atemsession im Verlauf gespeichert.");
+        await onSaveSession(buildBreathingSessionInput(presetId, presetName, cfg, T.elapsedSec, completedRounds));
+        setSavedMessage(t("breathing.saved"));
         T.reset();
         setRunningView(false);
       } catch (error) {
         savedRef.current = false;
-        setSaveError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
+        setSaveError(error instanceof Error ? error.message : t("breathing.saveFailed"));
       }
     })();
-  }, [T.done, T.elapsedSec, T.round, cfg, onSaveSession, preset.name, presetId, T.reset]);
+  }, [T.done, T.elapsedSec, T.round, cfg, onSaveSession, presetName, presetId, T.reset, t]);
 
   const updateCfg = (partial: Partial<TimerCfg>) => {
     updatePreferences({ breathingPresets: { [presetId]: { ...cfg, ...partial } } });
@@ -220,18 +224,18 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
           )}
         </div>
         <div style={{ padding: "2px 0 12px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
-          <MButton type="button" variant="ghost" size="icon" onClick={requestBack} aria-label="Zurück">
+          <MButton type="button" variant="ghost" size="icon" onClick={requestBack} aria-label={t("breathing.back")}>
             <Icon name="chevL" size={20} stroke={2.2} color={phaseMuted} />
           </MButton>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 13, letterSpacing: 1.5, color: phaseMuted, fontWeight: 700 }}>ATMEN</div>
-            <div style={{ fontSize: 12, color: phaseMuted, marginTop: 2, opacity: 0.72 }}>{preset.name}</div>
+            <div style={{ fontSize: 13, letterSpacing: 1.5, color: phaseMuted, fontWeight: 700 }}>{t("breathing.section")}</div>
+            <div style={{ fontSize: 12, color: phaseMuted, marginTop: 2, opacity: 0.72 }}>{presetName}</div>
           </div>
           <span style={{ width: 40 }} />
         </div>
         <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", width: "100%", position: "relative", zIndex: 2 }}>
           <div style={{ color: timerInk, fontSize: 13, letterSpacing: 2, fontWeight: 700, minHeight: 20 }}>
-            {T.phase === "prep" ? "BEREIT MACHEN" : T.label}
+            {T.phase === "prep" ? t("breathing.phase.prep") : displayPhase(T.label)}
           </div>
           <div style={{ position: "relative", display: "grid", placeItems: "center", width: "100%" }}>
             <div style={{ position: "relative", zIndex: 1, width: "100%" }}>
@@ -239,19 +243,19 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
             </div>
           </div>
           <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 26, color: timerMuted, marginTop: 14 }}>
-            ZYKLUS {String(T.round).padStart(2, "0")} <span style={{ opacity: 0.55 }}>/ {String(T.rounds).padStart(2, "0")}</span>
+            {t("breathing.cycle", { current: String(T.round).padStart(2, "0"), total: String(T.rounds).padStart(2, "0") })}
           </div>
         </div>
         <div style={{ padding: "12px 0 calc(16px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${phaseLine}`, display: "flex", justifyContent: "center", gap: 22, position: "relative", zIndex: 1 }}>
-          <MButton type="button" variant="secondary" size="icon" onClick={() => { T.reset(); setRunningView(false); }} aria-label="Timer zurücksetzen">
+          <MButton type="button" variant="secondary" size="icon" onClick={() => { T.reset(); setRunningView(false); }} aria-label={t("breathing.reset")}>
             <Icon name="reset" size={16} color={phaseMuted} />
           </MButton>
-          <button type="button" onClick={T.toggle} disabled={T.done} aria-label={T.running ? "Timer pausieren" : "Timer starten"} style={{ width: 68, height: 68, borderRadius: 34, border: "none", background: darkPhase ? M.accInk : M.acc, color: darkPhase ? M.acc : M.accInk, cursor: "pointer", display: "grid", placeItems: "center", transition: "background-color .65s ease, color .65s ease" }}>
+          <button type="button" onClick={T.toggle} disabled={T.done} aria-label={T.running ? t("breathing.pauseTimer") : t("breathing.startTimer")} style={{ width: 68, height: 68, borderRadius: 34, border: "none", background: darkPhase ? M.accInk : M.acc, color: darkPhase ? M.acc : M.accInk, cursor: "pointer", display: "grid", placeItems: "center", transition: "background-color .65s ease, color .65s ease" }}>
             <Icon name={T.running ? "pause" : "play"} size={30} style={{ marginLeft: T.running ? 0 : 3 }} />
           </button>
         </div>
-        <TimerLeaveSheet open={leaveOpen} title="Atemsession stoppen?" message="Beim Verlassen wird die aktuelle Atemsession zurückgesetzt." confirmLabel="STOPPEN" onConfirm={() => { T.reset(); setLeaveOpen(false); onBack(); }} onCancel={() => setLeaveOpen(false)} />
-        <AlertSheet open={!!saveError} title="Speichern fehlgeschlagen" message={saveError ?? ""} icon="alertCircle" onClose={() => setSaveError(null)} />
+        <TimerLeaveSheet open={leaveOpen} title={t("breathing.leave.title")} message={t("breathing.leave.message")} confirmLabel={t("breathing.leave.confirm")} onConfirm={() => { T.reset(); setLeaveOpen(false); onBack(); }} onCancel={() => setLeaveOpen(false)} />
+        <AlertSheet open={!!saveError} title={t("breathing.saveErrorTitle")} message={saveError ?? ""} icon="alertCircle" onClose={() => setSaveError(null)} />
       </div>
     );
   }
@@ -259,25 +263,25 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto", ...columnStyle, padding: `0 ${CONTENT_HORIZONTAL_PADDING}px calc(24px + env(safe-area-inset-bottom, 0px))`, boxSizing: "border-box" }}>
       <div style={{ padding: "2px 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
-        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label="Zurück"><Icon name="chevL" size={20} color={M.mut} /></MButton>
-        <div><div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>ATMEN</div><div style={{ fontSize: 24, fontFamily: M.display, color: M.fg }}>Dein Atemrhythmus</div></div>
+        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label={t("breathing.back")}><Icon name="chevL" size={20} color={M.mut} /></MButton>
+        <div><div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("breathing.section")}</div><div style={{ fontSize: 24, fontFamily: M.display, color: M.fg }}>{t("breathing.title")}</div></div>
       </div>
-      <p style={{ margin: "0 0 18px", color: M.mut, fontSize: 14, lineHeight: 1.45 }}>Geführte Atemübungen für einen ruhigen Moment. Passe die Zeiten an deinen Rhythmus an.</p>
+      <p style={{ margin: "0 0 18px", color: M.mut, fontSize: 14, lineHeight: 1.45 }}>{t("breathing.description")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {(Object.keys(BREATHING_PRESETS) as BreathingPresetId[]).map((id) => {
           const active = presetId === id;
-          return <button key={id} type="button" onClick={() => { setPresetId(id); setSavedMessage(null); }} style={{ textAlign: "left", padding: "15px 16px", borderRadius: 14, border: active ? `2px solid ${M.fg}` : `1px solid ${M.line}`, background: active ? M.accSoft : M.card, cursor: "pointer" }}><div style={{ fontWeight: 700, color: M.fg }}>{BREATHING_PRESETS[id].name}</div><div style={{ fontSize: 13, color: M.mut, marginTop: 4 }}>{BREATHING_PRESETS[id].description}</div></button>;
+          return <button key={id} type="button" onClick={() => { setPresetId(id); setSavedMessage(null); }} style={{ textAlign: "left", padding: "15px 16px", borderRadius: 14, border: active ? `2px solid ${M.fg}` : `1px solid ${M.line}`, background: active ? M.accSoft : M.card, cursor: "pointer" }}><div style={{ fontWeight: 700, color: M.fg }}>{t(id === "box" ? "breathing.preset.box.name" : id === "calm" ? "breathing.preset.relax.name" : "breathing.preset.focus.name")}</div><div style={{ fontSize: 13, color: M.mut, marginTop: 4 }}>{presetDescription(id)}</div></button>;
         })}
       </div>
       <div style={{ marginTop: 18, padding: "18px", borderRadius: 16, border: `1px solid ${M.line2}`, background: M.card }}>
-        <div style={{ fontSize: 13, letterSpacing: 1.3, color: M.mut, fontWeight: 700, marginBottom: 14 }}>PHASEN IN SEKUNDEN</div>
+        <div style={{ fontSize: 13, letterSpacing: 1.3, color: M.mut, fontWeight: 700, marginBottom: 14 }}>{t("breathing.phases")}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {phaseLabels.map(({ key, label, required }) => {
+          {phaseLabels.map(({ key, required }) => {
             const enabled = Boolean(cfg[key]) || required;
             const optionalKey = key as "hold" | "pause";
             return (
               <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 12, minHeight: 50 }}>
-                <span style={{ fontSize: 14, color: M.fg, fontWeight: 600 }}>{label}</span>
+                <span style={{ fontSize: 14, color: M.fg, fontWeight: 600 }}>{t(key === "inhale" ? "breathing.phase.inhale" : key === "hold" ? "breathing.phase.hold" : key === "exhale" ? "breathing.phase.exhale" : "breathing.phase.pause")}</span>
                 <div style={{ display: "grid", gridTemplateColumns: "154px 48px", alignItems: "center", gap: 8 }}>
                   {enabled ? (
                     <div style={{ justifySelf: "end" }}>
@@ -296,7 +300,7 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
                         : { [key]: cfg.breathPhaseMemory?.[optionalKey] ?? 2 })}
                       style={{ padding: 0, minWidth: 48 }}
                     >
-                      {enabled ? "Aus" : "An"}
+                      {enabled ? t("breathing.off") : t("breathing.on")}
                     </MButton>
                   ) : <span aria-hidden />}
                 </div>
@@ -305,12 +309,12 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
           })}
         </div>
         <div style={{ height: 1, background: M.line2, margin: "18px 0" }} />
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}><MButton type="button" variant={cfg.breathTarget === "rounds" ? "primary" : "secondary"} size="sm" style={{ flex: 1 }} onClick={() => updateCfg({ breathTarget: "rounds" })}>Zyklen</MButton><MButton type="button" variant={cfg.breathTarget === "duration" ? "primary" : "secondary"} size="sm" style={{ flex: 1 }} onClick={() => updateCfg({ breathTarget: "duration" })}>Gesamtzeit</MButton></div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}><MButton type="button" variant={cfg.breathTarget === "rounds" ? "primary" : "secondary"} size="sm" style={{ flex: 1 }} onClick={() => updateCfg({ breathTarget: "rounds" })}>{t("breathing.cycles")}</MButton><MButton type="button" variant={cfg.breathTarget === "duration" ? "primary" : "secondary"} size="sm" style={{ flex: 1 }} onClick={() => updateCfg({ breathTarget: "duration" })}>{t("breathing.totalTime")}</MButton></div>
         {cfg.breathTarget === "duration" ? <MStepper value={cfg.total ?? 120} min={30} max={1800} step={30} fmt={fmt} onChange={(value) => updateCfg({ total: value })} /> : <MStepper value={cfg.rounds ?? 6} min={1} max={99} onChange={(value) => updateCfg({ rounds: value })} />}
       </div>
       <div style={{ margin: "14px 0", textAlign: "center", fontSize: 13, color: M.mut }}>{targetSummary}</div>
       {savedMessage && <div style={{ textAlign: "center", color: M.fg, fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{savedMessage}</div>}
-      <MButton type="button" variant="primary" size="lg" fullWidth onClick={start}>Atemsession starten</MButton>
+      <MButton type="button" variant="primary" size="lg" fullWidth onClick={start}>{t("breathing.start")}</MButton>
     </div>
   );
 }

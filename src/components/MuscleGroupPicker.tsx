@@ -5,6 +5,8 @@ import {
   normalizeMuscleGroup,
 } from "../lib/exerciseCatalog";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
+import { muscleGroupTranslationKey } from "../lib/catalogLabels";
 
 export interface MuscleGroupPickerProps {
   value: string;
@@ -13,13 +15,14 @@ export interface MuscleGroupPickerProps {
 }
 
 export function MuscleGroupPicker({ value, rawValue, onChange }: MuscleGroupPickerProps) {
+  const { t } = useI18n();
   const legacyHint =
     rawValue && rawValue !== value && isLegacyMuscleGroup(rawValue) ? rawValue : null;
 
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-        MUSKELGRUPPE
+        {t("catalog.muscleGroup")}
       </div>
       {MUSCLE_GROUP_SECTIONS.map((section) => (
         <div key={section.id} style={{ marginBottom: section.id === "upper" ? 12 : 0 }}>
@@ -33,7 +36,7 @@ export function MuscleGroupPicker({ value, rawValue, onChange }: MuscleGroupPick
               textTransform: "uppercase",
             }}
           >
-            {section.label}
+            {t(section.id === "upper" ? "aiPlan.muscles.upper" : "aiPlan.muscles.lower")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {section.groups.map((group) => {
@@ -54,7 +57,7 @@ export function MuscleGroupPicker({ value, rawValue, onChange }: MuscleGroupPick
                     cursor: "pointer",
                   }}
                 >
-                  {group}
+                  {muscleGroupTranslationKey(group) ? t(muscleGroupTranslationKey(group)!) : group}
                 </button>
               );
             })}
@@ -62,7 +65,7 @@ export function MuscleGroupPicker({ value, rawValue, onChange }: MuscleGroupPick
         </div>
       ))}
       {legacyHint && (
-        <div style={{ fontSize: 13, color: M.mut2, marginTop: 8 }}>Früher: {legacyHint}</div>
+        <div style={{ fontSize: 13, color: M.mut2, marginTop: 8 }}>{t("catalog.formerly", { value: legacyHint })}</div>
       )}
     </div>
   );

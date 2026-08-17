@@ -15,7 +15,6 @@ import { DEFAULT_TIMER_SOUND_PACK_ID } from "../lib/timerSoundPacks";
 import { useContentColumnStyle, CONTENT_HORIZONTAL_PADDING } from "../lib/responsive";
 import type { ActiveWorkoutSnapshot } from "../lib/activeWorkout";
 import {
-  BLOCK_LABELS,
   DEFAULT_ENABLED_BLOCKS,
   filterExercisesForSession,
   groupExercisesByBlock,
@@ -70,6 +69,7 @@ import { isWorkoutExpressEligible, findNextExpressTarget } from "../lib/expressT
 import { EXPRESS_TRACKING_TAG } from "../lib/expressTracking";
 import { isOwnerLabsVisible, useOwnerLabs } from "../lib/ownerLabs";
 import { ExercisePickerSheet } from "../components/ExercisePickerSheet";
+import { useI18n } from "../lib/i18n";
 
 export interface TrackScreenProps {
   session: Workout;
@@ -109,6 +109,7 @@ export interface TrackScreenProps {
 type TrackView = "overview" | "exercise" | "express" | "metcon" | "complete";
 
 export function TrackScreen({ session, startedAt, planDayId, tags, planId, expressTracking = false, onPause, onDiscard, onSaveTimerSession, onFinish }: TrackScreenProps) {
+  const { t } = useI18n();
   const isCustom = !planDayId;
   const { user, profile } = useAuth();
   const { flags: labFlags } = useOwnerLabs(profile);
@@ -560,7 +561,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
         const prefill = prefills.get(ex.id);
         return prefill && isWorkingSetPr(ex.sets, prefill.history, ex.metric);
       });
-      if (prExercise) setPrToast(`Neuer PR bei ${prExercise.name}`);
+      if (prExercise) setPrToast(t("track.newPr", { name: prExercise.name }));
       await onFinish(buildFinishPayload());
     } finally {
       setFinishing(false);
@@ -689,9 +690,9 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
       return (
         <SupersetBlock key={seg.exercises.map((e) => e.id).join("-")} showLabel={false}>
           <div style={{ padding: "0 0 2px", fontSize: 13, fontWeight: 600, color: M.fg }}>
-            Supersatz
+            {t("track.superset")}
             <span style={{ color: M.mut, fontWeight: 500, marginLeft: 6 }}>
-              · {seg.exercises.length} Übungen
+              {t("track.supersetExercises", { count: seg.exercises.length })}
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -797,13 +798,13 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
           />
           <div style={{ padding: `0 ${CONTENT_HORIZONTAL_PADDING}px 12px` }}>
             <div style={{ display: "flex", gap: 10 }}>
-              <MStat label="SÄTZE" value={`${visibleDoneSets}/${visibleTotalSets}`} />
-              <MStat label="VOLUMEN" value={`${(W.volume / 1000).toFixed(1)}t`} />
-              <MStat label="FORTSCHRITT" value={`${pct}%`} />
+              <MStat label={t("track.stats.sets")} value={`${visibleDoneSets}/${visibleTotalSets}`} />
+              <MStat label={t("track.stats.volume")} value={`${(W.volume / 1000).toFixed(1)}t`} />
+              <MStat label={t("track.stats.progress")} value={`${pct}%`} />
             </div>
             {hasAutopilotPrefills ? (
               <div style={{ fontSize: 13, color: M.mut, marginTop: 10, lineHeight: 1.4 }}>
-                Auto-Pilot: Vorschläge aus deiner Historie — tippe ✓ zum Bestätigen.
+                {t("track.autopilotHint")}
               </div>
             ) : null}
           </div>
@@ -844,12 +845,12 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                     <Icon name="dumbbell" size={26} stroke={2} />
                   </div>
                   <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 20, color: M.fg }}>
-                    Noch keine Übungen
+                    {t("track.empty")}
                   </div>
                   <div style={{ fontSize: 14, marginTop: 8, lineHeight: 1.45, maxWidth: 260 }}>
                     {isCustom
-                      ? "Tippe unten auf „Übungen hinzufügen“, um zu starten."
-                      : "Füge Übungen pro Baustein hinzu."}
+                      ? t("track.emptyCustom")
+                      : t("track.emptyBlocks")}
                   </div>
                 </div>
               )}
@@ -883,7 +884,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                             }}
                             style={{ color: M.mut2, fontSize: 13, padding: "4px 8px", flexShrink: 0 }}
                           >
-                            Heute überspringen
+                            {t("track.skipToday")}
                           </MButton>
                         }
                       >
@@ -894,7 +895,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                             renderOverviewSegmentList(blockExercises, indexOffset)
                           ) : (
                             <div style={{ fontSize: 13, color: M.mut, fontWeight: 500, padding: "4px 2px 12px" }}>
-                              Noch keine Übungen
+                              {t("track.empty")}
                             </div>
                           )}
                           {block !== "metcon" ? (
@@ -913,7 +914,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                                 fontSize: 13,
                               }}
                             >
-                              <Icon name="plus" size={14} stroke={2.6} /> Übung hinzufügen
+                              <Icon name="plus" size={14} stroke={2.6} /> {t("track.addExercise")}
                             </MButton>
                           ) : metconComplete ? (
                             <MButton
@@ -928,7 +929,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                                 fontSize: 13,
                               }}
                             >
-                              MetCon erneut ansehen
+                              {t("track.viewMetconAgain")}
                             </MButton>
                           ) : null}
                         </div>
@@ -952,12 +953,12 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
                           }}
                           style={{ color: M.mut2, fontSize: 13, padding: "4px 8px", flexShrink: 0 }}
                         >
-                          Wieder aktivieren
+                          {t("track.reactivate")}
                         </MButton>
                       }
                     >
                       <div style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>
-                        Baustein für heute übersprungen
+                        {t("track.blockSkipped")}
                       </div>
                     </PlanBlockSection>
                   ))}
@@ -1058,7 +1059,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
               boxSizing: "border-box",
             }}
           >
-            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>PAUSE</span>
+            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>{t("track.rest")}</span>
             <span
               style={{
                 fontFamily: M.numeric,
@@ -1075,7 +1076,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
               size="sm"
               style={{ borderColor: M.mut2, color: M.brandInk, background: "transparent" }}
             >
-              Skip
+              {t("track.skip")}
             </MButton>
           </div>
         ) : null}
@@ -1093,7 +1094,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
               color: M.fg,
             }}
           >
-            <Icon name="plus" size={14} stroke={2.4} /> Übungen hinzufügen
+            <Icon name="plus" size={14} stroke={2.4} /> {t("track.addExercises")}
           </MButton>
         ) : null}
         {view === "overview" || view === "complete" ? (
@@ -1107,7 +1108,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
             onClick={() => setFinishSheet(true)}
             style={{ fontFamily: M.label, letterSpacing: 0.5, fontWeight: 700 }}
           >
-            Workout beenden
+            {t("track.finish")}
           </MButton>
         ) : null}
       </div>
@@ -1134,8 +1135,8 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
         loading={libraryLoading}
         title={
           pickerTargetBlock
-            ? `Übung · ${BLOCK_LABELS[pickerTargetBlock]}`
-            : "Übung hinzufügen"
+            ? t("track.pickerBlock", { block: t(pickerTargetBlock === "warmup" ? "block.warmup" : pickerTargetBlock === "skill" ? "block.skill" : pickerTargetBlock === "strength" ? "block.strength" : "block.metcon") })
+            : t("track.addExercise")
         }
         showFreeText={isCustom}
         onFreeText={(name) => addExerciseFromPicker(name)}
@@ -1245,13 +1246,13 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
       />
       <ConfirmSheet
         open={!!removeTarget}
-        title="Übung entfernen?"
+        title={t("track.remove.title")}
         message={
           removeTarget
-            ? `${removeTarget.name} wird nur aus dieser Trainingssession entfernt. Das Workout in der Library und dein Plan bleiben unverändert.`
+            ? t("track.remove.message", { name: removeTarget.name })
             : ""
         }
-        confirmLabel="Aus Session entfernen"
+        confirmLabel={t("track.remove.confirm")}
         icon="trash"
         onConfirm={handleConfirmRemoveExercise}
         onCancel={() => setRemoveTarget(null)}
@@ -1276,7 +1277,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
       />
       <AlertSheet
         open={!!heartRate.error}
-        title="Herzfrequenz"
+        title={t("track.heartRate")}
         message={heartRate.error ?? ""}
         icon="alertCircle"
         onClose={heartRate.clearError}

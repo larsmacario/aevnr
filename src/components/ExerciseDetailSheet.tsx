@@ -9,6 +9,8 @@ import { CatalogStandardLock } from "./CatalogStandardLock";
 import { ExerciseVideoSheet } from "./ExerciseVideoSheet";
 import { Icon } from "./Icon";
 import { MButton } from "./MButton";
+import { useI18n } from "../lib/i18n";
+import { equipmentTranslationKey, muscleGroupTranslationKey } from "../lib/catalogLabels";
 
 export interface ExerciseDetailSheetProps {
   open: boolean;
@@ -29,6 +31,7 @@ function canEditExercise(
 }
 
 export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: ExerciseDetailSheetProps) {
+  const { language, t } = useI18n();
   const { user, profile } = useAuth();
   const [videoOpen, setVideoOpen] = useState(false);
   const owner = isAppOwner(profile);
@@ -45,9 +48,13 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
   if (!exercise) return null;
 
   const isGlobal = exercise.userId === null;
-  const steps = exercise.executionStepsDe ?? [];
+  const displayName = language === "en" ? exercise.nameEn?.trim() || exercise.name : exercise.name;
+  const secondaryName = language === "en" ? exercise.name : exercise.nameEn;
+  const steps = language === "en" && exercise.executionStepsEn?.length ? exercise.executionStepsEn : exercise.executionStepsDe ?? [];
   const description =
-    exercise.descriptionDe?.trim() || "Keine Beschreibung hinterlegt.";
+    (language === "en" ? exercise.descriptionEn?.trim() || exercise.descriptionDe?.trim() : exercise.descriptionDe?.trim()) || t("exerciseDetail.noDescription");
+  const groupKey = muscleGroupTranslationKey(exercise.group);
+  const equipmentKey = equipmentTranslationKey(exercise.equip);
 
   return (
     <>
@@ -55,7 +62,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
         open={open}
         onClose={onClose}
         zIndex={22}
-        aria-label={`Übung: ${exercise.name}`}
+        aria-label={t("exerciseDetail.aria", { name: displayName })}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -77,23 +84,23 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
                     color: M.fg,
                   }}
                 >
-                  {exercise.name}
+                  {displayName}
                 </div>
                 {isGlobal && <CatalogStandardLock />}
               </div>
-              {exercise.nameEn && (
+              {secondaryName && secondaryName !== displayName && (
                 <div style={{ fontSize: 13, color: M.mut2, marginTop: 4, fontWeight: 600 }}>
-                  {exercise.nameEn}
+                  {secondaryName}
                 </div>
               )}
               <div style={{ fontSize: 14, color: M.mut, marginTop: 6, fontWeight: 600 }}>
-                {exercise.group} · {exercise.equip} · {metricShort(exercise.metric)}
+                {groupKey ? t(groupKey) : exercise.group} · {equipmentKey ? t(equipmentKey) : exercise.equip} · {metricShort(exercise.metric, language)}
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              aria-label="Schließen"
+              aria-label={t("exerciseDetail.close")}
               style={{
                 background: "none",
                 border: "none",
@@ -110,7 +117,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
 
           <div>
             <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 6 }}>
-              BESCHREIBUNG
+              {t("exerciseDetail.description")}
             </div>
             <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: M.fg, whiteSpace: "pre-wrap" }}>
               {description}
@@ -120,7 +127,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
           {steps.length > 0 && (
             <div>
               <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-                AUSFÜHRUNG
+                {t("exerciseDetail.execution")}
               </div>
               <ol
                 style={{
@@ -143,7 +150,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
 
           {exercise.youtubeUrl && (
             <MButton type="button" variant="secondary" size="md" fullWidth onClick={() => setVideoOpen(true)}>
-              Video ansehen
+              {t("exerciseDetail.video")}
             </MButton>
           )}
 
@@ -158,7 +165,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
                 onClose();
               }}
             >
-              Bearbeiten
+              {t("exerciseDetail.edit")}
             </MButton>
           )}
         </div>
@@ -167,7 +174,7 @@ export function ExerciseDetailSheet({ open, exercise, onClose, onEdit }: Exercis
       {exercise.youtubeUrl && (
         <ExerciseVideoSheet
           open={videoOpen}
-          exerciseName={exercise.name}
+          exerciseName={displayName}
           youtubeUrl={exercise.youtubeUrl}
           onClose={() => setVideoOpen(false)}
         />

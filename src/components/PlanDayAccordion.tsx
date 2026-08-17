@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { PlanDayBlock, PlanDayExercise } from "../data";
 import { M, EXERCISE_ROW, exerciseRowEllipsis } from "../theme";
 import { formatSetSummary } from "../lib/exerciseSets";
-import { groupExercisesByBlock, BLOCK_LABELS, type TrainingBlockType } from "../lib/planBlocks";
+import { groupExercisesByBlock, type TrainingBlockType } from "../lib/planBlocks";
 import { configFromPlanDayBlock, formatMetconBlockBadge } from "../lib/metcon";
 import { segmentExercises } from "../lib/superset";
 import { Icon } from "./Icon";
@@ -10,6 +10,7 @@ import { MButton } from "./MButton";
 import { ExerciseListRow, ExerciseListRowDumbbellIcon } from "./ExerciseListRow";
 import { PlanBlockSection } from "./PlanBlockSection";
 import { SupersetBlock } from "./SupersetBlock";
+import { useI18n } from "../lib/i18n";
 
 const BUILDER_ADD_BUTTON_STYLE = {
   border: "1.5px dashed " + M.line,
@@ -114,6 +115,7 @@ export function PlanDayExercisePreview({
   optionalMetconLink,
   onMetconSettings,
 }: PlanDayExercisePreviewProps) {
+  const { t } = useI18n();
   const skippedSet = new Set(skippedBlocks);
   const groups = groupExercisesByBlock(exercises, enabledBlocks);
   const metconBlockDef = blocks.find((b) => b.blockType === "metcon");
@@ -143,7 +145,7 @@ export function PlanDayExercisePreview({
                       onClick={onMetconSettings}
                       style={{ color: M.mut, fontSize: 13, padding: "4px 8px" }}
                     >
-                      Einstellungen
+                      {t("planDay.settings")}
                     </MButton>
                   ) : null}
                   {onRemoveBlock ? (
@@ -154,7 +156,7 @@ export function PlanDayExercisePreview({
                       onClick={() => onRemoveBlock(block)}
                       style={{ color: M.mut2, fontSize: 13, padding: "4px 8px" }}
                     >
-                      Entfernen
+                      {t("planDay.remove")}
                     </MButton>
                   ) : null}
                 </div>
@@ -181,7 +183,7 @@ export function PlanDayExercisePreview({
                   <ExerciseList exercises={blockExercises} flat={flat} onExerciseClick={onExerciseClick} />
                 ) : (
                   <div style={{ fontSize: 13, color: M.mut, fontWeight: 500, padding: "4px 2px" }}>
-                    Noch keine Übungen
+                    {t("planDay.empty")}
                   </div>
                 )}
               </div>
@@ -189,7 +191,7 @@ export function PlanDayExercisePreview({
               <ExerciseList exercises={blockExercises} flat={flat} onExerciseClick={onExerciseClick} />
             ) : (
               <div style={{ fontSize: 13, color: M.mut, fontWeight: 500, padding: "4px 2px" }}>
-                {skipped ? "Nicht absolviert" : "Noch keine Übungen"}
+                {skipped ? t("planDay.notCompleted") : t("planDay.empty")}
               </div>
             )}
             {builderMode && onAddExercise && (
@@ -201,7 +203,7 @@ export function PlanDayExercisePreview({
                 onClick={() => onAddExercise(block)}
                 style={{ marginTop: 10, ...BUILDER_ADD_BUTTON_STYLE }}
               >
-                <Icon name="plus" size={16} stroke={2.6} /> Übung hinzufügen
+                <Icon name="plus" size={16} stroke={2.6} /> {t("planDay.addExercise")}
               </MButton>
             )}
           </PlanBlockSection>
@@ -216,12 +218,12 @@ export function PlanDayExercisePreview({
           onClick={optionalMetconLink.onAdd}
           style={{ marginTop: 6, ...BUILDER_ADD_BUTTON_STYLE, color: M.mut }}
         >
-          <Icon name="plus" size={16} stroke={2.6} /> MetCon hinzufügen
+          <Icon name="plus" size={16} stroke={2.6} /> {t("planDay.addMetcon")}
         </MButton>
       )}
       {builderMode && disabledBlocks.length > 0 && onRestoreBlock && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-          <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>ENTFERNT</div>
+          <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>{t("planDay.removed")}</div>
           {disabledBlocks.map((block) => (
             <MButton
               key={block}
@@ -236,7 +238,7 @@ export function PlanDayExercisePreview({
                 justifyContent: "flex-start",
               }}
             >
-              <Icon name="plus" size={16} stroke={2.6} /> {BLOCK_LABELS[block]} hinzufügen
+              <Icon name="plus" size={16} stroke={2.6} /> {t("planDay.addBlock", { block: t(block === "warmup" ? "block.warmup" : block === "skill" ? "block.skill" : block === "strength" ? "block.strength" : "block.metcon") })}
             </MButton>
           ))}
         </div>
@@ -274,6 +276,7 @@ export function PlanDayAccordion({
   actions,
   variant = "detail",
 }: PlanDayAccordionProps) {
+  const { t } = useI18n();
   const highlighted = isCurrent;
   const canExpand = exercises.length > 0 || (enabledBlocks?.length ?? 0) > 0;
 
@@ -322,13 +325,13 @@ export function PlanDayAccordion({
   const mainContent =
     variant === "builder" ? (
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>TAG {dayNumber}</div>
+        <div style={{ fontSize: 13, letterSpacing: 1.2, color: M.mut2, fontWeight: 700 }}>{t("planDay.label", { number: dayNumber })}</div>
         <div style={{ fontWeight: 600, fontSize: 15.5, marginTop: 2 }}>{label}</div>
       </div>
     ) : (
       <>
         <span style={{ color: highlighted ? M.acc : M.mut2, minWidth: 42, fontSize: 13, fontWeight: 600 }}>
-          Tag {dayNumber}
+          {t("plan.day", { number: dayNumber })}
         </span>
         <span style={{ color: M.fg, flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</span>
       </>

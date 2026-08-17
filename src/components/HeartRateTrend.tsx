@@ -8,6 +8,7 @@ import {
   hasHeartRateZoneProfile,
   type HeartRateSample,
 } from "../lib/heartRate/heartRateZones";
+import { useI18n } from "../lib/i18n";
 
 export interface HeartRateTrendProps {
   bpm: number | null;
@@ -70,6 +71,7 @@ export function HeartRateTrend({
   compact = false,
   onConnect,
 }: HeartRateTrendProps) {
+  const { t } = useI18n();
   const zonesEnabled = hasHeartRateZoneProfile(birthDate) && maxHr != null;
   const currentZone = bpm != null && maxHr != null ? getZoneForBpm(bpm, maxHr) : null;
   const zoneBands = maxHr != null ? buildZoneBands(maxHr) : [];
@@ -138,11 +140,11 @@ export function HeartRateTrend({
                 onClick={onConnect}
                 style={{ marginLeft: "auto", flexShrink: 0, fontFamily: M.numeric, letterSpacing: 0.3 }}
               >
-                <Icon name="heart" size={14} color={M.fg} /> Verbinden
+                <Icon name="heart" size={14} color={M.fg} /> {t("heartRate.compactConnect")}
               </MButton>
             ) : (
               <span style={{ marginLeft: "auto", fontSize: 11, color: M.mut2, textAlign: "right" }}>
-                Nur iOS-App
+                {t("heartRate.iosOnly")}
               </span>
             )}
           </div>
@@ -180,9 +182,9 @@ export function HeartRateTrend({
                 lineHeight: 1.3,
               }}
             >
-              ZONE {currentZone.zone}
+              {t("heartRate.zone", { number: currentZone.zone })}
               <div style={{ fontSize: 11, fontWeight: 600, color: M.mut, marginTop: 3 }}>
-                {currentZone.label.toUpperCase()}
+                {t(`heartRate.zone${currentZone.zone}` as "heartRate.zone1").toUpperCase()}
               </div>
             </div>
           ) : deviceName ? (
@@ -231,7 +233,7 @@ export function HeartRateTrend({
             }}
             aria-hidden
           />
-          {deviceName} · verbunden
+          {t("heartRate.deviceConnected", { device: deviceName })}
         </div>
       ) : null}
 
@@ -274,7 +276,7 @@ export function HeartRateTrend({
               whiteSpace: "nowrap",
             }}
           >
-            ZONE {currentZone.zone} · {currentZone.label.toUpperCase()}
+            {t("heartRate.zone", { number: currentZone.zone })} · {t(`heartRate.zone${currentZone.zone}` as "heartRate.zone1").toUpperCase()}
           </div>
         ) : null}
       </div>
@@ -287,8 +289,8 @@ export function HeartRateTrend({
           role="img"
           aria-label={
             samples.length > 0
-              ? `Herzfrequenzverlauf, aktuell ${bpm ?? "unbekannt"} Schläge pro Minute`
-              : "Herzfrequenzverlauf"
+              ? t("heartRate.chartCurrent", { bpm: bpm ?? t("heartRate.unknown") })
+              : t("heartRate.chart")
           }
         >
           {zonesEnabled
@@ -366,7 +368,7 @@ export function HeartRateTrend({
 
       {!zonesEnabled ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.4, color: M.mut2, fontWeight: 600 }}>
-          Geburtsdatum im Profil hinterlegen, um HF-Zonen anzuzeigen.
+          {t("heartRate.birthDateHint")}
         </p>
       ) : null}
 
@@ -379,13 +381,13 @@ export function HeartRateTrend({
           onClick={onConnect}
           style={{ marginTop: 10, fontFamily: M.numeric, letterSpacing: 0.4 }}
         >
-          <Icon name="heart" size={14} color={M.fg} /> Sensor verbinden
+          <Icon name="heart" size={14} color={M.fg} /> {t("heartRate.connectSensor")}
         </MButton>
       ) : null}
 
       {!supported ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.4, color: M.mut2 }}>
-          BLE-Herzfrequenz nur in der iOS-App oder Chrome verfügbar.
+          {t("heartRate.trendUnsupported")}
         </p>
       ) : null}
     </div>

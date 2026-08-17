@@ -5,7 +5,8 @@ import { Icon } from "./Icon";
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { ProteinPresetLogSheet } from "./ProteinPresetLogSheet";
-import { formatPresetChipLabel, getRecoveryPreset } from "../lib/recoveryEngine";
+import { calcPresetProtein, getRecoveryPreset } from "../lib/recoveryEngine";
+import { useI18n } from "../lib/i18n";
 
 export interface WorkoutFinishRecoveryProps {
   sessionLine: string;
@@ -35,13 +36,13 @@ export interface WorkoutFinishSheetProps {
 
 const uniqueExercises = (exercises: string[]) => Array.from(new Set(exercises));
 
-const FEEDBACK_LEGEND = [
-  { rating: "like" as const, icon: "like" as const, label: "Gefällt mir", color: M.brand },
-  { rating: "dislike" as const, icon: "dislike" as const, label: "Ersetzen", color: M.mut },
-  { rating: "pain" as const, icon: "alertCircle" as const, label: "Schmerzen", color: M.danger },
-];
-
 function FeedbackLegend() {
+  const { t } = useI18n();
+  const feedbackLegend = [
+    { rating: "like" as const, icon: "like" as const, label: t("finish.feedback.like"), color: M.brand },
+    { rating: "dislike" as const, icon: "dislike" as const, label: t("finish.feedback.replace"), color: M.mut },
+    { rating: "pain" as const, icon: "alertCircle" as const, label: t("finish.feedback.pain"), color: M.danger },
+  ];
   return (
     <div
       style={{
@@ -51,7 +52,7 @@ function FeedbackLegend() {
         marginTop: 8,
       }}
     >
-      {FEEDBACK_LEGEND.map((item) => (
+      {feedbackLegend.map((item) => (
         <div
           key={item.rating}
           style={{
@@ -99,13 +100,23 @@ export function WorkoutFinishSheet({
   onDiscard,
   onClose,
 }: WorkoutFinishSheetProps) {
+  const { t } = useI18n();
   const [feedback, setFeedback] = useState<Record<string, { rating: "like" | "dislike" | "pain" }>>({});
   const [canScroll, setCanScroll] = useState(false);
   const [atBottom, setAtBottom] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const activePreset = activePresetId ? getRecoveryPreset(activePresetId) ?? null : null;
+  const localizePreset = (presetId: string) => {
+    const preset = getRecoveryPreset(presetId);
+    if (!preset) return null;
+    return {
+      ...preset,
+      label: t(preset.id === "shake" ? "recovery.preset.shake" : preset.id === "quark" ? "recovery.preset.quark" : preset.id === "skyr" ? "recovery.preset.skyr" : preset.id === "eier" ? "recovery.preset.eggs" : "recovery.preset.chicken"),
+      amountHint: t(preset.id === "shake" ? "recovery.preset.powderAmount" : preset.id === "eier" ? "recovery.preset.eggsAmount" : "recovery.preset.amount"),
+    };
+  };
+  const activePreset = activePresetId ? localizePreset(activePresetId) : null;
 
   const exerciseList = uniqueExercises(exercises);
 
@@ -176,10 +187,10 @@ export function WorkoutFinishSheet({
       fitContent={false}
       wrapScroll={false}
       lockBodyScroll
-      aria-label="Workout beenden"
+      aria-label={t("track.finish")}
     >
       <div style={{ flexShrink: 0 }}>
-        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 6 }}>Workout beenden?</div>
+        <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 6 }}>{t("finish.title")}</div>
         <div
           style={{
             color: M.mut,
@@ -188,7 +199,7 @@ export function WorkoutFinishSheet({
             lineHeight: 1.45,
           }}
         >
-          {name} · {fmtUp(durationSec)} · {doneSets}/{totalSets} Sätze · {(volumeKg / 1000).toFixed(1)}t
+          {t("finish.summary", { name, duration: fmtUp(durationSec), done: doneSets, total: totalSets, volume: (volumeKg / 1000).toFixed(1) })}
         </div>
       </div>
 
@@ -212,12 +223,12 @@ export function WorkoutFinishSheet({
                 textTransform: "uppercase",
               }}
             >
-              Übungs-Feedback
+              {t("finish.feedback")}
             </div>
             <FeedbackLegend />
             {showScrollHint && (
               <div style={{ fontSize: 13, color: M.mut, marginTop: 4, fontWeight: 600 }}>
-                Weitere Übungen — nach unten scrollen
+                {t("finish.scrollHint")}
               </div>
             )}
           </div>
@@ -382,17 +393,17 @@ export function WorkoutFinishSheet({
                 textTransform: "uppercase",
               }}
             >
-              Recovery
+              {t("finish.recovery")}
             </div>
             <div style={{ fontSize: 13, color: M.mut, marginTop: 6, fontWeight: 600 }}>{recovery.sessionLine}</div>
             <div style={{ fontSize: 14, color: M.fg, marginTop: 8, lineHeight: 1.45 }}>
               {recovery.remainingG > 0
-                ? `Für heute noch ~${recovery.remainingG} g Protein offen.`
-                : "Protein-Ziel für heute erreicht — optional trotzdem loggen."}
+                ? t("finish.proteinRemaining", { amount: recovery.remainingG })
+                : t("finish.proteinReached")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
               {recovery.suggestionPresetIds.map((presetId) => {
-                const preset = getRecoveryPreset(presetId);
+                const preset = localizePreset(presetId);
                 if (!preset) return null;
                 const logged = recovery.loggedSuggestionLabel === preset.label;
                 return (
@@ -405,7 +416,7 @@ export function WorkoutFinishSheet({
                     onClick={() => setActivePresetId(presetId)}
                     style={{ borderRadius: 999 }}
                   >
-                    {logged ? `${formatPresetChipLabel(preset)} ✓` : formatPresetChipLabel(preset)}
+                    {preset.label} · ~{calcPresetProtein(preset, preset.defaultAmountG)} g {t("recovery.tabs.protein")}{logged ? " ✓" : ""}
                   </MButton>
                 );
               })}
@@ -419,7 +430,7 @@ export function WorkoutFinishSheet({
                 onClick={recovery.onDismiss}
                 style={{ marginTop: 8 }}
               >
-                Später
+                {t("finish.later")}
               </MButton>
             ) : null}
           </div>
@@ -449,10 +460,10 @@ export function WorkoutFinishSheet({
                 textTransform: "uppercase",
               }}
             >
-              Speichern
+              {t("finish.save")}
             </div>
             <div style={{ fontSize: 13, color: M.mut, marginTop: 4, fontWeight: 600 }}>
-              {doneSets}/{totalSets} Sätze · {fmtUp(durationSec)}
+              {t("finish.setSummary", { done: doneSets, total: totalSets, duration: fmtUp(durationSec) })}
             </div>
           </div>
           <button
@@ -485,18 +496,18 @@ export function WorkoutFinishSheet({
           <MButton
             type="button"
             disabled={busy}
-            aria-label="Workout verwerfen"
+            aria-label={t("finish.discardAria")}
             onClick={onDiscard}
             variant="secondary"
             size="md"
             fullWidth
           >
-            <Icon name="trash" size={18} stroke={2.2} color={M.mut} /> Verwerfen
+            <Icon name="trash" size={18} stroke={2.2} color={M.mut} /> {t("finish.discard")}
           </MButton>
         </div>
 
         <MButton type="button" disabled={busy} onClick={onClose} variant="ghost" size="md" fullWidth>
-          Abbrechen
+          {t("common.cancel")}
         </MButton>
       </div>
 

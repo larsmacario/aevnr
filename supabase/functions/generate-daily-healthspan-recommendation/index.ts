@@ -20,6 +20,7 @@ serve(async (req) => {
   if (blocked) return blocked;
   try {
     const body = await req.json();
+    const language = body?.language === "en" ? "en" : "de";
     const checkin = body?.checkin && typeof body.checkin === "object" ? body.checkin : null;
     const week = body?.week && typeof body.week === "object" ? body.week : {};
     const history = Array.isArray(body?.history) ? body.history.slice(0, 30) : [];
@@ -27,9 +28,24 @@ serve(async (req) => {
     if (!checkin) throw new Error("Check-in fehlt");
     const readinessLow = Number(checkin.sleepHours) < 6 || Number(checkin.energyLevel) <= 4 || Number(checkin.stressLevel) >= 8;
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) return new Response(JSON.stringify({ error: "KI nicht konfiguriert." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const prompt = `Erstelle genau eine verständliche Tagesaktion für eine Healthspan-App. Keine Diagnose, Therapie, Risikobewertung oder medizinische Aussage. Check-in: ${JSON.stringify(checkin)}. Wochenstand: ${JSON.stringify(week)}. Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Aktiver Plan: ${JSON.stringify(activePlan)}. Erlaubte Aktionen: strength (nächsten Plan-Tag trainieren), reduce (Express Tracking öffnen und Belastung selbst reduzieren), endurance (Zone-2-Timer), recover (Erholung priorisieren), nutrition (eine konkrete nächste Protein-/Wasser-Gewohnheit), metabolism (freiwillig eine sättigende protein- und ballaststoffreiche Mahlzeit sowie Energie/Sättigung danach protokollieren), maintain (Kurs halten). Bei metabolism niemals Insulin, Blutzucker, Fettverbrennung, Frühstücksverzögerung oder Kaffee-Timing behaupten oder empfehlen. Titel maximal 55 Zeichen, Detail maximal 180 Zeichen und konkret. ${readinessLow ? "WICHTIG: Niedrige Belastbarkeit: action darf nur reduce, endurance oder recover sein; niemals strength oder metabolism." : ""}`;
-    const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model, max_tokens: 450, tools: [tool], tool_choice: { type: "tool", name: "recommend_daily_healthspan_action" }, messages: [{ role: "user", content: prompt }] }) });
+    const system = language === "en"
+      ? "You are a healthspan coach for an evidence-informed longevity app. The user's active language setting is ENGLISH ('en'). You must output title and detail strictly in English. Never output German."
+      : "Du bist ein Healthspan-Coach für eine evidenzbasierte Langlebigkeits-App. Die aktive Spracheinstellung des Nutzers ist DEUTSCH ('de'). Du musst Titel und Detail strikt auf Deutsch ausgeben.";
+    const prompt = language === "de"
+      ? `SPRACHVORGABE: DEUTSCH. Erstelle genau eine verständliche Tagesaktion für eine Healthspan-App. Antworte ausschließlich auf Deutsch. Keine Diagnose, Therapie, Risikobewertung oder medizinische Aussage. Check-in: ${JSON.stringify(checkin)}. Wochenstand: ${JSON.stringify(week)}. Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Aktiver Plan: ${JSON.stringify(activePlan)}. Erlaubte Aktionen: strength (nächsten Plan-Tag trainieren), reduce (Express Tracking öffnen und Belastung selbst reduzieren), endurance (Zone-2-Timer), recover (Erholung priorisieren), nutrition (eine konkrete nächste Protein-/Wasser-Gewohnheit), metabolism (freiwillig eine sättigende protein- und ballaststoffreiche Mahlzeit sowie Energie/Sättigung danach protokollieren), maintain (Kurs halten). Bei metabolism niemals Insulin, Blutzucker, Fettverbrennung, Frühstücksverzögerung oder Kaffee-Timing behaupten oder empfehlen. Titel maximal 55 Zeichen, Detail maximal 180 Zeichen und konkret. ${readinessLow ? "WICHTIG: Niedrige Belastbarkeit: action darf nur reduce, endurance oder recover sein; niemals strength oder metabolism." : ""}`
+      : `LANGUAGE REQUIREMENT: ENGLISH. Create exactly one clear daily action for a Healthspan app. Respond strictly in English. No diagnosis, treatment, risk assessment, or medical claims. Check-in: ${JSON.stringify(checkin)}. Weekly status: ${JSON.stringify(week)}. Training history for the last 30 days: ${JSON.stringify(history)}. Active plan: ${JSON.stringify(activePlan)}. Allowed actions: strength (train the next planned day), reduce (open Express Tracking and let the user reduce load), endurance (Zone 2 timer), recover (prioritize recovery), nutrition (one concrete next protein/water habit), metabolism (optionally log a satiating meal rich in protein and fiber plus energy/satiety afterward), maintain (stay the course). For metabolism, never claim or recommend anything about insulin, blood glucose, fat burning, delaying breakfast, or coffee timing. Title max 55 characters, detail max 180 characters and concrete. ${readinessLow ? "IMPORTANT: Low readiness: action may only be reduce, endurance, or recover; never strength or metabolism." : ""}`;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model,
+        max_tokens: 450,
+        system,
+        tools: [tool],
+        tool_choice: { type: "tool", name: "recommend_daily_healthspan_action" },
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
     if (!response.ok) throw new Error("KI-Anbieter nicht erreichbar");
     const data = await response.json();
     const result = data.content?.find((entry: { type?: string }) => entry.type === "tool_use")?.input;

@@ -1,16 +1,7 @@
 import { M } from "../theme";
 import { Icon } from "./Icon";
 import { MButton } from "./MButton";
-
-const DATA_CATEGORIES = [
-  "Anamnese (Schmerzzonen, Trainingsort, Equipment, Sportarten, Ernährung, Beruf, Schlaf, Stress, Trainingsstruktur)",
-  "Körperwerte (Größe, Gewicht, Körperfettanteil, Taillen- und Hüftumfang)",
-  "Profil (Geschlecht, Geburtsdatum)",
-  "Fitnessziel und Trainingserfahrung",
-  "Trainingshistorie (letzte abgeschlossene Einheiten)",
-  "Übungs-Feedback (Bewertungen und Notizen)",
-  "Fotos von Nährwertetiketten (nur zur Erkennung, nicht gespeichert)",
-] as const;
+import { useI18n } from "../lib/i18n";
 
 export interface AiConsentStepProps {
   onOpenPrivacy: () => void;
@@ -28,6 +19,8 @@ export function AiConsentStep({
   showActions = false,
   saving = false,
 }: AiConsentStepProps) {
+  const { t } = useI18n();
+  const dataCategories = ["aiConsent.data.anamnesis", "aiConsent.data.body", "aiConsent.data.profile", "aiConsent.data.goal", "aiConsent.data.history", "aiConsent.data.feedback", "aiConsent.data.photos"] as const;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
@@ -58,11 +51,10 @@ export function AiConsentStep({
             textAlign: "center",
           }}
         >
-          Einwilligung zur KI-Nutzung
+          {t("aiConsent.title")}
         </h2>
         <p style={{ color: M.mut, fontSize: 14, margin: 0, lineHeight: 1.5, textAlign: "center" }}>
-          Für Trainingsplan, Recovery-Produkterkennung und Etikett-Auswertung werden Daten an einen externen KI-Anbieter
-          übermittelt.
+          {t("aiConsent.description")}
         </p>
       </div>
 
@@ -75,34 +67,33 @@ export function AiConsentStep({
         }}
       >
         <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-          ANBIETER
+          {t("aiConsent.provider")}
         </div>
         <p style={{ color: M.fg, fontSize: 14, margin: "0 0 12px 0", lineHeight: 1.45 }}>
           <strong>Anthropic, PBC</strong> (San Francisco, USA)
         </p>
 
         <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-          ZWECK
+          {t("aiConsent.purpose")}
         </div>
         <p style={{ color: M.fg, fontSize: 14, margin: "0 0 12px 0", lineHeight: 1.45 }}>
-          Personalisierter Trainingsplan, Protein-Produkterkennung aus Etikett-Fotos (Fotos werden nicht gespeichert).
+          {t("aiConsent.purposeText")}
         </p>
 
         <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.mut, fontWeight: 700, marginBottom: 8 }}>
-          ÜBERMITTELTE DATEN
+          {t("aiConsent.data")}
         </div>
         <ul style={{ margin: 0, paddingLeft: 18, color: M.fg, fontSize: 13.5, lineHeight: 1.5 }}>
-          {DATA_CATEGORIES.map((item) => (
+          {dataCategories.map((item) => (
             <li key={item} style={{ marginBottom: 6 }}>
-              {item}
+              {t(item)}
             </li>
           ))}
         </ul>
       </div>
 
       <p style={{ color: M.mut2, fontSize: 13, lineHeight: 1.45, margin: 0 }}>
-        Es erfolgt keine Weitergabe zu Werbezwecken. Du kannst diese Einwilligung jederzeit in den Einstellungen
-        widerrufen. Details in der{" "}
+        {t("aiConsent.privacyPrefix")}{" "}
         <button
           type="button"
           onClick={onOpenPrivacy}
@@ -118,7 +109,7 @@ export function AiConsentStep({
             cursor: "pointer",
           }}
         >
-          Datenschutzerklärung
+          {t("aiConsent.privacy")}
         </button>
         .
       </p>
@@ -126,11 +117,11 @@ export function AiConsentStep({
       {showActions && onAccept && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
           <MButton type="button" onClick={onAccept} variant="primary" size="md" fullWidth disabled={saving}>
-            {saving ? "SPEICHERN…" : "Zustimmen und fortfahren"}
+            {saving ? t("aiConsent.saving") : t("aiConsent.accept")}
           </MButton>
           {onBack && (
             <MButton type="button" onClick={onBack} variant="ghost" size="md" fullWidth disabled={saving}>
-              Abbrechen
+              {t("common.cancel")}
             </MButton>
           )}
         </div>

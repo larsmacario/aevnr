@@ -30,6 +30,7 @@ import type { PerceivedEffort } from "./lib/progressionEngine";
 import { inferExerciseBlockFormat } from "./lib/progressionEngine";
 import type { WorkoutSet } from "./lib/engine";
 import { useAuth } from "./lib/auth";
+import { useI18n } from "./lib/i18n";
 import { useBreakpoint } from "./lib/responsive";
 import { PhoneShell } from "./components/PhoneShell";
 import { FloatNav, FloatNavContentFade, floatNavContentInset, type NavTabId, type Tab } from "./components/FloatNav";
@@ -169,6 +170,7 @@ export function PhoneApp() {
 }
 
 function PhoneAppInner() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { isOnline } = useNetwork();
   const { preferences, updatePreferences } = usePreferences();
@@ -677,9 +679,9 @@ function PhoneAppInner() {
       />
       <ConfirmSheet
         open={!!replaceDraftAction}
-        title="Entwurf verwerfen?"
-        message="Es läuft bereits ein pausiertes Workout. Wenn du fortfährst, wird der Entwurf verworfen."
-        confirmLabel="FORTFAHREN"
+        title={t("draft.discardTitle")}
+        message={t("draft.discardMessage")}
+        confirmLabel={t("draft.continue")}
         icon="flag"
         onConfirm={handleReplaceDraftConfirm}
         onCancel={() => setReplaceDraftAction(null)}

@@ -3,6 +3,7 @@ import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { M } from "../theme";
 import { MEAL_QUALITY_LABELS, type MealQuality, type MetabolicLog, type MetabolicLogInput } from "../lib/metabolic";
+import { useI18n } from "../lib/i18n";
 
 function toLocalInputValue(iso: string): string {
   const date = new Date(iso);
@@ -11,6 +12,7 @@ function toLocalInputValue(iso: string): string {
 }
 
 export function MetabolicLogSheet({ open, current, busy, onClose, onSave }: { open: boolean; current?: MetabolicLog | null; busy?: boolean; onClose: () => void; onSave: (input: MetabolicLogInput) => void | Promise<void> }) {
+  const { t } = useI18n();
   const [loggedAt, setLoggedAt] = useState("");
   const [mealQuality, setMealQuality] = useState<MealQuality>("balanced");
   const [energyLevel, setEnergyLevel] = useState(6);
@@ -33,21 +35,21 @@ export function MetabolicLogSheet({ open, current, busy, onClose, onSave }: { op
     </label>
   );
 
-  return <BottomSheet open={open} onClose={onClose} aria-label="Mahlzeit und Befinden">
+  return <BottomSheet open={open} onClose={onClose} aria-label={t("metabolism.sheet.aria")}>
     <div style={{ padding: "0 2px" }}>
-      <div style={{ color: M.fg, fontFamily: M.display, fontSize: 28, letterSpacing: 0.4 }}>MAHLZEIT & BEFINDEN</div>
-      <p style={{ color: M.mut, fontSize: 14, lineHeight: 1.5, margin: "6px 0 18px" }}>Beobachte deinen persönlichen Rhythmus. Diese Angaben messen weder Insulin noch Blutzucker.</p>
-      <label style={{ display: "block", fontSize: 14, fontWeight: 650, marginBottom: 8 }}>Zeitpunkt</label>
-      <input aria-label="Zeitpunkt" type="datetime-local" value={loggedAt} onChange={(event) => setLoggedAt(event.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: 12, borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit" }} />
-      <div style={{ fontSize: 14, fontWeight: 650, margin: "18px 0 8px" }}>Mahlzeitgefühl</div>
+      <div style={{ color: M.fg, fontFamily: M.display, fontSize: 28, letterSpacing: 0.4 }}>{t("metabolism.sheet.title")}</div>
+      <p style={{ color: M.mut, fontSize: 14, lineHeight: 1.5, margin: "6px 0 18px" }}>{t("metabolism.sheet.description")}</p>
+      <label style={{ display: "block", fontSize: 14, fontWeight: 650, marginBottom: 8 }}>{t("metabolism.sheet.time")}</label>
+      <input aria-label={t("metabolism.sheet.time")} type="datetime-local" value={loggedAt} onChange={(event) => setLoggedAt(event.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: 12, borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit" }} />
+      <div style={{ fontSize: 14, fontWeight: 650, margin: "18px 0 8px" }}>{t("metabolism.sheet.feeling")}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {(Object.keys(MEAL_QUALITY_LABELS) as MealQuality[]).map((quality) => <MButton key={quality} type="button" variant={mealQuality === quality ? "primary" : "secondary"} size="sm" onClick={() => setMealQuality(quality)}>{MEAL_QUALITY_LABELS[quality]}</MButton>)}
+        {(Object.keys(MEAL_QUALITY_LABELS) as MealQuality[]).map((quality) => <MButton key={quality} type="button" variant={mealQuality === quality ? "primary" : "secondary"} size="sm" onClick={() => setMealQuality(quality)}>{t(`metabolism.quality.${quality}` as "metabolism.quality.balanced")}</MButton>)}
       </div>
-      {score("Energie danach", energyLevel, setEnergyLevel)}
-      {score("Sättigung danach", satietyLevel, setSatietyLevel)}
-      <label style={{ display: "block", fontSize: 14, fontWeight: 650, margin: "18px 0 8px" }}>Notiz <span style={{ color: M.mut, fontWeight: 400 }}>(optional)</span></label>
-      <textarea value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="Was ist dir aufgefallen?" style={{ width: "100%", minHeight: 70, resize: "vertical", boxSizing: "border-box", padding: 12, borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit", marginBottom: 16 }} />
-      <MButton fullWidth variant="primary" size="md" disabled={busy || !loggedAt} onClick={() => void onSave({ loggedAt: new Date(loggedAt).toISOString(), mealQuality, energyLevel, satietyLevel, note })}>{busy ? "Speichern…" : current ? "Eintrag speichern" : "Eintrag hinzufügen"}</MButton>
+      {score(t("metabolism.sheet.energy"), energyLevel, setEnergyLevel)}
+      {score(t("metabolism.sheet.satiety"), satietyLevel, setSatietyLevel)}
+      <label style={{ display: "block", fontSize: 14, fontWeight: 650, margin: "18px 0 8px" }}>{t("metabolism.sheet.note")} <span style={{ color: M.mut, fontWeight: 400 }}>{t("metabolism.sheet.optional")}</span></label>
+      <textarea value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder={t("metabolism.sheet.placeholder")} style={{ width: "100%", minHeight: 70, resize: "vertical", boxSizing: "border-box", padding: 12, borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit", marginBottom: 16 }} />
+      <MButton fullWidth variant="primary" size="md" disabled={busy || !loggedAt} onClick={() => void onSave({ loggedAt: new Date(loggedAt).toISOString(), mealQuality, energyLevel, satietyLevel, note })}>{busy ? t("metabolism.sheet.saving") : current ? t("metabolism.sheet.save") : t("metabolism.sheet.add")}</MButton>
     </div>
   </BottomSheet>;
 }

@@ -46,3 +46,11 @@ describe("ÆVNR-Onboarding", () => {
     expect(legacyFitnessGoalForFocus("body_composition")).toBe("fat_loss");
   });
 });
+
+describe("language preference", () => {
+  it("keeps supported languages and rejects unsupported profile values", () => {
+    expect(mergePreferences({ language: "en" } as never).language).toBe("en");
+    expect(mergePreferences({ language: "de-DE" } as never).language).toBe("de");
+    expect(["de", "en"]).toContain(mergePreferences({ language: "fr" } as never).language);
+  });
+});

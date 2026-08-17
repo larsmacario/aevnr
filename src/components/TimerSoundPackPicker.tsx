@@ -4,6 +4,7 @@ import { Icon } from "./Icon";
 import { MSwitch } from "./widgets";
 import { playTimerCue } from "../lib/timerSounds";
 import { TIMER_SOUND_PACKS } from "../lib/timerSoundPacks";
+import { useI18n } from "../lib/i18n";
 
 export interface TimerSoundPackPickerProps {
   enabled: boolean;
@@ -20,6 +21,7 @@ export function TimerSoundPackPicker({
   onPackChange,
   compact = false,
 }: TimerSoundPackPickerProps) {
+  const { t } = useI18n();
   return (
     <div>
       <div
@@ -33,9 +35,9 @@ export function TimerSoundPackPicker({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: M.fg, fontWeight: 600, fontSize: compact ? 14 : 15 }}>Timer-Signale</div>
+          <div style={{ color: M.fg, fontWeight: 600, fontSize: compact ? 14 : 15 }}>{t("timerSounds.title")}</div>
           <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>
-            Countdown, Start, Pause und Ende im Intervall-Timer
+            {t("timerSounds.description")}
           </div>
         </div>
         <MSwitch checked={enabled} onChange={onEnabledChange} />
@@ -48,7 +50,7 @@ export function TimerSoundPackPicker({
           marginTop: compact ? 8 : 4,
         }}
       >
-        <div style={{ color: M.mut, fontSize: 13, marginBottom: 10 }}>Timer-Sound</div>
+        <div style={{ color: M.mut, fontSize: 13, marginBottom: 10 }}>{t("timerSounds.sound")}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {TIMER_SOUND_PACKS.map((pack) => {
             const selected = packId === pack.id;
@@ -80,15 +82,15 @@ export function TimerSoundPackPicker({
                   }}
                 >
                   <div style={{ fontWeight: selected ? 700 : 600, color: selected ? M.acc : M.fg }}>
-                    {pack.label}
+                    {t(`timerSounds.${pack.id}.label` as "timerSounds.klassisch.label")}
                   </div>
-                  <div style={{ fontSize: 12, color: M.mut, marginTop: 2 }}>{pack.description}</div>
+                  <div style={{ fontSize: 12, color: M.mut, marginTop: 2 }}>{t(`timerSounds.${pack.id}.description` as "timerSounds.klassisch.description")}</div>
                 </MButton>
                 <MButton
                   onClick={() => playTimerCue("go", pack.id)}
                   variant="ghost"
                   size="icon"
-                  aria-label={`${pack.label} anhören`}
+                  aria-label={t("timerSounds.preview", { name: t(`timerSounds.${pack.id}.label` as "timerSounds.klassisch.label") })}
                   style={{ flexShrink: 0 }}
                 >
                   <Icon name="volume" size={18} stroke={2} color={M.mut} />

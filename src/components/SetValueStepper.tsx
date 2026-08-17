@@ -13,6 +13,7 @@ import {
 import { formatDistanceM, formatDurationSec } from "../lib/exerciseCatalog";
 import type { CSSProperties } from "react";
 import { M, mMini, mMiniLg } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 const MINI_LG: CSSProperties = mMiniLg;
 
@@ -100,6 +101,7 @@ export function SetValueStepper({
   tableCell = false,
   muted = false,
 }: SetValueStepperProps) {
+  const { t } = useI18n();
   const isLg = size === "lg";
   const isTrackRow = fullWidth && isLg && !uniformRow && !tableCell;
   const isUniformRow = uniformRow && isLg;
@@ -252,7 +254,7 @@ export function SetValueStepper({
           width: fullWidth || isTableCell ? "100%" : undefined,
         }}
       >
-        <button type="button" onClick={dec} style={miniBtn} aria-label="Wert verringern">
+        <button type="button" onClick={dec} style={miniBtn} aria-label={t("value.decrease")}>
           –
         </button>
         {editable ? (
@@ -277,7 +279,7 @@ export function SetValueStepper({
         ) : (
           <span style={valueStyle}>{formatters.display(value)}</span>
         )}
-        <button type="button" onClick={inc} style={miniBtn} aria-label="Wert erhöhen">
+        <button type="button" onClick={inc} style={miniBtn} aria-label={t("value.increase")}>
           +
         </button>
       </div>

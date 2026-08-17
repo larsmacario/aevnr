@@ -20,6 +20,7 @@ serve(async (req) => {
   if (blocked) return blocked;
   try {
     const body = await req.json();
+    const language = body?.language === "en" ? "en" : "de";
     const readiness = body?.readiness === "reduce" ? "reduce" : "ready";
     const preferences = Array.isArray(body?.preferences) ? body.preferences.slice(0, 6) : [];
     const history = Array.isArray(body?.history) ? body.history.slice(0, 30) : [];
@@ -27,9 +28,24 @@ serve(async (req) => {
     const profileContext = body?.profileContext && typeof body.profileContext === "object" ? body.profileContext : {};
     const performanceBaseline = body?.performanceBaseline && typeof body.performanceBaseline === "object" ? body.performanceBaseline : null;
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) return new Response(JSON.stringify({ error: "KI nicht konfiguriert." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const prompt = `Erstelle eine Tages-Session für Express Tracking. Keine Diagnose, keine medizinischen Aussagen. Bereitschaft: ${readiness}. Wünsche: ${preferences.join(", ") || "keine"}. Profilkontext: ${JSON.stringify(profileContext)}. Freiwillige Startwerte (nur Leistungsorientierung, keine Diagnose): ${JSON.stringify(performanceBaseline)}. Bei reduce darf mode nur zone2 oder sehr leichtes strength sein (max. 2 Sätze je Übung). Berücksichtige diese Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Verwende ausschließlich catalogExerciseId aus diesem Katalog: ${JSON.stringify(exercises)}. Bei fehlenden oder übersprungenen Startwerten konservativ planen. Bei zone2: durationMin 10-90 und optionale device. Bei strength: 2-6 Übungen, sets 1-4, reps 5-20.`;
-    const response = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model, max_tokens: 1000, tools: [tool], tool_choice: { type: "tool", name: "create_daily_session" }, messages: [{ role: "user", content: prompt }] }) });
+    const system = language === "en"
+      ? "You are an expert strength and endurance coach for an express training system. The user's active language setting is ENGLISH ('en'). You must output rationale and device strictly in English. Never use German."
+      : "Du bist ein Kraft- und Ausdauer-Coach für ein Express-Trainingssystem. Die aktive Spracheinstellung des Nutzers ist DEUTSCH ('de'). Du musst rationale und device strikt auf Deutsch ausgeben.";
+    const prompt = language === "de"
+      ? `SPRACHVORGABE: DEUTSCH. Erstelle eine Tages-Session für Express Tracking. rationale und device ausschließlich auf Deutsch. Keine Diagnose, keine medizinischen Aussagen. Bereitschaft: ${readiness}. Wünsche: ${preferences.join(", ") || "keine"}. Profilkontext: ${JSON.stringify(profileContext)}. Freiwillige Startwerte (nur Leistungsorientierung, keine Diagnose): ${JSON.stringify(performanceBaseline)}. Bei reduce darf mode nur zone2 oder sehr leichtes strength sein (max. 2 Sätze je Übung). Berücksichtige diese Trainingshistorie der letzten 30 Tage: ${JSON.stringify(history)}. Verwende ausschließlich catalogExerciseId aus diesem Katalog: ${JSON.stringify(exercises)}. Bei fehlenden oder übersprungenen Startwerten konservativ planen. Bei zone2: durationMin 10-90 und optionale device. Bei strength: 2-6 Übungen, sets 1-4, reps 5-20.`
+      : `LANGUAGE REQUIREMENT: ENGLISH. Create a daily Express Tracking session. Write rationale and device strictly in English. No diagnosis or medical claims. Readiness: ${readiness}. Preferences: ${preferences.join(", ") || "none"}. Profile context: ${JSON.stringify(profileContext)}. Optional baselines (performance guidance only, not diagnosis): ${JSON.stringify(performanceBaseline)}. When readiness is reduce, mode may only be zone2 or very light strength (max 2 sets per exercise). Consider this training history from the last 30 days: ${JSON.stringify(history)}. Use only catalogExerciseId values from this catalog: ${JSON.stringify(exercises)}. Plan conservatively when baselines are missing or skipped. For zone2: durationMin 10-90 and optional device. For strength: 2-6 exercises, sets 1-4, reps 5-20.`;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1000,
+        system,
+        tools: [tool],
+        tool_choice: { type: "tool", name: "create_daily_session" },
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
     if (!response.ok) throw new Error("KI-Anbieter nicht erreichbar");
     const data = await response.json();
     const result = data.content?.find((entry: { type?: string }) => entry.type === "tool_use")?.input;

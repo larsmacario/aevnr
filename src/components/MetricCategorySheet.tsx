@@ -2,6 +2,7 @@ import { EXERCISE_METRICS, metricLabel, type ExerciseMetric } from "../lib/exerc
 import { M } from "../theme";
 import { BottomSheet } from "./BottomSheet";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 export interface MetricCategorySheetProps {
   open: boolean;
@@ -11,8 +12,9 @@ export interface MetricCategorySheetProps {
 }
 
 export function MetricCategorySheet({ open, value, onChange, onClose }: MetricCategorySheetProps) {
+  const { language, t } = useI18n();
   return (
-    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label="Kategorie">
+    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label={t("metricCategory.title")}>
       <div
         style={{
           fontFamily: M.display,
@@ -23,7 +25,7 @@ export function MetricCategorySheet({ open, value, onChange, onClose }: MetricCa
           flexShrink: 0,
         }}
       >
-        Kategorie
+        {t("metricCategory.title")}
       </div>
       <div style={{ margin: "0 -18px" }}>
         {EXERCISE_METRICS.map((m, i) => {
@@ -60,7 +62,7 @@ export function MetricCategorySheet({ open, value, onChange, onClose }: MetricCa
                   whiteSpace: "nowrap",
                 }}
               >
-                {metricLabel(m.id)}
+                {metricLabel(m.id, language)}
               </span>
               {selected && <Icon name="check" size={20} color={M.acc} stroke={2.4} />}
             </button>

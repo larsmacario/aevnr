@@ -30,6 +30,7 @@ import {
 } from "../lib/expressTracking";
 import type { Workout } from "../lib/engine";
 import type { LibraryExercise } from "../data";
+import { useI18n } from "../lib/i18n";
 
 export interface ExpressTrackingSetupScreenProps {
   onBack: () => void;
@@ -39,8 +40,8 @@ export interface ExpressTrackingSetupScreenProps {
 
 type SetupStep = "coach" | "source" | "sets";
 
-function formatSessionDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-DE", {
+function formatSessionDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -48,6 +49,7 @@ function formatSessionDate(iso: string): string {
 }
 
 export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: ExpressTrackingSetupScreenProps) {
+  const { language, locale, t } = useI18n();
   const { user, profile } = useAuth();
   const { preferences, updatePreferences, saving: preferencesSaving } = usePreferences();
   const { data: library, loading: libraryLoading, reload: reloadExercises } = useExercises();
@@ -128,7 +130,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
 
   const goToSetsFromSession = (session: HistoryEntry) => {
     const imported = extractExpressTemplatesFromSession(session);
-    setSkipMessage(expressImportSkipMessage(imported));
+    setSkipMessage(expressImportSkipMessage(imported, language));
     if (imported.templates.length === 0) return;
     setManualTemplates(imported.templates);
     setStep("sets");
@@ -192,29 +194,29 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
     if (!library?.length) return;
     setAiBusy(true); setAiError(null);
     try {
-      const proposal = await generateDailyAiSession({ readiness: readiness === "reduce" ? "reduce" : "ready", preferences: aiPreferences, history: historyForAi, exercises: library, profileContext: { birthDate: profile?.birth_date, anamnesis: preferences.anamnesis }, performanceBaseline });
+      const proposal = await generateDailyAiSession({ language: preferences.language, readiness: readiness === "reduce" ? "reduce" : "ready", preferences: aiPreferences, history: historyForAi, exercises: library, profileContext: { birthDate: profile?.birth_date, anamnesis: preferences.anamnesis }, performanceBaseline });
       if (proposal.mode === "zone2") { onStartZone2({ durationMin: proposal.durationMin, device: proposal.device, rationale: proposal.rationale }); return; }
       const byId = new Map(library.map((exercise) => [exercise.id, exercise]));
       const templates: ExpressTrackingExerciseTemplate[] = proposal.exercises.flatMap((item) => {
         const exercise = byId.get(item.catalogExerciseId);
         return exercise ? [{ name: exercise.name, catalogExerciseId: exercise.id, group: exercise.group, note: `${exercise.group} · ${exercise.equip}`, templateReps: item.reps, setCount: Math.max(1, Math.min(4, item.sets)) }] : [];
       });
-      if (!templates.length) throw new Error("Die KI hat keine verfügbaren Übungen gewählt.");
+      if (!templates.length) throw new Error(t("express.ai.noExercises"));
       setManualTemplates(templates); setSetCount(Math.max(1, Math.min(4, proposal.exercises[0]?.sets ?? 2))); setHealthspanMode("ai"); setAiRationale(proposal.rationale); setStep("sets");
-    } catch (error) { setAiError(error instanceof Error ? error.message : "KI-Tages-Session fehlgeschlagen."); }
+    } catch (error) { setAiError(error instanceof Error ? error.message : t("express.ai.failed")); }
     finally { setAiBusy(false); }
   };
   const requestAiSession = async () => {
-    if (readiness === "missing") { setAiError("Bitte erfasse zuerst den heutigen Check-in. Manuelles Express Tracking bleibt ohne Check-in verfügbar."); return; }
-    if (!user) { setAiError("Bitte melde dich an, um eine KI-Tages-Session zu erstellen."); return; }
-    if (!hasAiConsent(preferences)) { setAiError("Für die KI-Tages-Session fehlt deine Einwilligung."); return; }
-    if (!library?.length) { setAiError("Der Übungskatalog ist noch nicht verfügbar. Du kannst jederzeit manuell fortfahren."); return; }
+    if (readiness === "missing") { setAiError(t("express.ai.checkinRequired")); return; }
+    if (!user) { setAiError(t("express.ai.loginRequired")); return; }
+    if (!hasAiConsent(preferences)) { setAiError(t("express.ai.consentRequired")); return; }
+    if (!library?.length) { setAiError(t("express.ai.catalogMissing")); return; }
     try {
       const since = new Date(); since.setDate(since.getDate() - 30);
       const historyForAi = await fetchSessionsSinceWithExercises(since);
       if (historyForAi.length === 0) { setBaselineStartsAiSession(true); setBaselineSheetOpen(true); return; }
       void createAiSession(historyForAi);
-    } catch (error) { setAiError(error instanceof Error ? error.message : "KI-Tages-Session fehlgeschlagen."); }
+    } catch (error) { setAiError(error instanceof Error ? error.message : t("express.ai.failed")); }
   };
   const saveBaselineAndCreateSession = async (baseline: ExpressPerformanceBaseline) => {
     try {
@@ -224,7 +226,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
       setBaselineStartsAiSession(false);
       const since = new Date(); since.setDate(since.getDate() - 30);
       await createAiSession(await fetchSessionsSinceWithExercises(since), baseline);
-    } catch (error) { setAiError(error instanceof Error ? error.message : "Startwerte konnten nicht gespeichert werden."); }
+    } catch (error) { setAiError(error instanceof Error ? error.message : t("express.ai.baselineSaveFailed")); }
   };
   const handleAiConsentToggle = (enabled: boolean) => {
     if (!enabled) {
@@ -246,25 +248,25 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader
         onBack={step === "sets" ? () => setStep("source") : step === "source" ? () => setStep("coach") : onBack}
-        title="EXPRESSTRACKING"
+        title={t("express.title")}
       />
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `0 ${CONTENT_HORIZONTAL_PADDING}px 24px` }}>
-        <div style={{ fontSize: TYPE.bodySm, color: M.mut, marginBottom: 12 }}>Schritt {stepIndex} von 3</div>
+        <div style={{ fontSize: TYPE.bodySm, color: M.mut, marginBottom: 12 }}>{t("express.step", { current: stepIndex, total: 3 })}</div>
         {step === "coach" ? (
           <div style={{ padding: "4px 0" }}>
-            <div style={{ fontFamily: M.display, fontSize: TYPE.title, color: M.fg }}>HEUTE TRAINIEREN</div>
-            {readiness === "missing" ? <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>Ein kurzer Check-in hilft dir, die Einheit passend zu wählen.</p><MButton fullWidth variant="primary" size="md" onClick={() => setCheckinOpen(true)}>Check-in erfassen</MButton><button type="button" onClick={continueAsPlanned} style={{ width: "100%", border: 0, background: "transparent", color: M.mut, fontSize: TYPE.bodySm, padding: "16px 0", cursor: "pointer" }}>Ohne Check-in fortfahren</button></> : readiness === "reduce" ? <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>Dein heutiger Check-in spricht für eine geringere Belastung. Du entscheidest selbst.</p><div style={{ display: "flex", flexDirection: "column", gap: 10 }}><MButton fullWidth variant="primary" size="md" onClick={continueReduced}>Leichter trainieren · 1 Satz weniger</MButton><MButton fullWidth variant="secondary" size="md" onClick={() => onStartZone2()}>Zone 2 statt Kraft</MButton><MButton fullWidth variant="ghost" size="md" onClick={continueAsPlanned}>Trotzdem wie geplant</MButton></div></> : <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>Dein Check-in wirkt stabil. Trainiere heute wie geplant.</p><MButton fullWidth variant="primary" size="md" onClick={continueAsPlanned}>Express Tracking starten</MButton></>}
-            <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${M.line2}` }}><MButton fullWidth variant="secondary" size="md" onClick={() => setAiOpen((open) => !open)}>KI-Tages-Session erstellen</MButton>{aiOpen ? <div style={{ marginTop: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", marginBottom: 10, borderBottom: `1px solid ${M.line2}` }}><div><div style={{ color: M.fg, fontWeight: 600, fontSize: TYPE.bodySm }}>KI-Datennutzung</div><div style={{ marginTop: 3, color: M.mut, fontSize: TYPE.caption }}>Einwilligung für deine Tages-Session</div><div style={{ marginTop: 5, color: M.mut2, fontSize: TYPE.caption, lineHeight: 1.35 }}>Jederzeit unter Einstellungen › Daten & KI widerrufbar.</div></div><MSwitch checked={hasAiConsent(preferences)} onChange={handleAiConsentToggle} disabled={preferencesSaving || aiBusy} /></div><MButton type="button" variant="ghost" size="sm" onClick={() => { setBaselineStartsAiSession(false); setBaselineSheetOpen(true); }} style={{ margin: "0 0 8px", paddingLeft: 0 }}>Startwerte anpassen</MButton><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{["Cardio", "Bodyweight", "Gym", "Zuhause", "Kurz", "Draußen"].map((item) => <MButton key={item} variant={aiPreferences.includes(item) ? "primary" : "secondary"} size="sm" disabled={aiBusy} onClick={() => setAiPreferences((items) => items.includes(item) ? items.filter((value) => value !== item) : [...items, item])}>{item}</MButton>)}</div><MButton fullWidth variant="primary" size="md" loading={aiBusy} onClick={() => void requestAiSession()} style={{ marginTop: 12 }}>{aiBusy ? "KI erstellt deine Tages-Session …" : "Tages-Session erstellen"}</MButton>{aiBusy ? <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, color: M.mut, fontSize: TYPE.bodySm, lineHeight: 1.4 }}><Icon name="sparkles" size={16} color={M.fg} />Check-in, die letzten 30 Tage und deine Wünsche werden berücksichtigt.</div> : null}{aiError ? <div style={{ marginTop: 8, color: M.danger, fontSize: TYPE.bodySm }}>{aiError}</div> : null}</div> : null}</div>
+            <div style={{ fontFamily: M.display, fontSize: TYPE.title, color: M.fg }}>{t("express.coach.title")}</div>
+            {readiness === "missing" ? <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>{t("express.coach.missing")}</p><MButton fullWidth variant="primary" size="md" onClick={() => setCheckinOpen(true)}>{t("express.coach.addCheckin")}</MButton><button type="button" onClick={continueAsPlanned} style={{ width: "100%", border: 0, background: "transparent", color: M.mut, fontSize: TYPE.bodySm, padding: "16px 0", cursor: "pointer" }}>{t("express.coach.withoutCheckin")}</button></> : readiness === "reduce" ? <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>{t("express.coach.reduce")}</p><div style={{ display: "flex", flexDirection: "column", gap: 10 }}><MButton fullWidth variant="primary" size="md" onClick={continueReduced}>{t("express.coach.lighter")}</MButton><MButton fullWidth variant="secondary" size="md" onClick={() => onStartZone2()}>{t("express.coach.zone2")}</MButton><MButton fullWidth variant="ghost" size="md" onClick={continueAsPlanned}>{t("express.coach.asPlanned")}</MButton></div></> : <><p style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5 }}>{t("express.coach.ready")}</p><MButton fullWidth variant="primary" size="md" onClick={continueAsPlanned}>{t("express.coach.start")}</MButton></>}
+            <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${M.line2}` }}><MButton fullWidth variant="secondary" size="md" onClick={() => setAiOpen((open) => !open)}>{t("express.ai.create")}</MButton>{aiOpen ? <div style={{ marginTop: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", marginBottom: 10, borderBottom: `1px solid ${M.line2}` }}><div><div style={{ color: M.fg, fontWeight: 600, fontSize: TYPE.bodySm }}>{t("express.ai.data")}</div><div style={{ marginTop: 3, color: M.mut, fontSize: TYPE.caption }}>{t("express.ai.consent")}</div><div style={{ marginTop: 5, color: M.mut2, fontSize: TYPE.caption, lineHeight: 1.35 }}>{t("express.ai.revokeHint")}</div></div><MSwitch checked={hasAiConsent(preferences)} onChange={handleAiConsentToggle} disabled={preferencesSaving || aiBusy} /></div><MButton type="button" variant="ghost" size="sm" onClick={() => { setBaselineStartsAiSession(false); setBaselineSheetOpen(true); }} style={{ margin: "0 0 8px", paddingLeft: 0 }}>{t("express.ai.baseline")}</MButton><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(["cardio", "bodyweight", "gym", "home", "short", "outdoors"] as const).map((item) => <MButton key={item} variant={aiPreferences.includes(item) ? "primary" : "secondary"} size="sm" disabled={aiBusy} onClick={() => setAiPreferences((items) => items.includes(item) ? items.filter((value) => value !== item) : [...items, item])}>{t(item === "cardio" ? "express.pref.cardio" : item === "bodyweight" ? "express.pref.bodyweight" : item === "gym" ? "express.pref.gym" : item === "home" ? "express.pref.home" : item === "short" ? "express.pref.short" : "express.pref.outdoors")}</MButton>)}</div><MButton fullWidth variant="primary" size="md" loading={aiBusy} onClick={() => void requestAiSession()} style={{ marginTop: 12 }}>{aiBusy ? t("express.ai.generating") : t("express.ai.start")}</MButton>{aiBusy ? <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, color: M.mut, fontSize: TYPE.bodySm, lineHeight: 1.4 }}><Icon name="sparkles" size={16} color={M.fg} />{t("express.ai.context")}</div> : null}{aiError ? <div style={{ marginTop: 8, color: M.danger, fontSize: TYPE.bodySm }}>{aiError}</div> : null}</div> : null}</div>
           </div>
         ) : step === "source" ? (
           <>
             <div style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5, marginBottom: 16 }}>
-              Wiederhole ein früheres ExpressTracking-Workout oder wähle Übungen aus der Bibliothek.
+              {t("express.source.description")}
             </div>
 
             {historyLoading ? (
-              <div style={{ color: M.mut, fontSize: TYPE.bodySm, marginBottom: 16 }}>Verlauf wird geladen…</div>
+              <div style={{ color: M.mut, fontSize: TYPE.bodySm, marginBottom: 16 }}>{t("express.history.loading")}</div>
             ) : history.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                 {history.map((session) => {
@@ -292,7 +294,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: M.fg, fontWeight: 600, fontSize: TYPE.body }}>{session.name}</div>
                         <div style={{ color: M.mut, fontSize: TYPE.bodySm, marginTop: 2 }}>
-                          {formatSessionDate(session.performedAt)} · {eligible} Übung{eligible === 1 ? "" : "en"}
+                          {formatSessionDate(session.performedAt, locale)} · {t(eligible === 1 ? "express.exercise.count" : "express.exercise.countPlural", { count: eligible })}
                         </div>
                       </div>
                       <Icon name="chevR" size={16} color={M.mut2} stroke={2.2} />
@@ -313,14 +315,14 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
                   textAlign: "center",
                 }}
               >
-                Noch kein ExpressTracking in der Vergangenheit — wähle Übungen aus der Bibliothek.
+                {t("express.history.empty")}
               </div>
             )}
           </>
         ) : (
           <>
             <div style={{ fontSize: TYPE.body, color: M.mut, lineHeight: 1.5, marginBottom: 16 }}>
-              Passe die Sätze direkt für jede Übung an. Neue Übungen verwenden den Standardwert.
+              {t("express.sets.description")}
             </div>
 
             {skipMessage ? (
@@ -354,8 +356,8 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
               }}
             >
               <div>
-                <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: TYPE.titleSm, color: M.fg }}>Sätze pro Übung</div>
-                <div style={{ fontSize: TYPE.bodySm, color: M.mut, marginTop: 4 }}>Standard: {preferences.defaultSets}</div>
+                <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: TYPE.titleSm, color: M.fg }}>{t("express.sets.title")}</div>
+                <div style={{ fontSize: TYPE.bodySm, color: M.mut, marginTop: 4 }}>{t("express.sets.default", { count: preferences.defaultSets })}</div>
               </div>
               <MStepper value={setCount} min={1} max={10} onChange={setSetCount} />
             </div>
@@ -370,10 +372,10 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
               }}
             >
               <div style={{ fontSize: TYPE.caption, fontWeight: 700, letterSpacing: 1, color: M.mut, marginBottom: 8 }}>
-                ZUSAMMENFASSUNG
+                {t("express.summary")}
               </div>
               <div style={{ color: M.fg, fontWeight: 600, fontSize: TYPE.body, marginBottom: 12 }}>
-                {activeTemplates.length} Übung{activeTemplates.length === 1 ? "" : "en"} · {activeTemplates.reduce((total, item) => total + (item.setCount ?? setCount), 0)} Sätze
+                {t("express.summary.value", { exercises: t(activeTemplates.length === 1 ? "express.exercise.count" : "express.exercise.countPlural", { count: activeTemplates.length }), sets: activeTemplates.reduce((total, item) => total + (item.setCount ?? setCount), 0) })}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {templatesByMuscleGroup.map(({ group, templates }, groupIndex) => (
@@ -406,7 +408,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
                           openRowId={openSwipeRowId}
                           onOpenRowIdChange={setOpenSwipeRowId}
                           onDelete={() => removeTemplate(template)}
-                          deleteAriaLabel={`${template.name} entfernen`}
+                          deleteAriaLabel={t("express.removeExercise", { name: template.name })}
                           showSwipeHint={
                             !libraryLoading && groupIndex === 0 && templateIndex === 0
                           }
@@ -447,7 +449,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
                   fontSize: TYPE.bodySm,
                 }}
               >
-                <Icon name="plus" size={14} stroke={2.6} /> Übung hinzufügen
+                <Icon name="plus" size={14} stroke={2.6} /> {t("express.addExercise")}
               </MButton>
             </div>
           </>
@@ -471,7 +473,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
             onClick={() => setPickerOpen(true)}
             style={{ fontFamily: M.label, letterSpacing: 0.3 }}
           >
-            <Icon name="plus" size={16} stroke={2.4} /> Übungen auswählen
+            <Icon name="plus" size={16} stroke={2.4} /> {t("express.selectExercises")}
           </MButton>
         ) : step === "sets" ? (
           <MButton
@@ -483,7 +485,7 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
             disabled={activeTemplates.length === 0}
             style={{ fontFamily: M.label, fontWeight: 700, letterSpacing: 0.4 }}
           >
-            Workout starten
+            {t("express.startWorkout")}
           </MButton>
         ) : null}
       </div>
@@ -497,15 +499,15 @@ export function ExpressTrackingSetupScreen({ onBack, onStart, onStartZone2 }: Ex
         expressTrackingOnly
         library={library ?? []}
         loading={libraryLoading}
-        title={step === "sets" ? "Übungen hinzufügen" : "Übungen wählen"}
+        title={step === "sets" ? t("express.picker.add") : t("express.picker.choose")}
         allowCreate
         onLibraryChange={reloadExercises}
       />
       <DailyCheckinSheet open={checkinOpen} current={todayCheckin} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={saveCheckin} />
-      <BottomSheet open={aiConsentSheetOpen} onClose={() => setAiConsentSheetOpen(false)} position="absolute" zIndex={40} aria-label="KI-Einwilligung">
+      <BottomSheet open={aiConsentSheetOpen} onClose={() => setAiConsentSheetOpen(false)} position="absolute" zIndex={40} aria-label={t("express.consentAria")}>
         <AiConsentStep onOpenPrivacy={openPrivacy} onAccept={() => void handleGrantAiConsent()} onBack={() => setAiConsentSheetOpen(false)} showActions saving={preferencesSaving} />
       </BottomSheet>
-      <BottomSheet open={baselineSheetOpen} onClose={() => setBaselineSheetOpen(false)} position="absolute" zIndex={40} aria-label="Startwerte für KI-Express">
+      <BottomSheet open={baselineSheetOpen} onClose={() => setBaselineSheetOpen(false)} position="absolute" zIndex={40} aria-label={t("express.baselineAria")}>
         <ExpressPerformanceBaselineForm baseline={preferences.expressPerformanceBaseline} onSave={saveBaselineAndCreateSession} onCancel={() => { setBaselineStartsAiSession(false); setBaselineSheetOpen(false); }} saving={preferencesSaving || aiBusy} />
       </BottomSheet>
     </div>

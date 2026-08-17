@@ -5,8 +5,10 @@ import { getSyncPendingCount, processSyncQueue } from "../lib/db";
 import { useNetwork } from "../lib/offline/networkStatus";
 import { MButton } from "./MButton";
 import { SyncStatusSheet } from "./SyncStatusSheet";
+import { useI18n } from "../lib/i18n";
 
 export function OfflineBanner() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const { isOnline } = useNetwork();
   const [pending, setPending] = useState(0);
@@ -41,9 +43,11 @@ export function OfflineBanner() {
 
   const label = !isOnline
     ? pending > 0
-      ? `Offline · ${pending} ausstehend`
-      : "Offline · Nur Lesen & Tracken"
-    : `${pending} ausstehende Sync${pending === 1 ? "" : "s"}`;
+      ? t("sync.banner.offlinePending", { count: pending })
+      : t("sync.banner.offlineRead")
+    : pending === 1
+      ? t("sync.banner.onlinePending_one", { count: pending })
+      : t("sync.banner.onlinePending_other", { count: pending });
 
   return (
     <>
@@ -79,7 +83,7 @@ export function OfflineBanner() {
         </button>
         {isOnline && pending > 0 && (
           <MButton variant="ghost" size="sm" onClick={() => void handleSync()} loading={syncing}>
-            Sync
+            {t("sync.sync")}
           </MButton>
         )}
       </div>

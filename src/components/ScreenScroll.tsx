@@ -4,6 +4,7 @@ import { M } from "../theme";
 import { Icon } from "./Icon";
 import { MButton } from "./MButton";
 import { floatNavContentInset } from "./FloatNav";
+import { useI18n } from "../lib/i18n";
 
 export const SCREEN_TITLE_STYLE: CSSProperties = {
   fontSize: 13,
@@ -91,9 +92,10 @@ export function ScreenBackHeader({
   title,
   trailing,
   backHidden = false,
-  backAriaLabel = "Zurück",
+  backAriaLabel,
   style,
 }: ScreenBackHeaderProps) {
+  const { t } = useI18n();
   const hideBack = backHidden || !onBack;
 
   return (
@@ -101,7 +103,7 @@ export function ScreenBackHeader({
       {hideBack ? (
         <span style={{ width: 40, flexShrink: 0 }} aria-hidden />
       ) : (
-        <MButton onClick={onBack} variant="ghost" size="icon" aria-label={backAriaLabel}>
+        <MButton onClick={onBack} variant="ghost" size="icon" aria-label={backAriaLabel ?? t("common.back")}>
           <Icon name="chevL" size={20} stroke={2.2} color={M.mut} />
         </MButton>
       )}

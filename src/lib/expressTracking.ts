@@ -218,18 +218,22 @@ export function countSkippedExpressImport(result: ExpressTrackingImportResult): 
   return result.skippedMetcon + result.skippedFormat + result.skippedSuperset + result.skippedMetric;
 }
 
-export function expressImportSkipMessage(result: ExpressTrackingImportResult): string | null {
+export function expressImportSkipMessage(result: ExpressTrackingImportResult, language: "de" | "en" = "de"): string | null {
   const parts: string[] = [];
   if (result.skippedSuperset > 0) {
-    parts.push(`${result.skippedSuperset} Supersatz-Übung${result.skippedSuperset === 1 ? "" : "en"}`);
+    parts.push(language === "en"
+      ? `${result.skippedSuperset} superset exercise${result.skippedSuperset === 1 ? "" : "s"}`
+      : `${result.skippedSuperset} Supersatz-Übung${result.skippedSuperset === 1 ? "" : "en"}`);
   }
   if (result.skippedMetcon > 0 || result.skippedFormat > 0) {
     const n = result.skippedMetcon + result.skippedFormat;
-    parts.push(`${n} MetCon/AMRAP/Circuit-Übung${n === 1 ? "" : "en"}`);
+    parts.push(language === "en"
+      ? `${n} MetCon/AMRAP/circuit exercise${n === 1 ? "" : "s"}`
+      : `${n} MetCon/AMRAP/Circuit-Übung${n === 1 ? "" : "en"}`);
   }
   if (result.skippedMetric > 0) {
-    parts.push(`${result.skippedMetric} andere Metrik`);
+    parts.push(language === "en" ? `${result.skippedMetric} with another metric` : `${result.skippedMetric} andere Metrik`);
   }
   if (parts.length === 0) return null;
-  return `${parts.join(", ")} nicht übernommen.`;
+  return language === "en" ? `${parts.join(", ")} not imported.` : `${parts.join(", ")} nicht übernommen.`;
 }

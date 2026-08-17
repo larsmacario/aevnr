@@ -1,6 +1,7 @@
 import { BottomSheet } from "./BottomSheet";
 import { OneRmCalculatorBody } from "./OneRmCalculatorBody";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface OneRmCalculatorSheetProps {
   open: boolean;
@@ -18,8 +19,9 @@ export function OneRmCalculatorSheet({
   initialReps,
   resetKey,
 }: OneRmCalculatorSheetProps) {
+  const { t } = useI18n();
   return (
-    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label="1RM-Rechner">
+    <BottomSheet open={open} onClose={onClose} zIndex={30} aria-label={t("oneRm.calculator")}>
       <div
         style={{
           fontFamily: M.display,
@@ -29,7 +31,7 @@ export function OneRmCalculatorSheet({
           flexShrink: 0,
         }}
       >
-        1RM-Rechner
+        {t("oneRm.calculator")}
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
         <OneRmCalculatorBody

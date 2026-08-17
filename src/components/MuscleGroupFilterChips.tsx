@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { MUSCLE_GROUP_SECTIONS } from "../lib/exerciseCatalog";
+import { muscleGroupTranslationKey } from "../lib/catalogLabels";
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export interface MuscleGroupFilterChipsProps {
   groupFilter: string | null;
@@ -19,11 +21,12 @@ const chipStyle = (active: boolean): CSSProperties => ({
 });
 
 export function MuscleGroupFilterChips({ groupFilter, onGroupFilterChange }: MuscleGroupFilterChipsProps) {
+  const { t } = useI18n();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button type="button" onClick={() => onGroupFilterChange(null)} style={chipStyle(groupFilter === null)}>
-          Alle
+          {t("catalog.all")}
         </button>
       </div>
       {MUSCLE_GROUP_SECTIONS.map((section) => (
@@ -38,19 +41,23 @@ export function MuscleGroupFilterChips({ groupFilter, onGroupFilterChange }: Mus
               textTransform: "uppercase",
             }}
           >
-            {section.label}
+            {section.id === "upper" ? t("aiPlan.muscles.upper") : t("aiPlan.muscles.lower")}
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {section.groups.map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => onGroupFilterChange(groupFilter === g ? null : g)}
-                style={chipStyle(groupFilter === g)}
-              >
-                {g}
-              </button>
-            ))}
+            {section.groups.map((g) => {
+              const key = muscleGroupTranslationKey(g);
+              const label = key ? t(key) : g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => onGroupFilterChange(groupFilter === g ? null : g)}
+                  style={chipStyle(groupFilter === g)}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}

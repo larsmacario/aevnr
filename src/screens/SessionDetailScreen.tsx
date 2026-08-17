@@ -3,7 +3,7 @@ import { M } from "../theme";
 import { deleteSession, useSession } from "../lib/db";
 import { formatSetSummary } from "../lib/exerciseSets";
 import { formatTimerDetailMetrics, isTimerSession } from "../lib/timerSession";
-import { groupExercisesByBlock, skippedBlocksLabel } from "../lib/planBlocks";
+import { groupExercisesByBlock, type TrainingBlockType } from "../lib/planBlocks";
 import { Icon } from "../components/Icon";
 import { MTag } from "../components/widgets";
 import { PlanBlockSection } from "../components/PlanBlockSection";
@@ -12,6 +12,7 @@ import { segmentExercises } from "../lib/superset";
 import { DeleteConfirmDialog } from "../components/DeleteConfirmDialog";
 import { MButton } from "../components/MButton";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useI18n } from "../lib/i18n";
 export interface SessionDetailScreenProps {
   sessionId: string;
   trackLoading?: boolean;
@@ -20,9 +21,9 @@ export interface SessionDetailScreenProps {
   onDeleted: () => void;
 }
 
-function formatPerformedAt(iso: string): string {
+function formatPerformedAt(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("de-DE", {
+  return d.toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -39,6 +40,7 @@ export function SessionDetailScreen({
   onEdit,
   onDeleted,
 }: SessionDetailScreenProps) {
+  const { locale, t } = useI18n();
   const { data: session, loading, error } = useSession(sessionId);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function SessionDetailScreen({
       setDeleteConfirmOpen(false);
       onDeleted();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+      setActionError(e instanceof Error ? e.message : t("session.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -62,7 +64,7 @@ export function SessionDetailScreen({
   if (loading) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: M.mut, fontSize: 14 }}>
-        Session wird geladen…
+        {t("session.loading")}
       </div>
     );
   }
@@ -70,9 +72,9 @@ export function SessionDetailScreen({
   if (error || !session) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 22 }}>
-        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? "Session nicht gefunden."}</div>
+        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? t("session.notFound")}</div>
         <MButton onClick={onBack} variant="primary" size="sm">
-          Zurück
+          {t("common.back")}
         </MButton>
       </div>
     );
@@ -80,7 +82,7 @@ export function SessionDetailScreen({
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <ScreenBackHeader onBack={onBack} title="SESSION" />
+      <ScreenBackHeader onBack={onBack} title={t("session.title")} />
 
       {actionError && <div style={{ padding: "0 22px 8px", color: M.danger, fontSize: 13 }}>{actionError}</div>}
 
@@ -89,7 +91,7 @@ export function SessionDetailScreen({
           <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 30, lineHeight: 1.1 }}>{session.name}</div>
           {session.pr && <MTag>PR</MTag>}
         </div>
-        <div style={{ fontSize: 13, color: M.mut, marginTop: 8, fontWeight: 600 }}>{formatPerformedAt(session.performedAt)}</div>
+        <div style={{ fontSize: 13, color: M.mut, marginTop: 8, fontWeight: 600 }}>{formatPerformedAt(session.performedAt, locale)}</div>
 
         {session.tags.length > 0 && (
           <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
@@ -122,15 +124,15 @@ export function SessionDetailScreen({
             <>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <Icon name="clock" size={15} stroke={2} color={M.mut} />
-                {session.dur} Min
+                {t("session.minutes", { count: session.dur })}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <Icon name="bolt" size={15} color={M.mut} />
-                {session.vol.toFixed(1)}t Volumen
+                {t("session.volume", { value: session.vol.toFixed(1) })}
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <Icon name="list" size={15} stroke={2} color={M.mut} />
-                {session.sets} Sätze
+                {t("session.sets", { count: session.sets })}
               </span>
             </>
           )}
@@ -138,13 +140,13 @@ export function SessionDetailScreen({
 
         {session.skippedBlocks.length > 0 && (
           <div style={{ marginTop: 12, fontSize: 13, color: M.mut, fontWeight: 600 }}>
-            Übersprungen: {skippedBlocksLabel(session.skippedBlocks)}
+            {t("session.skipped", { blocks: session.skippedBlocks.map((block: TrainingBlockType) => t(block === "warmup" ? "block.warmup" : block === "skill" ? "block.skill" : block === "strength" ? "block.strength" : "block.metcon")).join(", ") })}
           </div>
         )}
 
         {session.exercises.length > 0 && (
           <>
-            <div style={{ marginTop: 18, fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>ÜBUNGEN</div>
+            <div style={{ marginTop: 18, fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("session.exercises")}</div>
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
               {groupExercisesByBlock(
                 session.exercises.map((ex) => ({ ...ex, blockType: ex.blockType ?? "strength" })),
@@ -209,7 +211,7 @@ export function SessionDetailScreen({
                                       fontSize: 14,
                                     }}
                                   >
-                                    <span>Satz {si + 1}</span>
+                                    <span>{t("session.set", { number: si + 1 })}</span>
                                     <span style={{ fontFamily: M.display, fontWeight: 400, display: "inline-flex", alignItems: "center", gap: 6 }}>
                                       {s.kg} kg × {s.reps}
                                       {s.done && <Icon name="check" size={14} stroke={2.6} color={M.acc} />}
@@ -228,7 +230,7 @@ export function SessionDetailScreen({
                         })}
                       </div>
                     ) : (
-                      <div style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>Nicht absolviert</div>
+                      <div style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>{t("session.notCompleted")}</div>
                     )}
                   </PlanBlockSection>
                 );
@@ -248,14 +250,14 @@ export function SessionDetailScreen({
             style={{ flex: 1, minWidth: 0, background: M.card }}
           >
             <Icon name="edit" size={16} stroke={2} color={M.fg} />
-            Bearbeiten
+            {t("session.edit")}
           </MButton>
           <MButton
             disabled={busy || trackLoading}
             onClick={() => setDeleteConfirmOpen(true)}
             variant="danger"
             size="icon"
-            aria-label="Session löschen"
+            aria-label={t("session.deleteAria")}
             style={{ flexShrink: 0 }}
           >
             <Icon name="trash" size={16} stroke={2} color={M.mut2} />
@@ -265,23 +267,10 @@ export function SessionDetailScreen({
 
       <DeleteConfirmDialog
         open={deleteConfirmOpen && !!session}
-        title="Session löschen?"
-        message={
-          session ? (
-            <>
-              Möchtest du die Session <strong style={{ color: M.fg }}>{session.name}</strong> wirklich löschen?
-            </>
-          ) : null
-        }
-        step2Title="Endgültig löschen?"
-        step2Message={
-          session ? (
-            <>
-              Diese Aktion kann nicht rückgängig gemacht werden. Session{" "}
-              <strong style={{ color: M.fg }}>{session.name}</strong> unwiderruflich entfernen?
-            </>
-          ) : null
-        }
+        title={t("session.delete.title")}
+        message={session ? t("session.delete.message", { name: session.name }) : null}
+        step2Title={t("session.delete.step2Title")}
+        step2Message={session ? t("session.delete.step2Message", { name: session.name }) : null}
         busy={busy}
         onCancel={() => setDeleteConfirmOpen(false)}
         onConfirm={handleDelete}

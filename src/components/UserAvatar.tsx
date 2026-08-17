@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { M } from "../theme";
 import { getAvatarPublicUrl } from "../lib/avatar";
+import { useI18n } from "../lib/i18n";
 
 export interface UserAvatarProps {
   size: number;
@@ -27,6 +28,7 @@ export function UserAvatar({
   className,
   cacheKey,
 }: UserAvatarProps) {
+  const { t } = useI18n();
   const radius = size / 2;
   const fontSize = Math.round(size * 0.47);
   const initial = getInitial(displayName);
@@ -48,7 +50,7 @@ export function UserAvatar({
     const img = (
       <img
         src={src}
-        alt={displayName ? `Profilbild von ${displayName}` : "Profilbild"}
+        alt={displayName ? t("avatar.altNamed", { name: displayName }) : t("avatar.alt")}
         style={{
           width: "100%",
           height: "100%",
@@ -63,7 +65,7 @@ export function UserAvatar({
         <button
           type="button"
           onClick={onClick}
-          aria-label="Profilbild ändern"
+          aria-label={t("avatar.change")}
           className={className}
           style={{
             ...baseStyle,
@@ -103,7 +105,7 @@ export function UserAvatar({
       <button
         type="button"
         onClick={onClick}
-        aria-label="Profilbild hinzufügen"
+        aria-label={t("avatar.add")}
         className={className}
         style={{
           ...baseStyle,

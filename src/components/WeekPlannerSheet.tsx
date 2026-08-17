@@ -14,6 +14,7 @@ import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
 import { PlanDayWeekdayPicker } from "./PlanDayWeekdayPicker";
 import { Icon } from "./Icon";
+import { useI18n } from "../lib/i18n";
 
 export interface WeekPlannerSheetProps {
   open: boolean;
@@ -24,12 +25,13 @@ export interface WeekPlannerSheetProps {
 }
 
 export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekPlannerSheetProps) {
+  const { locale, t } = useI18n();
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const planDays = plan?.days ?? [];
-  const weekdayLabels = useMemo(() => weekdays.map(trainingWeekdayLabel), [weekdays]);
+  const weekdayLabels = useMemo(() => weekdays.map((day) => trainingWeekdayLabel(day, locale)), [weekdays, locale]);
 
   useEffect(() => {
     if (!open || !plan || planDays.length === 0) return;
@@ -60,7 +62,7 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
     if (!plan || planDays.length === 0) return;
     const trainingWeekdays = trainingWeekdaysFromPlanDayWeekdays(weekdays);
     if (new Set(trainingWeekdays).size !== trainingWeekdays.length) {
-      setError("Jeder Wochentag darf nur einem Workout zugeordnet sein.");
+      setError(t("weekPlanner.duplicate"));
       return;
     }
     setSaving(true);
@@ -70,7 +72,7 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
       await onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("weekPlanner.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -82,18 +84,18 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
       onClose={onClose}
       position="absolute"
       zIndex={40}
-      aria-label="Woche planen"
+      aria-label={t("weekPlanner.aria")}
       fitContent={false}
       wrapScroll
     >
       <div style={{ fontSize: 13, letterSpacing: 1.4, color: M.brand, fontWeight: 700, marginBottom: 6 }}>
-        WOCHENPLAN
+        {t("weekPlanner.kicker")}
       </div>
       <div style={{ fontFamily: M.label, fontWeight: 700, fontSize: 24, lineHeight: 1.1, marginBottom: 8 }}>
-        Deine Woche planen
+        {t("weekPlanner.title")}
       </div>
       <div style={{ color: M.mut, fontSize: 14, lineHeight: 1.45, marginBottom: 16 }}>
-        Ordne jedem Workout einen Trainingstag zu. Die Zuordnung gilt als Standard für künftige Wochen.
+        {t("weekPlanner.description")}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
@@ -116,10 +118,12 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
                 marginBottom: 10,
               }}
             >
-              {planDayDisplayName(day, weekdayLabels)}
+              {planDayDisplayName(day, weekdayLabels, t("plan.day", { number: index + 1 }))}
             </div>
             <div style={{ color: M.mut, fontSize: 13, fontWeight: 600, marginBottom: 10 }}>
-              {day.exercises?.length ?? 0} Übung{(day.exercises?.length ?? 0) === 1 ? "" : "en"}
+              {(day.exercises?.length ?? 0) === 1
+                ? t("weekPlanner.exerciseOne")
+                : t("weekPlanner.exercises", { count: day.exercises?.length ?? 0 })}
             </div>
             <PlanDayWeekdayPicker
               value={weekdays[index] ?? index}
@@ -144,7 +148,7 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
         fullWidth
         style={{ marginBottom: 10, color: M.mut2 }}
       >
-        Standard wiederherstellen
+        {t("weekPlanner.restore")}
       </MButton>
       <MButton
         type="button"
@@ -155,10 +159,10 @@ export function WeekPlannerSheet({ open, plan, userId, onClose, onSaved }: WeekP
         disabled={saving}
         style={{ marginBottom: 10 }}
       >
-        <Icon name="check" size={16} color={M.brandInk} /> {saving ? "Speichern…" : "Woche speichern"}
+        <Icon name="check" size={16} color={M.brandInk} /> {saving ? t("weekPlanner.saving") : t("weekPlanner.save")}
       </MButton>
       <MButton type="button" onClick={onClose} variant="ghost" size="md" fullWidth disabled={saving}>
-        Abbrechen
+        {t("common.cancel")}
       </MButton>
     </BottomSheet>
   );

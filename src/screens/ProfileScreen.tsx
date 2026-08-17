@@ -11,7 +11,9 @@ import { UserAvatar } from "../components/UserAvatar";
 import { AvatarCropSheet } from "../components/AvatarCropSheet";
 import { AvatarActionSheet } from "../components/AvatarActionSheet";
 import { ConfirmSheet } from "../components/ConfirmSheet";
-import { FACT_TOPIC_LABELS, type FactTopic } from "../lib/facts";
+import { FACT_TOPICS, type FactTopic } from "../lib/facts";
+import { useI18n } from "../lib/i18n";
+import type { TranslationKey } from "../locales/de";
 export interface ProfileScreenProps {
   onBack: () => void;
   mode?: "push" | "tab";
@@ -62,18 +64,10 @@ const smallOutlineBtn: React.CSSProperties = {
   cursor: "pointer",
 };
 
-function formatGender(value: "male" | "female" | "other" | null | undefined): string {
-  if (value === "male") return "Männlich";
-  if (value === "female") return "Weiblich";
-  if (value === "other") return "Divers";
-  return "—";
-}
-
-function formatBirthDate(value: string | null | undefined): string {
+function formatBirthDate(value: string | null | undefined, locale: string): string {
   if (!value) return "—";
-  const [year, month, day] = value.split("-");
-  if (!year || !month || !day) return "—";
-  return `${day}.${month}.${year}`;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString(locale);
 }
 
 function capitalizeFirst(value: string): string {
@@ -82,6 +76,7 @@ function capitalizeFirst(value: string): string {
 }
 
 export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
+  const { locale, t } = useI18n();
   const {
     user,
     profile,
@@ -165,7 +160,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
       return;
     }
     setEditingField(null);
-    setInfo("Anzeigename gespeichert.");
+    setInfo(t("profile.saved.name"));
   };
 
   const submitEmail = async () => {
@@ -178,7 +173,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
       return;
     }
     setEditingField(null);
-    setInfo("Bestätigungs-Mail wurde an die neue Adresse gesendet.");
+    setInfo(t("profile.saved.email"));
   };
 
   const submitBirthDate = async () => {
@@ -192,14 +187,14 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
       return;
     }
     setEditingField(null);
-    setInfo("Geburtsdatum gespeichert.");
+    setInfo(t("profile.saved.birthDate"));
   };
 
   const submitGender = async () => {
     clearFeedback();
     updatePreferences({ gender }, true);
     setEditingField(null);
-    setInfo("Geschlecht gespeichert.");
+    setInfo(t("profile.saved.gender"));
   };
 
   const toggleFactTopic = (topic: FactTopic) => {
@@ -210,19 +205,19 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
 
   const saveFactTopics = async () => {
     if (factTopicsDraft.length === 0) {
-      setError("Wähle mindestens ein Thema aus.");
+      setError(t("profile.error.fact"));
       return;
     }
     clearFeedback();
     await updatePreferences({ factTopics: factTopicsDraft }, true);
     setFactTopicsEditing(false);
-    setInfo("Deine Fakteninteressen wurden gespeichert.");
+    setInfo(t("profile.saved.facts"));
   };
 
   const submitPassword = async () => {
     clearFeedback();
     if (newPassword !== confirmPassword) {
-      setError("Neues Passwort und Bestätigung stimmen nicht überein.");
+      setError(t("profile.error.passwordMatch"));
       return;
     }
     setBusyPassword(true);
@@ -235,7 +230,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    setInfo("Passwort wurde aktualisiert.");
+    setInfo(t("profile.saved.password"));
     setPasswordOpen(false);
   };
 
@@ -252,7 +247,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
     setDeleteAccountOpen(false);
   };
 
-  const avatarName = displayName || profile?.display_name || "Athlet";
+  const avatarName = displayName || profile?.display_name || t("home.athlete");
   const avatarPath = profile?.avatar_path ?? null;
 
   const openFilePicker = () => {
@@ -270,7 +265,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
 
   const handleFileSelected = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setError("Bitte wähle eine Bilddatei.");
+      setError(t("profile.error.image"));
       return;
     }
     if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl);
@@ -298,7 +293,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
     }
     setAvatarCacheKey((k) => k + 1);
     closeCropSheet();
-    setInfo("Profilbild gespeichert.");
+    setInfo(t("profile.saved.avatar"));
   };
 
   const handleRemoveAvatar = async () => {
@@ -312,33 +307,33 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
       return;
     }
     setAvatarCacheKey((k) => k + 1);
-    setInfo("Profilbild entfernt.");
+    setInfo(t("profile.removed.avatar"));
   };
 
   const profileRows = useMemo(
     () => [
-      { key: "displayName", label: "Name", value: displayName || "—", icon: "user", editable: true },
-      { key: "gender", label: "Geschlecht", value: formatGender(preferences.gender), icon: "users", editable: true },
-      { key: "birthDate", label: "Geburtsdatum", value: formatBirthDate(profile?.birth_date), icon: "calendar", editable: true },
-      { key: "email", label: "E-Mail", value: user?.email ?? "—", icon: "mail", editable: true },
-      { key: "userId", label: "Nutzer-ID", value: user?.id ?? "—", icon: "copy", editable: false, copyable: true },
+      { key: "displayName", label: t("profile.name"), value: displayName || "—", icon: "user", editable: true },
+      { key: "gender", label: t("profile.gender"), value: preferences.gender ? t(`profile.gender.${preferences.gender}` as TranslationKey) : "—", icon: "users", editable: true },
+      { key: "birthDate", label: t("profile.birthDate"), value: formatBirthDate(profile?.birth_date, locale), icon: "calendar", editable: true },
+      { key: "email", label: t("auth.email"), value: user?.email ?? "—", icon: "mail", editable: true },
+      { key: "userId", label: t("profile.userId"), value: user?.id ?? "—", icon: "copy", editable: false, copyable: true },
       {
         key: "role",
-        label: "Rolle",
+        label: t("profile.role"),
         value: typeof profile?.role === "string" ? capitalizeFirst(profile.role) : "User",
         icon: "flag",
         editable: false,
       },
     ],
-    [displayName, preferences.gender, profile?.birth_date, profile?.role, user?.email, user?.id],
+    [displayName, preferences.gender, profile?.birth_date, profile?.role, user?.email, user?.id, locale, t],
   );
 
   const copyValue = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      setInfo(`${label} kopiert.`);
+      setInfo(t("profile.copied", { label }));
     } catch {
-      setError(`${label} konnte nicht kopiert werden.`);
+      setError(t("profile.copyFailed", { label }));
     }
   };
 
@@ -346,7 +341,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader
         onBack={onBack}
-        title="PROFIL"
+        title={t("profile.title")}
         backHidden={mode === "tab"}
         trailing={<span style={{ width: 40, flexShrink: 0 }} aria-hidden />}
       />
@@ -431,14 +426,14 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
               padding: "4px 8px",
             }}
           >
-            Profilbild ändern
+            {t("profile.avatarChange")}
           </button>
         </div>
 
         <div style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>INFORMATIONEN</div>
-            <div style={{ color: M.mut2, fontSize: 12, fontWeight: 600 }}>KONTO</div>
+            <div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("profile.info")}</div>
+            <div style={{ color: M.mut2, fontSize: 12, fontWeight: 600 }}>{t("profile.account")}</div>
           </div>
           <div
             style={{
@@ -478,7 +473,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                         <button
                           onClick={() => copyValue(row.value, row.label)}
                           style={{ width: 28, height: 28, borderRadius: 14, background: "transparent", border: "none", color: M.mut2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                          aria-label={`${row.label} kopieren`}
+                          aria-label={t("profile.copyAria", { label: row.label })}
                         >
                           <Icon name="copy" size={15} stroke={1.8} />
                         </button>
@@ -490,7 +485,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                             setEditingField(isEditing ? null : (row.key as EditableField));
                           }}
                           style={{ width: 28, height: 28, borderRadius: 14, background: "transparent", border: "none", color: M.mut2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                          aria-label={`${row.label} bearbeiten`}
+                          aria-label={t("profile.editAria", { label: row.label })}
                         >
                           <Icon name="edit" size={15} stroke={2} />
                         </button>
@@ -502,7 +497,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                     <div style={{ padding: "0 0 10px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <input
                         type="text"
-                        placeholder="Anzeigename"
+                        placeholder={t("profile.displayName")}
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         autoComplete="name"
@@ -510,14 +505,14 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                       />
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                         <button onClick={() => setEditingField(null)} style={smallOutlineBtn}>
-                          ABBRECHEN
+                          {t("profile.cancel")}
                         </button>
                         <button
                           disabled={busyName}
                           onClick={submitDisplayName}
                           style={{ ...smallOutlineBtn, border: "none", background: M.acc, color: M.accInk, cursor: busyName ? "wait" : "pointer" }}
                         >
-                          SPEICHERN
+                          {t("profile.save")}
                         </button>
                       </div>
                     </div>
@@ -530,17 +525,17 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                         onChange={(e) => setGender((e.target.value || null) as "male" | "female" | "other" | null)}
                         style={compactInputStyle}
                       >
-                        <option value="">Bitte wählen</option>
-                        <option value="male">Männlich</option>
-                        <option value="female">Weiblich</option>
-                        <option value="other">Divers</option>
+                        <option value="">{t("profile.gender.choose")}</option>
+                        <option value="male">{t("profile.gender.male")}</option>
+                        <option value="female">{t("profile.gender.female")}</option>
+                        <option value="other">{t("profile.gender.other")}</option>
                       </select>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                         <button onClick={() => setEditingField(null)} style={smallOutlineBtn}>
-                          ABBRECHEN
+                          {t("profile.cancel")}
                         </button>
                         <button onClick={submitGender} style={{ ...smallOutlineBtn, border: "none", background: M.acc, color: M.accInk }}>
-                          SPEICHERN
+                          {t("profile.save")}
                         </button>
                       </div>
                     </div>
@@ -550,25 +545,25 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                     <div style={{ padding: "0 0 10px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <input
                         type="email"
-                        placeholder="E-Mail"
+                        placeholder={t("auth.email")}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         autoComplete="email"
                         style={compactInputStyle}
                       />
                       <div style={{ fontSize: 13, color: M.mut, lineHeight: 1.45 }}>
-                        Nach dem Speichern erhältst du eine Bestätigungs-Mail an die neue Adresse.
+                        {t("profile.emailHint")}
                       </div>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                         <button onClick={() => setEditingField(null)} style={smallOutlineBtn}>
-                          ABBRECHEN
+                          {t("profile.cancel")}
                         </button>
                         <button
                           disabled={busyEmail}
                           onClick={submitEmail}
                           style={{ ...smallOutlineBtn, border: "none", background: M.acc, color: M.accInk, cursor: busyEmail ? "wait" : "pointer" }}
                         >
-                          SPEICHERN
+                          {t("profile.save")}
                         </button>
                       </div>
                     </div>
@@ -584,7 +579,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                       />
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                         <button onClick={() => setEditingField(null)} style={smallOutlineBtn}>
-                          ABBRECHEN
+                          {t("profile.cancel")}
                         </button>
                         <button
                           disabled={busyBirthDate}
@@ -597,7 +592,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                             cursor: busyBirthDate ? "wait" : "pointer",
                           }}
                         >
-                          SPEICHERN
+                          {t("profile.save")}
                         </button>
                       </div>
                     </div>
@@ -624,7 +619,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                 justifyContent: "space-between",
               }}
             >
-              <span style={{ display: "flex", alignItems: "center", gap: 10, ...rowLabelStyle, color: M.fg }}><span style={{ width: 32, height: 32, borderRadius: 10, background: M.accSoft, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={15} color={M.fg} /></span>Passwort ändern</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10, ...rowLabelStyle, color: M.fg }}><span style={{ width: 32, height: 32, borderRadius: 10, background: M.accSoft, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name="lock" size={15} color={M.fg} /></span>{t("profile.passwordChange")}</span>
               <Icon name={passwordOpen ? "chevD" : "chevR"} size={16} stroke={2.2} color={M.mut} />
             </button>
 
@@ -632,7 +627,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
               <div style={{ padding: "0 0 12px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   type="password"
-                  placeholder="Aktuelles Passwort"
+                  placeholder={t("profile.currentPassword")}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   autoComplete="current-password"
@@ -640,7 +635,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                 />
                 <input
                   type="password"
-                  placeholder="Neues Passwort"
+                  placeholder={t("auth.newPassword")}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
@@ -648,7 +643,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                 />
                 <input
                   type="password"
-                  placeholder="Neues Passwort bestätigen"
+                  placeholder={t("profile.confirmPassword")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
@@ -660,7 +655,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
                     onClick={submitPassword}
                     style={{ ...smallOutlineBtn, border: "none", background: M.acc, color: M.accInk, cursor: busyPassword ? "wait" : "pointer" }}
                   >
-                    PASSWORT SPEICHERN
+                    {t("profile.passwordSave")}
                   </button>
                 </div>
               </div>
@@ -669,13 +664,13 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
         </div>
 
         <div style={{ marginBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}><div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>FAKTEN</div>{!factTopicsEditing ? <MButton type="button" variant="ghost" size="sm" onClick={() => { clearFeedback(); setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(true); }} style={{ minHeight: 32, padding: "0 2px", color: M.fg }}>Bearbeiten <Icon name="edit" size={14} /></MButton> : <span style={{ fontSize: 12, color: M.mut, fontWeight: 600 }}>{factTopicsDraft.length}/3</span>}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}><div style={{ fontSize: 13, letterSpacing: 1.5, color: M.mut, fontWeight: 700 }}>{t("profile.facts")}</div>{!factTopicsEditing ? <MButton type="button" variant="ghost" size="sm" onClick={() => { clearFeedback(); setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(true); }} style={{ minHeight: 32, padding: "0 2px", color: M.fg }}>{t("common.edit")} <Icon name="edit" size={14} /></MButton> : <span style={{ fontSize: 12, color: M.mut, fontWeight: 600 }}>{factTopicsDraft.length}/3</span>}</div>
           <div style={{ background: M.card, border: "1px solid " + M.line2, borderRadius: 16, padding: 14 }}>
-            <div style={{ color: M.mut, fontSize: 13, lineHeight: 1.45, marginBottom: 12 }}>{factTopicsEditing ? "Wähle bis zu drei Themen für deine täglichen Fakten." : preferences.factTopics.length ? "Diese Themen bestimmen deine täglichen Fakten." : "Lege deine Interessen für tägliche Fakten fest."}</div>
+            <div style={{ color: M.mut, fontSize: 13, lineHeight: 1.45, marginBottom: 12 }}>{factTopicsEditing ? t("profile.factsEdit") : preferences.factTopics.length ? t("profile.factsSelected") : t("profile.factsEmpty")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {factTopicsEditing ? (Object.keys(FACT_TOPIC_LABELS) as FactTopic[]).map((topic) => <MButton key={topic} type="button" variant={factTopicsDraft.includes(topic) ? "primary" : "secondary"} size="sm" onClick={() => toggleFactTopic(topic)} disabled={!factTopicsDraft.includes(topic) && factTopicsDraft.length >= 3}>{FACT_TOPIC_LABELS[topic]}</MButton>) : preferences.factTopics.map((topic) => <span key={topic} style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 18, background: M.accSoft, color: M.fg, fontSize: 13, fontWeight: 650 }}>{FACT_TOPIC_LABELS[topic]}</span>)}
+              {factTopicsEditing ? FACT_TOPICS.map((topic) => <MButton key={topic} type="button" variant={factTopicsDraft.includes(topic) ? "primary" : "secondary"} size="sm" onClick={() => toggleFactTopic(topic)} disabled={!factTopicsDraft.includes(topic) && factTopicsDraft.length >= 3}>{t(`fact.${topic}` as TranslationKey)}</MButton>) : preferences.factTopics.map((topic) => <span key={topic} style={{ height: 36, display: "inline-flex", alignItems: "center", padding: "0 14px", borderRadius: 18, background: M.accSoft, color: M.fg, fontSize: 13, fontWeight: 650 }}>{t(`fact.${topic}` as TranslationKey)}</span>)}
             </div>
-            {factTopicsEditing ? <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}><MButton type="button" variant="secondary" size="sm" onClick={() => { setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(false); }}>Abbrechen</MButton><MButton type="button" variant="primary" size="sm" onClick={() => void saveFactTopics()}>Speichern</MButton></div> : null}
+            {factTopicsEditing ? <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}><MButton type="button" variant="secondary" size="sm" onClick={() => { setFactTopicsDraft(preferences.factTopics); setFactTopicsEditing(false); }}>{t("common.cancel")}</MButton><MButton type="button" variant="primary" size="sm" onClick={() => void saveFactTopics()}>{t("profile.save")}</MButton></div> : null}
           </div>
         </div>
 
@@ -689,17 +684,17 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
               marginBottom: 10,
             }}
           >
-            AKTIONEN
+            {t("profile.actions")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <MButton
-              onClick={() => setInfo("Kauf-Wiederherstellung folgt im nächsten Schritt.")}
+              onClick={() => setInfo(t("profile.restoreInfo"))}
               variant="secondary"
               size="sm"
               fullWidth
               style={{ justifyContent: "space-between", textAlign: "left" }}
             >
-              Kauf wiederherstellen
+              {t("profile.restore")}
               <Icon name="chevR" size={14} stroke={2.1} color={M.mut} />
             </MButton>
             <MButton
@@ -709,7 +704,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
               fullWidth
               style={{ justifyContent: "space-between", textAlign: "left" }}
             >
-              Abmelden
+              {t("menu.logout")}
               <Icon name="chevR" size={14} stroke={2.1} color={M.mut} />
             </MButton>
             <MButton
@@ -719,7 +714,7 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
               fullWidth
               style={{ justifyContent: "space-between", textAlign: "left" }}
             >
-              Konto löschen
+              {t("profile.deleteAccount")}
               <Icon name="chevR" size={14} stroke={2.1} color={M.mut} />
             </MButton>
           </div>
@@ -728,25 +723,25 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
 
       <DeleteConfirmDialog
         open={deleteAccountOpen}
-        title="Konto löschen?"
+        title={t("profile.delete.title")}
         message={
           <>
-            <p style={{ margin: "0 0 10px" }}>Folgende Daten werden unwiderruflich gelöscht:</p>
+            <p style={{ margin: "0 0 10px" }}>{t("profile.delete.intro")}</p>
             <ul style={{ margin: 0, paddingLeft: 18 }}>
-              <li>Profil (Anzeigename, Geburtsdatum, Profilbild, Einstellungen)</li>
-              <li>Trainingspläne und eigene Workouts</li>
-              <li>Trainingshistorie (Sessions inkl. Timer-Läufe)</li>
-              <li>Eigene Übungen im Katalog</li>
-              <li>Körperwerte und Fortschrittsfotos</li>
-              <li>Support-Anfragen</li>
-              <li>Anmeldedaten (E-Mail und Passwort)</li>
+              <li>{t("profile.delete.profile")}</li>
+              <li>{t("profile.delete.plans")}</li>
+              <li>{t("profile.delete.history")}</li>
+              <li>{t("profile.delete.exercises")}</li>
+              <li>{t("profile.delete.body")}</li>
+              <li>{t("profile.delete.support")}</li>
+              <li>{t("profile.delete.login")}</li>
             </ul>
-            <p style={{ margin: "10px 0 0" }}>Standard-Übungen und -Workouts der App bleiben erhalten.</p>
-            <p style={{ margin: "10px 0 0" }}>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <p style={{ margin: "10px 0 0" }}>{t("profile.delete.keep")}</p>
+            <p style={{ margin: "10px 0 0" }}>{t("profile.delete.warning")}</p>
           </>
         }
-        step2Title="Endgültig löschen?"
-        step2Message="Dein Konto und alle zugehörigen Daten werden permanent entfernt. Bist du sicher?"
+        step2Title={t("profile.delete.finalTitle")}
+        step2Message={t("profile.delete.finalMessage")}
         busy={busyDelete}
         onCancel={() => setDeleteAccountOpen(false)}
         onConfirm={handleDeleteAccount}
@@ -769,9 +764,9 @@ export function ProfileScreen({ onBack, mode = "push" }: ProfileScreenProps) {
 
       <ConfirmSheet
         open={removeAvatarOpen}
-        title="Profilbild entfernen?"
-        message="Dein Profilbild wird gelöscht. Stattdessen wird wieder der Anfangsbuchstabe deines Namens angezeigt."
-        confirmLabel="Entfernen"
+        title={t("profile.avatarRemove.title")}
+        message={t("profile.avatarRemove.message")}
+        confirmLabel={t("profile.avatarRemove.confirm")}
         icon="trash"
         onCancel={() => setRemoveAvatarOpen(false)}
         onConfirm={() => void handleRemoveAvatar()}

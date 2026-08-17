@@ -20,6 +20,7 @@ import {
 import { brandButtonStyle, M } from "../../theme";
 import { MButton } from "../MButton";
 import { Icon } from "../Icon";
+import { useI18n } from "../../lib/i18n";
 
 export interface ExpressTrackingViewProps {
   exercises: Exercise[];
@@ -58,6 +59,7 @@ export function ExpressTrackingView({
   onSkipRest,
   onAllSetsDone,
 }: ExpressTrackingViewProps) {
+  const { t } = useI18n();
   const target = useMemo(() => findNextExpressTarget(exercises), [exercises]);
   const progress = useMemo(() => countExpressProgress(exercises), [exercises]);
   const progressPct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -146,15 +148,15 @@ export function ExpressTrackingView({
     if (onAllSetsDone) {
       return (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ color: M.mut, fontSize: 14, fontWeight: 600 }}>Workout wird zusammengefasst…</div>
+          <div style={{ color: M.mut, fontSize: 14, fontWeight: 600 }}>{t("track.summarizing")}</div>
         </div>
       );
     }
 
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "24px 18px" }}>
-        <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 22, color: M.fg }}>Fertig</div>
-        <div style={{ color: M.mut, marginTop: 8, fontSize: 14 }}>Alle Sätze erledigt.</div>
+        <div style={{ fontFamily: M.numeric, fontWeight: 700, fontSize: 22, color: M.fg }}>{t("track.done")}</div>
+        <div style={{ color: M.mut, marginTop: 8, fontSize: 14 }}>{t("track.allSetsDone")}</div>
       </div>
     );
   }
@@ -219,7 +221,7 @@ export function ExpressTrackingView({
           flexShrink: 0,
         }}
       >
-        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label="Zur Übersicht">
+        <MButton type="button" variant="ghost" size="icon" onClick={onBack} aria-label={t("track.backOverview")}>
           <Icon name="chevL" size={22} stroke={2.2} color={M.mut} />
         </MButton>
         <span
@@ -251,7 +253,7 @@ export function ExpressTrackingView({
           />
         </div>
         <div style={{ fontSize: 13, color: M.mut, marginTop: 6, fontWeight: 600 }}>
-          {progress.done}/{progress.total} Sätze
+          {t("track.progressSets", { done: progress.done, total: progress.total })}
         </div>
       </div>
 
@@ -294,7 +296,7 @@ export function ExpressTrackingView({
               }}
               aria-hidden={!exerciseSwitchActive}
             >
-              Neue Übung
+              {t("track.newExercise")}
             </div>
 
             <div
@@ -328,7 +330,7 @@ export function ExpressTrackingView({
                 minHeight: 44,
               }}
             >
-              <ExpressSetStepButton label="−" onClick={handleRemoveSet} disabled={!canRemoveSet} ariaLabel="Satz entfernen" />
+              <ExpressSetStepButton label="−" onClick={handleRemoveSet} disabled={!canRemoveSet} ariaLabel={t("track.removeSet")} />
               <span
                 style={{
                   fontSize: 13,
@@ -340,9 +342,9 @@ export function ExpressTrackingView({
                   transition: reducedMotion ? "none" : "color 0.3s ease",
                 }}
               >
-                Satz {target.setIndex + 1} von {target.totalSetsInExercise}
+                {t("track.setOf", { current: target.setIndex + 1, total: target.totalSetsInExercise })}
               </span>
-              <ExpressSetStepButton label="+" onClick={handleAddSet} ariaLabel="Satz hinzufügen" />
+              <ExpressSetStepButton label="+" onClick={handleAddSet} ariaLabel={t("track.addSet")} />
             </div>
           </div>
 
@@ -362,7 +364,7 @@ export function ExpressTrackingView({
               format={formatKgDisplay}
               parse={parseKgInput}
               inputMode="decimal"
-              ariaLabel="Gewicht in kg"
+              ariaLabel={t("track.weightAria")}
               color={displayColor}
               onCommit={(kg) => handleSetValueCommit("kg", kg)}
             />
@@ -372,7 +374,7 @@ export function ExpressTrackingView({
               format={formatRepsDisplay}
               parse={parseRepsInput}
               inputMode="numeric"
-              ariaLabel="Wiederholungen"
+              ariaLabel={t("track.repsAria")}
               color={displayColor}
               onCommit={(reps) => handleSetValueCommit("reps", reps)}
             />
@@ -388,8 +390,8 @@ export function ExpressTrackingView({
           >
             <ExpressBumpButton label="kg −" onClick={() => handleBump("kg", -1)} />
             <ExpressBumpButton label="kg +" onClick={() => handleBump("kg", 1)} />
-            <ExpressBumpButton label="Wdh −" onClick={() => handleBump("reps", -1)} />
-            <ExpressBumpButton label="Wdh +" onClick={() => handleBump("reps", 1)} />
+            <ExpressBumpButton label={`${t("track.repsShort")} −`} onClick={() => handleBump("reps", -1)} />
+            <ExpressBumpButton label={`${t("track.repsShort")} +`} onClick={() => handleBump("reps", 1)} />
           </div>
         </div>
 
@@ -424,7 +426,7 @@ export function ExpressTrackingView({
                   marginBottom: 6,
                 }}
               >
-                Als Nächstes
+                {t("track.next")}
               </div>
               <div
                 style={{
@@ -471,7 +473,7 @@ export function ExpressTrackingView({
       >
         {isSuggested ? (
           <div style={{ textAlign: "center", fontSize: 13, color: M.brand, fontStyle: "italic" }}>
-            Auto-Pilot · ein Tap zum Loggen
+            {t("track.autopilotTap")}
           </div>
         ) : null}
 
@@ -487,7 +489,7 @@ export function ExpressTrackingView({
               boxSizing: "border-box",
             }}
           >
-            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>PAUSE</span>
+            <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>{t("track.rest")}</span>
             <span
               style={{
                 fontFamily: M.numeric,
@@ -505,7 +507,7 @@ export function ExpressTrackingView({
               size="sm"
               style={{ borderColor: M.mut2, color: M.brandInk, background: "transparent" }}
             >
-              Skip
+              {t("track.skip")}
             </MButton>
           </div>
         ) : null}
@@ -518,14 +520,14 @@ export function ExpressTrackingView({
             onClick={handleConfirm}
             style={{ flex: 1, minHeight: 52, fontFamily: M.numeric, fontWeight: 700, letterSpacing: 0.3 }}
           >
-            <Icon name="check" size={18} stroke={2.6} /> Satz loggen
+            <Icon name="check" size={18} stroke={2.6} /> {t("track.logSet")}
           </MButton>
           <MButton
             type="button"
             variant="ghost"
             size="icon"
             onClick={() => onOpenExerciseMenu(target.exerciseId)}
-            aria-label="Übungsmenü"
+            aria-label={t("track.exerciseMenu")}
             style={{ flexShrink: 0, color: M.mut2, alignSelf: "stretch", minHeight: 52, width: 52 }}
           >
             <Icon name="moreH" size={20} stroke={2.2} />

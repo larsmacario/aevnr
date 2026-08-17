@@ -1,4 +1,5 @@
 import { M } from "../theme";
+import { useI18n } from "../lib/i18n";
 
 export const WARMUP_COLUMN_WIDTH = 44;
 
@@ -10,6 +11,7 @@ export interface WarmUpSetToggleProps {
 }
 
 export function WarmUpSetToggle({ checked, onChange, layout = "full", size = "md" }: WarmUpSetToggleProps) {
+  const { t } = useI18n();
   const isLg = size === "lg";
 
   if (layout === "compact") {
@@ -26,13 +28,13 @@ export function WarmUpSetToggle({ checked, onChange, layout = "full", size = "md
           flexShrink: 0,
           paddingBottom: isLg ? 2 : 0,
         }}
-        title="Satz 1 als Warm-up markieren"
+        title={t("set.warmupAria")}
       >
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          aria-label="Satz 1 als Warm-up markieren"
+          aria-label={t("set.warmupAria")}
           style={{
             width: isLg ? 18 : 14,
             height: isLg ? 18 : 14,
@@ -67,13 +69,13 @@ export function WarmUpSetToggle({ checked, onChange, layout = "full", size = "md
         cursor: "pointer",
         userSelect: "none",
       }}
-      title="Satz 1 als Warm-up markieren"
+      title={t("set.warmupAria")}
     >
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        aria-label="Satz 1 als Warm-up markieren"
+        aria-label={t("set.warmupAria")}
         style={{
           width: isLg ? 20 : 16,
           height: isLg ? 20 : 16,
@@ -82,7 +84,7 @@ export function WarmUpSetToggle({ checked, onChange, layout = "full", size = "md
         }}
       />
       <span style={{ fontSize: isLg ? 15 : 13, fontWeight: 600, color: checked ? M.acc : M.mut }}>
-        S1 als Warm-up
+        {t("set.warmupLabel")}
       </span>
     </label>
   );

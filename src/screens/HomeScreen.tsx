@@ -54,6 +54,7 @@ import { PersonalQuickActions, type PersonalQuickAction } from "../components/Pe
 import { buildHealthspanDomains, checkinFingerprint, findCheckinForDate, normalizeDailyCheckin, recommendHealthspanAction } from "../lib/healthspan";
 import { prioritizeDashboard } from "../lib/dashboardPersonalization";
 import { selectDashboardQuickActions } from "../lib/dashboardQuickActions";
+import { useI18n } from "../lib/i18n";
 
 export interface HomeScreenProps {
   onStart: (planDayId: string, planId?: string) => void;
@@ -95,6 +96,7 @@ export function HomeScreen({
   trackLoading,
 }: HomeScreenProps) {
   const { profile, user } = useAuth();
+  const { language, locale, t } = useI18n();
   const { preferences, updatePreferences } = usePreferences();
   const { isOnline } = useNetwork();
   const { data: activePlan, loading: planLoading, reload: reloadPlan, isStale: planStale } = useActivePlan();
@@ -180,15 +182,15 @@ export function HomeScreen({
     setSelectedIsoWeekday(getTodayIsoWeekday());
   }, [activePlan?.id]);
 
-  const displayName = profile?.display_name ?? "Athlet";
+  const displayName = profile?.display_name ?? t("home.athlete");
   const todayLabel = useMemo(
     () =>
-      new Date().toLocaleDateString("de-DE", {
+      new Date().toLocaleDateString(locale, {
         weekday: "long",
         day: "numeric",
         month: "long",
       }),
-    [],
+    [locale],
   );
 
   const weekData = week ?? [];
@@ -216,10 +218,10 @@ export function HomeScreen({
     return day === 0 ? 6 : day - 1;
   }, []);
   const planTrainingWeekdays = activePlan ? getPlanTrainingWeekdays(activePlan) : undefined;
-  const weekdayLabels = weekdayLabelsFromTrainingWeekdays(planTrainingWeekdays);
+  const weekdayLabels = weekdayLabelsFromTrainingWeekdays(planTrainingWeekdays, locale);
   const calendarWeek = useMemo(
-    () => getCurrentCalendarWeek(planTrainingWeekdays),
-    [planTrainingWeekdays],
+    () => getCurrentCalendarWeek(planTrainingWeekdays, new Date(), locale),
+    [planTrainingWeekdays, locale],
   );
   const hasTrainingWeekdays = (planTrainingWeekdays?.length ?? 0) > 0;
   const selectedPlanDayIndex =
@@ -238,7 +240,7 @@ export function HomeScreen({
   const isSelectedToday = selectedCalendarDay?.isToday ?? false;
   const selectedDateLabel =
     selectedCalendarDay && !isSelectedToday
-      ? selectedCalendarDay.date.toLocaleDateString("de-DE", {
+      ? selectedCalendarDay.date.toLocaleDateString(locale, {
           weekday: "long",
           day: "numeric",
           month: "long",
@@ -261,8 +263,8 @@ export function HomeScreen({
       primaryFocus: preferences.primaryFocus,
       secondaryFocus: preferences.secondaryFocus,
     };
-    return { input, domains: buildHealthspanDomains(input), recommendation: recommendHealthspanAction(input) };
-  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, metabolicLogs, metabolicLoggedToday, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus]);
+    return { input, domains: buildHealthspanDomains(input, language), recommendation: recommendHealthspanAction(input, language) };
+  }, [sessions, weekStartMonday, activePlan?.days.length, proteinLogsToday, proteinTargetG, waterLogsToday, waterTargetMl, metabolicLogs, metabolicLoggedToday, todayCheckin, preferences.primaryFocus, preferences.secondaryFocus, language]);
   const dashboardFocus = preferences.dashboard.focusOverride ?? preferences.primaryFocus;
   const dashboardPriority = useMemo(() => prioritizeDashboard({
     focus: dashboardFocus,
@@ -277,9 +279,9 @@ export function HomeScreen({
   const cachedRecommendation = useMemo(() => {
     const latest = todayCheckin;
     const cached = preferences.dailyHealthspanRecommendation;
-    if (!latest || !cached || cached.checkinDate !== latest.checkinDate) return null;
+    if (!latest || !cached || cached.language !== language || cached.checkinDate !== latest.checkinDate) return null;
     return cached.checkinFingerprint === checkinFingerprint(latest) ? cached : null;
-  }, [todayCheckin, preferences.dailyHealthspanRecommendation]);
+  }, [todayCheckin, preferences.dailyHealthspanRecommendation, language]);
 
   const handleSaveDailyCheckin = async (input: import("../lib/healthspan").DailyCheckinInput) => {
     if (!user) return;
@@ -295,19 +297,20 @@ export function HomeScreen({
           try {
             const since = new Date(); since.setDate(since.getDate() - 30);
             const recommendation = await generateDailyAiHealthspanRecommendation({
+              language,
               checkin: normalized,
               week: { ...healthspan.input, zone2TargetMinutes: 150 },
               history: await fetchSessionsSinceWithExercises(since),
               activePlan: activePlan ? { name: activePlan.name, dayNames: activePlan.days.map((day) => planDayDisplayName(day, weekdayLabels)) } : null,
             });
-            await updatePreferences({ dailyHealthspanRecommendation: { ...recommendation, version: 1, checkinDate: normalized.checkinDate!, checkinFingerprint: checkinFingerprint(normalized), createdAt: new Date().toISOString() } }, true);
+            await updatePreferences({ dailyHealthspanRecommendation: { ...recommendation, version: 1, checkinDate: normalized.checkinDate!, checkinFingerprint: checkinFingerprint(normalized), createdAt: new Date().toISOString(), language } }, true);
           } catch {
             // Die erklärbare Regel-Empfehlung bleibt sichtbar.
           } finally { setAiRecommendationBusy(false); }
         })();
       }
     }
-    catch (cause) { setCheckinAlert(cause instanceof Error ? cause.message : "Check-in konnte nicht gespeichert werden."); }
+    catch (cause) { setCheckinAlert(cause instanceof Error ? cause.message : t("home.checkinError")); }
     finally { setCheckinBusy(false); }
   };
   const isSunday = getTodayIsoWeekday() === 6;
@@ -351,7 +354,7 @@ export function HomeScreen({
       setWaterRefreshKey((key) => key + 1);
       reloadWaterLogs();
     } catch (cause) {
-      setHydrationAlert(cause instanceof Error ? cause.message : "Wasser konnte nicht gespeichert werden.");
+      setHydrationAlert(cause instanceof Error ? cause.message : t("home.waterError"));
     } finally {
       setHydrationBusy(false);
     }
@@ -441,7 +444,7 @@ export function HomeScreen({
           ...brandSurface("hero"),
         }}
       >
-        <div style={{ ...labelStyle(), marginBottom: 8 }}>Aktives Workout · {fmtUp(durationSec)}</div>
+        <div style={{ ...labelStyle(), marginBottom: 8 }}>{t("home.activeWorkout", { duration: fmtUp(durationSec) })}</div>
         <div style={{ ...displayStyle(26), marginTop: 4 }}>{activeWorkout.session.name}</div>
         <div
           style={{
@@ -456,7 +459,7 @@ export function HomeScreen({
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: M.brand }}>
             <Icon name="dumbbell" size={15} stroke={2} color={M.brand} />
-            {activeMetrics.doneSets}/{activeMetrics.totalSets} Sätze
+            {t("home.setCount", { count: `${activeMetrics.doneSets}/${activeMetrics.totalSets}` })}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: M.brand }}>
             <Icon name="bolt" size={15} stroke={2} color={M.brand} />
@@ -465,10 +468,10 @@ export function HomeScreen({
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <MButton onClick={onResumeActive} variant="primary" size="md" style={{ flex: 1 }}>
-            <Icon name="play" size={16} color={M.brandInk} /> Fortsetzen
+            <Icon name="play" size={16} color={M.brandInk} /> {t("home.resume")}
           </MButton>
           <MButton onClick={() => setFinishSheet(true)} variant="secondary" size="md" style={{ flex: 1, background: M.panel }}>
-            Beenden
+            {t("home.finish")}
           </MButton>
         </div>
       </div>
@@ -484,17 +487,17 @@ export function HomeScreen({
         ...brandSurface("hero"),
       }}
     >
-      <div style={{ ...labelStyle(), marginBottom: 4 }}>Neue Woche</div>
-      <div style={{ ...displayStyle(24), marginTop: 4 }}>Bereit für die Woche?</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>{t("home.newWeek")}</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>{t("home.weekReady")}</div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.45 }}>
-        Plane jetzt deine Trainingstage — ordne deine Workouts den Wochentagen zu und starte motiviert in die neue Woche.
+        {t("home.weekCopy")}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <MButton onClick={() => setWeekPlannerOpen(true)} variant="primary" size="md" style={{ flex: 1 }}>
-          Woche planen
+          {t("home.planWeek")}
         </MButton>
         <MButton onClick={dismissWeekPlannerCard} variant="secondary" size="md" style={{ flex: 1, background: M.panel }}>
-          Später
+          {t("home.later")}
         </MButton>
       </div>
     </div>
@@ -510,21 +513,21 @@ export function HomeScreen({
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ ...labelStyle(), marginBottom: 4 }}>Recovery</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>{t("home.quick.recovery")}</div>
       <div style={{ ...displayStyle(24), marginTop: 4 }}>
-        Diese Woche: {weeklyRecoveryStats.loggedDays} von {weeklyRecoveryStats.trainingDays} Trainingstagen
+        {t("home.recoveryWeek", { logged: weeklyRecoveryStats.loggedDays, training: weeklyRecoveryStats.trainingDays })}
       </div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.45 }}>
         {weeklyRecoveryStats.loggedDays >= weeklyRecoveryStats.trainingDays
-          ? "Stark — du bist auf Kurs."
-          : "Nach dem Training reicht oft ein Tap im Finish-Dialog."}
+          ? t("home.recoveryOnTrack")
+          : t("home.recoveryHint")}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
         <MButton onClick={() => onOpenRecovery("protein")} variant="primary" size="md" style={{ flex: 1 }}>
-          Recovery öffnen
+          {t("home.openRecovery")}
         </MButton>
         <MButton onClick={dismissRecoveryWeekCard} variant="secondary" size="md" style={{ flex: 1, background: M.panel }}>
-          Ausblenden
+          {t("home.hide")}
         </MButton>
       </div>
     </div>
@@ -532,8 +535,8 @@ export function HomeScreen({
 
   const todayCard = planLoading && !activePlan ? (
     <div style={{ marginTop: 16 }}>
-      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
-      <div style={{ color: M.mut, fontSize: 14, marginTop: 4 }}>Plan wird geladen…</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>{t("home.plannedToday")}</div>
+      <div style={{ color: M.mut, fontSize: 14, marginTop: 4 }}>{t("home.loadingPlan")}</div>
     </div>
   ) : !activePlan ? (
     <div
@@ -545,13 +548,13 @@ export function HomeScreen({
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
-      <div style={{ ...displayStyle(24), marginTop: 4 }}>Kein aktiver Plan</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>{t("home.plannedToday")}</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>{t("home.noPlan")}</div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.4 }}>
-        Erstelle einen Trainingsplan und lege pro Tag deine Übungen fest.
+        {t("home.noPlanCopy")}
       </div>
       <MButton onClick={onOpenPlans} variant="primary" size="md" fullWidth style={{ marginTop: 16 }}>
-        <Icon name="layers" size={16} color={M.brandInk} /> Plan erstellen
+        <Icon name="layers" size={16} color={M.brandInk} /> {t("home.createPlan")}
       </MButton>
     </div>
   ) : !selectedPlanDay ? (
@@ -564,13 +567,13 @@ export function HomeScreen({
         border: "1px solid " + M.line2,
       }}
     >
-      <div style={{ ...labelStyle(), marginBottom: 4 }}>Heute geplant</div>
-      <div style={{ ...displayStyle(24), marginTop: 4 }}>Kein Training an diesem Tag</div>
+      <div style={{ ...labelStyle(), marginBottom: 4 }}>{t("home.plannedToday")}</div>
+      <div style={{ ...displayStyle(24), marginTop: 4 }}>{t("home.noTraining")}</div>
       {selectedDateLabel ? (
         <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.4 }}>{selectedDateLabel}</div>
       ) : (
         <div style={{ color: M.mut, fontSize: 14, marginTop: 10, lineHeight: 1.4 }}>
-          Wähle einen Trainingstag in der Woche oben.
+          {t("home.chooseTrainingDay")}
         </div>
       )}
     </div>
@@ -585,7 +588,7 @@ export function HomeScreen({
       }}
     >
       <div style={{ ...labelStyle(), marginBottom: 4 }}>
-        {activePlan.name} · Tag {(selectedPlanDayIndex ?? 0) + 1}
+        {activePlan.name} · {t("home.day", { count: (selectedPlanDayIndex ?? 0) + 1 })}
       </div>
       {selectedDateLabel ? (
         <div style={{ fontSize: 13, color: M.mut, fontWeight: 500, marginTop: 4 }}>{selectedDateLabel}</div>
@@ -606,7 +609,7 @@ export function HomeScreen({
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           <Icon name="dumbbell" size={15} stroke={2} color={M.mut} />
-          {selectedPlanDay.exercises?.length ?? 0} Übung{(selectedPlanDay.exercises?.length ?? 0) === 1 ? "" : "en"}
+          {t((selectedPlanDay.exercises?.length ?? 0) === 1 ? "home.exerciseCount_one" : "home.exerciseCount_other", { count: selectedPlanDay.exercises?.length ?? 0 })}
         </span>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
@@ -617,7 +620,7 @@ export function HomeScreen({
           size="md"
           style={{ flex: 1 }}
         >
-          <Icon name="play" size={16} color={M.brandInk} /> Training starten
+          <Icon name="play" size={16} color={M.brandInk} /> {t("home.startTraining")}
         </MButton>
       </div>
     </div>
@@ -633,7 +636,7 @@ export function HomeScreen({
         padding: "15px 16px 14px",
       }}
     >
-      <div style={{ ...labelStyle(), marginBottom: 12 }}>Diese Woche</div>
+      <div style={{ ...labelStyle(), marginBottom: 12 }}>{t("home.thisWeek")}</div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         {calendarWeek.map((day) => {
           const isSelected = selectedIsoWeekday === day.isoWeekday;
@@ -704,9 +707,9 @@ export function HomeScreen({
       </div>
       {!activePlan ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 14 }}>
-          <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>Kein aktiver Plan</span>
+          <span style={{ fontSize: 13, color: M.mut, fontWeight: 500 }}>{t("home.noPlan")}</span>
           <MButton type="button" variant="ghost" size="sm" onClick={onOpenPlans} style={{ padding: 0, color: M.fg }}>
-            Plan erstellen
+            {t("home.createPlan")}
             <Icon name="chevR" size={14} color={M.fg} stroke={2.2} />
           </MButton>
         </div>
@@ -716,9 +719,9 @@ export function HomeScreen({
 
   const statsRow = (
     <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-      <MStat label="STREAK" value={String(stats?.streakWeeks ?? 0)} sub="Wochen" />
-      <MStat label="DIESE WOCHE" value={String(stats?.sessionsThisWeek ?? 0)} sub="Sessions" />
-      <MStat label="VOLUMEN" value={`${stats?.volumeThisWeekT ?? 0}t`} sub="diese Woche" />
+      <MStat label={t("home.stats.streak")} value={String(stats?.streakWeeks ?? 0)} sub={t("home.stats.weeks")} />
+      <MStat label={t("home.stats.thisWeek")} value={String(stats?.sessionsThisWeek ?? 0)} sub={t("home.stats.sessions")} />
+      <MStat label={t("home.stats.volume")} value={`${stats?.volumeThisWeekT ?? 0}t`} sub={t("home.thisWeek").toLocaleLowerCase(locale)} />
     </div>
   );
 
@@ -733,7 +736,7 @@ export function HomeScreen({
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ ...labelStyle() }}>Volumen / Woche</span>
+        <span style={{ ...labelStyle() }}>{t("home.stats.volumeWeek")}</span>
         <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
           {weekData.reduce((a, w) => a + w.v, 0) > 0 ? "●" : "—"}
         </span>
@@ -787,7 +790,7 @@ export function HomeScreen({
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ ...labelStyle() }}>Protein / Woche</span>
+          <span style={{ ...labelStyle() }}>{t("home.stats.proteinWeek")}</span>
           <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
             {proteinLoggedTodayG}/{proteinTargetG} g
           </span>
@@ -858,7 +861,7 @@ export function HomeScreen({
     >
       <div style={{ background: M.card, border: `1px solid ${M.line2}`, borderRadius: 18, padding: "15px 16px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ ...labelStyle() }}>Wasser / Woche</span>
+          <span style={{ ...labelStyle() }}>{t("home.stats.waterWeek")}</span>
           <span style={{ fontFamily: M.label, fontWeight: 700, fontSize: 16, color: M.brand }}>
             {formatWaterAmount(waterLoggedTodayMl)}/{formatWaterAmount(waterTargetMl)}
           </span>
@@ -904,9 +907,9 @@ export function HomeScreen({
           marginBottom: 0,
         }}
       >
-        <span style={{ ...labelStyle() }}>Statistik</span>
+        <span style={{ ...labelStyle() }}>{t("home.stats.title")}</span>
         <MButton type="button" onClick={onOpenStats} variant="ghost" size="sm" style={{ padding: 0, color: M.fg }}>
-          Alle anzeigen
+          {t("home.stats.all")}
           <Icon name="chevR" size={14} color={M.fg} stroke={2.2} />
         </MButton>
       </div>
@@ -918,12 +921,12 @@ export function HomeScreen({
   );
 
   const allQuickActions: Record<import("../lib/dashboardQuickActions").DashboardQuickActionId, PersonalQuickAction> = {
-    recovery: { id: "recovery", label: "Recovery", detail: "Erholung & Ernährung", icon: "heart", onClick: () => onOpenRecovery("protein") },
-    breathing: { id: "breathing", label: "Atmen", detail: "Kurz zur Ruhe kommen", icon: "wind", onClick: onOpenBreathing },
-    timer: { id: "timer", label: "Intervall-Timer", detail: "Deine Einheit starten", icon: "timer", onClick: onOpenTimer },
-    plans: { id: "plans", label: activePlan ? "Training & Plan" : "Plan erstellen", detail: activePlan ? "Deine nächste Einheit" : "Deinen Rhythmus planen", icon: "layers", onClick: onOpenPlans },
-    calculator: { id: "calculator", label: "1RM-Rechner", detail: "Leistung einordnen", icon: "calculator", onClick: onOpenCalculator },
-    body: { id: "body", label: "Körperwerte", detail: "Deinen Verlauf sehen", icon: "scale", onClick: onOpenBodyTracker },
+    recovery: { id: "recovery", label: t("home.quick.recovery"), detail: t("home.quick.recoveryDetail"), icon: "heart", onClick: () => onOpenRecovery("protein") },
+    breathing: { id: "breathing", label: t("home.quick.breathing"), detail: t("home.quick.breathingDetail"), icon: "wind", onClick: onOpenBreathing },
+    timer: { id: "timer", label: t("home.quick.timer"), detail: t("home.quick.timerDetail"), icon: "timer", onClick: onOpenTimer },
+    plans: { id: "plans", label: activePlan ? t("home.quick.training") : t("home.quick.plan"), detail: activePlan ? t("home.quick.next") : t("home.quick.planDetail"), icon: "layers", onClick: onOpenPlans },
+    calculator: { id: "calculator", label: t("home.quick.calculator"), detail: t("home.quick.calculatorDetail"), icon: "calculator", onClick: onOpenCalculator },
+    body: { id: "body", label: t("home.quick.body"), detail: t("home.quick.bodyDetail"), icon: "scale", onClick: onOpenBodyTracker },
   };
   const personalQuickActions = selectDashboardQuickActions({ primaryFocus: preferences.primaryFocus, secondaryFocus: preferences.secondaryFocus, hasPlan: !!activePlan }).map((id) => allQuickActions[id]);
 
@@ -934,21 +937,21 @@ export function HomeScreen({
         Hydration
       </div>
       <div style={{ ...displayStyle(24), marginTop: 4 }}>
-        Heute fehlen noch {formatWaterAmount(Math.max(0, waterTargetMl - waterLoggedTodayMl))}
+        {t("home.hydration.missing", { amount: formatWaterAmount(Math.max(0, waterTargetMl - waterLoggedTodayMl)) })}
       </div>
       <div style={{ color: M.mut, fontSize: 14, marginTop: 8, lineHeight: 1.45 }}>
-        Du hast bisher {formatWaterAmount(waterLoggedTodayMl)} von {formatWaterAmount(waterTargetMl)} erreicht.
+        {t("home.hydration.progress", { current: formatWaterAmount(waterLoggedTodayMl), target: formatWaterAmount(waterTargetMl) })}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
         <MButton type="button" variant="primary" size="md" disabled={hydrationBusy} onClick={() => void addWaterFromHint()} style={{ flex: 1 }}>
           +250 ml
         </MButton>
         <MButton type="button" variant="secondary" size="md" onClick={() => onOpenRecovery("water")} style={{ flex: 1 }}>
-          Öffnen
+          {t("home.open")}
         </MButton>
       </div>
       <MButton type="button" variant="ghost" size="sm" fullWidth onClick={dismissHydrationHint} style={{ marginTop: 6, color: M.mut }}>
-        Für heute ausblenden
+        {t("home.hideToday")}
       </MButton>
     </div>
   ) : null;
@@ -960,19 +963,19 @@ export function HomeScreen({
           <div style={{ fontSize: 13, color: M.mut, fontWeight: 600 }}>
             {todayLabel}
             {planStale && !isOnline && (
-              <span style={{ marginLeft: 8, fontSize: 13, color: M.mut2 }}>· Offline</span>
+              <span style={{ marginLeft: 8, fontSize: 13, color: M.mut2 }}>· {t("home.offline")}</span>
             )}
           </div>
           <div style={{ ...displayStyle(32), marginTop: 4, whiteSpace: "nowrap" }}>
-            Hej, {displayName.split(" ")[0]}
+            {t("home.greeting", { name: displayName.split(" ")[0] })}
           </div>
         </div>
         <MButton
           onClick={onOpenProfile}
           variant="secondary"
           size="icon"
-          aria-label="Profil"
-          title="Profil"
+          aria-label={t("menu.profile")}
+          title={t("menu.profile")}
           style={{ width: 48, height: 48, borderRadius: 24, background: M.bg, border: "1px solid " + M.line, padding: 0, overflow: "hidden", flexShrink: 0 }}
         >
           <UserAvatar
@@ -1016,11 +1019,11 @@ export function HomeScreen({
       />
       <AlertSheet
         open={!!hydrationAlert}
-        title="Speichern fehlgeschlagen"
+        title={t("home.saveFailed")}
         message={hydrationAlert ?? ""}
         onClose={() => setHydrationAlert(null)}
       />
-      <AlertSheet open={!!checkinAlert} title="Check-in nicht gespeichert" message={checkinAlert ?? ""} onClose={() => setCheckinAlert(null)} />
+      <AlertSheet open={!!checkinAlert} title={t("home.checkinFailed")} message={checkinAlert ?? ""} onClose={() => setCheckinAlert(null)} />
       <DailyCheckinSheet open={checkinOpen} current={todayCheckin} busy={checkinBusy} onClose={() => setCheckinOpen(false)} onSave={handleSaveDailyCheckin} />
     </ScreenScroll>
   );

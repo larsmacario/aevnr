@@ -2,7 +2,7 @@ import { useState } from "react";
 import { M } from "../theme";
 import { fmt, TIMER_DEFAULTS, TIMER_MODES, type TimerMode } from "../lib/engine";
 import { createAiConsentGrant, hasAiConsent, usePreferences, type AevnrFocus } from "../lib/preferences";
-import { DASHBOARD_MODULE_IDS, focusLabel, type DashboardModuleId } from "../lib/dashboardPersonalization";
+import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "../lib/dashboardPersonalization";
 import { TimerSoundPackPicker } from "../components/TimerSoundPackPicker";
 import { TimerConfigPanel } from "../components/TimerConfigPanel";
 import { MStepper, MSwitch } from "../components/widgets";
@@ -15,6 +15,9 @@ import { ExpressPerformanceBaselineForm } from "../components/ExpressPerformance
 import { OwnerLabsSection } from "../components/settings/OwnerLabsSection";
 import { useAuth } from "../lib/auth";
 import { isOwnerLabsVisible } from "../lib/ownerLabs";
+import { useI18n } from "../lib/i18n";
+import type { AppLanguage } from "../lib/language";
+import type { TranslationKey } from "../locales/de";
 
 export interface SettingsScreenProps {
   onBack: () => void;
@@ -83,6 +86,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const { profile } = useAuth();
   const showOwnerLabs = isOwnerLabsVisible(profile);
   const { preferences, updatePreferences, saving } = usePreferences();
+  const { language, locale, setLanguage, t } = useI18n();
   const [timerMode, setTimerMode] = useState<TimerMode>("emom");
   const [aiConsentSheetOpen, setAiConsentSheetOpen] = useState(false);
   const [baselineSheetOpen, setBaselineSheetOpen] = useState(false);
@@ -134,7 +138,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader
         onBack={onBack}
-        title="EINSTELLUNGEN"
+        title={t("settings.title")}
         trailing={
           <span style={{ width: 24, fontSize: 13, color: saving ? M.acc : "transparent", fontWeight: 700 }}>
             {saving ? "…" : ""}
@@ -143,8 +147,20 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       />
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `0 22px ${SCROLL_BOTTOM_PADDING}px` }}>
-        <Section title="TRAINING">
-          <SettingRow label="Pausenzeit" hint="Pause nach abgehaktem Satz">
+        <Section title={t("settings.language.section")}>
+          <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{t("settings.language.label")}</div>
+          <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>{t("settings.language.hint")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+            {(["de", "en"] as AppLanguage[]).map((option) => (
+              <MButton key={option} type="button" variant={language === option ? "primary" : "secondary"} size="md" onClick={() => void setLanguage(option)}>
+                {t(`language.name.${option}` as TranslationKey)}
+              </MButton>
+            ))}
+          </div>
+        </Section>
+
+        <Section title={t("settings.training.section")}>
+          <SettingRow label={t("settings.training.rest")} hint={t("settings.training.restHint")}>
             <MStepper
               value={preferences.restSeconds}
               min={30}
@@ -154,13 +170,13 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(v) => updatePreferences({ restSeconds: v })}
             />
           </SettingRow>
-          <SettingRow label="Auto-Pause" hint="Pause automatisch nach Satz starten">
+          <SettingRow label={t("settings.training.autoRest")} hint={t("settings.training.autoRestHint")}>
             <MSwitch
               checked={preferences.autoRest}
               onChange={(v) => updatePreferences({ autoRest: v }, true)}
             />
           </SettingRow>
-          <SettingRow label="Gewichtssprung Oberkörper" hint="Inkrement bei Double Progression (z. B. Brust, Rücken)">
+          <SettingRow label={t("settings.training.upperIncrement")} hint={t("settings.training.upperIncrementHint")}>
             <MStepper
               value={preferences.weightIncrementUpperKg}
               min={1}
@@ -170,7 +186,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(v) => updatePreferences({ weightIncrementUpperKg: v }, true)}
             />
           </SettingRow>
-          <SettingRow label="Gewichtssprung Unterkörper" hint="Inkrement bei Bein- und Hüftübungen" last>
+          <SettingRow label={t("settings.training.lowerIncrement")} hint={t("settings.training.lowerIncrementHint")} last>
             <MStepper
               value={preferences.weightIncrementLowerKg}
               min={2.5}
@@ -182,8 +198,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           </SettingRow>
         </Section>
 
-        <Section title="WORKOUT-BUILDER">
-          <SettingRow label="Standard-Sätze">
+        <Section title={t("settings.builder.section")}>
+          <SettingRow label={t("settings.builder.sets")}>
             <MStepper
               value={preferences.defaultSets}
               min={1}
@@ -191,7 +207,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(v) => updatePreferences({ defaultSets: v })}
             />
           </SettingRow>
-          <SettingRow label="Standard-Wiederholungen" last>
+          <SettingRow label={t("settings.builder.reps")} last>
             <MStepper
               value={preferences.defaultReps}
               min={1}
@@ -201,42 +217,42 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           </SettingRow>
         </Section>
 
-        <Section title="DEIN DASHBOARD">
-          <SettingRow label="Automatisch priorisieren" hint="ÆVNR stellt heute relevante Bereiche nach vorn.">
+        <Section title={t("settings.dashboard.section")}>
+          <SettingRow label={t("settings.dashboard.auto")} hint={t("settings.dashboard.autoHint")}>
             <MSwitch checked={preferences.dashboard.autoPrioritize} onChange={(autoPrioritize) => updatePreferences({ dashboard: { ...preferences.dashboard, autoPrioritize } }, true)} />
           </SettingRow>
           <div style={{ padding: "12px 0", borderBottom: "1px solid " + M.line2 }}>
-            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Dashboard-Fokus</div>
-            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>Optionaler Schwerpunkt zusätzlich zu deinem Onboarding-Ziel.</div>
+            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{t("settings.dashboard.focus")}</div>
+            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>{t("settings.dashboard.focusHint")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
-              <MButton type="button" size="sm" variant={preferences.dashboard.focusOverride === null ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: null } }, true)}>Automatisch</MButton>
-              {(["strength", "endurance", "energy", "body_composition"] as AevnrFocus[]).map((focus) => <MButton key={focus} type="button" size="sm" variant={preferences.dashboard.focusOverride === focus ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: focus } }, true)}>{focusLabel(focus)}</MButton>)}
+              <MButton type="button" size="sm" variant={preferences.dashboard.focusOverride === null ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: null } }, true)}>{t("common.automatic")}</MButton>
+              {(["strength", "endurance", "energy", "body_composition"] as AevnrFocus[]).map((focus) => <MButton key={focus} type="button" size="sm" variant={preferences.dashboard.focusOverride === focus ? "primary" : "secondary"} onClick={() => updatePreferences({ dashboard: { ...preferences.dashboard, focusOverride: focus } }, true)}>{t(`focus.${focus}` as TranslationKey)}</MButton>)}
             </div>
           </div>
           <div style={{ paddingTop: 12 }}>
-            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>Bereiche anzeigen</div>
-            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>Der Tages-Coach bleibt immer sichtbar.</div>
+            <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{t("settings.dashboard.modules")}</div>
+            <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>{t("settings.dashboard.modulesHint")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
-              {DASHBOARD_MODULE_IDS.map((module) => <MButton key={module} type="button" size="sm" variant={preferences.dashboard.hiddenModules.includes(module) ? "secondary" : "primary"} onClick={() => toggleDashboardModule(module)}>{({ healthspan: "Healthspan", training: "Training", recovery: "Recovery", insights: "Insights" })[module]}</MButton>)}
+              {DASHBOARD_MODULE_IDS.map((module) => <MButton key={module} type="button" size="sm" variant={preferences.dashboard.hiddenModules.includes(module) ? "secondary" : "primary"} onClick={() => toggleDashboardModule(module)}>{t(`dashboard.${module}` as TranslationKey)}</MButton>)}
             </div>
           </div>
         </Section>
 
-        <Section title="DATEN & KI">
+        <Section title={t("settings.data.section")}>
           <SettingRow
-            label="KI-Datennutzung für Trainingspläne"
-            hint="Einwilligung zur Übermittlung deiner Trainingsdaten an Anthropic für KI-Pläne. Widerruf stoppt neue Generierungen; bestehende Pläne bleiben erhalten."
+            label={t("settings.data.consent")}
+            hint={t("settings.data.consentHint")}
           >
             <MSwitch checked={aiConsentGranted} onChange={handleAiConsentToggle} />
           </SettingRow>
           <SettingRow
-            label="Startwerte für KI-Express"
-            hint={preferences.expressPerformanceBaseline ? `Zuletzt aktualisiert: ${new Date(preferences.expressPerformanceBaseline.updatedAt).toLocaleDateString("de-DE")}` : "Freiwillige Leistungsorientierung für deine erste KI-Express-Session."}
+            label={t("settings.data.baseline")}
+            hint={preferences.expressPerformanceBaseline ? t("settings.data.updated", { date: new Date(preferences.expressPerformanceBaseline.updatedAt).toLocaleDateString(locale) }) : t("settings.data.baselineHint")}
             last
           >
-            <MButton type="button" variant="secondary" size="sm" onClick={() => setBaselineSheetOpen(true)}>Bearbeiten</MButton>
+            <MButton type="button" variant="secondary" size="sm" onClick={() => setBaselineSheetOpen(true)}>{t("common.edit")}</MButton>
           </SettingRow>
-          {preferences.expressPerformanceBaseline ? <MButton type="button" variant="ghost" size="sm" fullWidth onClick={() => updatePreferences({ expressPerformanceBaseline: null }, true)} style={{ marginTop: 8, color: M.danger }}>Startwerte löschen</MButton> : null}
+          {preferences.expressPerformanceBaseline ? <MButton type="button" variant="ghost" size="sm" fullWidth onClick={() => updatePreferences({ expressPerformanceBaseline: null }, true)} style={{ marginTop: 8, color: M.danger }}>{t("settings.data.deleteBaseline")}</MButton> : null}
         </Section>
 
         {showOwnerLabs ? (
@@ -245,7 +261,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           </Section>
         ) : null}
 
-        <Section title="INTERVAL-TIMER">
+        <Section title={t("settings.timer.section")}>
           <TimerSoundPackPicker
             enabled={preferences.timerSounds}
             packId={preferences.timerSoundPack}
@@ -290,12 +306,12 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             fullWidth
             style={{ marginTop: 14, color: M.mut, fontFamily: M.body, fontWeight: 600 }}
           >
-            Auf Werkseinstellungen zurücksetzen
+            {t("settings.timer.reset")}
           </MButton>
         </Section>
 
         <div style={{ fontSize: 13, color: M.mut2, textAlign: "center", paddingTop: 4 }}>
-          Änderungen werden automatisch gespeichert
+          {t("settings.saved")}
         </div>
       </div>
 
@@ -304,7 +320,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         onClose={() => setAiConsentSheetOpen(false)}
         position="absolute"
         zIndex={40}
-        aria-label="KI-Einwilligung"
+        aria-label={t("settings.aiConsent.aria")}
       >
         <AiConsentStep
           onOpenPrivacy={openDatenschutz}
@@ -314,7 +330,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           saving={saving}
         />
       </BottomSheet>
-      <BottomSheet open={baselineSheetOpen} onClose={() => setBaselineSheetOpen(false)} position="absolute" zIndex={40} aria-label="Startwerte für KI-Express">
+      <BottomSheet open={baselineSheetOpen} onClose={() => setBaselineSheetOpen(false)} position="absolute" zIndex={40} aria-label={t("settings.baseline.aria")}>
         <ExpressPerformanceBaselineForm baseline={preferences.expressPerformanceBaseline} onSave={async (baseline) => { await updatePreferences({ expressPerformanceBaseline: baseline }, true); setBaselineSheetOpen(false); }} onCancel={() => setBaselineSheetOpen(false)} saving={saving} />
       </BottomSheet>
     </div>

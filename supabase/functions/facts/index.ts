@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
-import { localParts, normalizeTopics, selectUnseenFact, serviceClient } from "../_shared/facts.ts";
+import { localParts, normalizeLanguage, normalizeTopics, selectUnseenFact, serviceClient } from "../_shared/facts.ts";
 
 const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Content-Type": "application/json" };
 
@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await db.from("profiles").select("preferences").eq("id", user.id).single();
     if (profileError) throw profileError;
     const preferences = profile.preferences as Record<string, unknown> | null;
+    const language = normalizeLanguage(body?.language ?? preferences?.language);
     const topics = normalizeTopics(preferences?.factTopics);
     const requestedTimezone = typeof body?.timezone === "string" ? body.timezone : null;
     const timezone = requestedTimezone ?? (typeof preferences?.factTimezone === "string" ? preferences.factTimezone : "Europe/Berlin");
@@ -36,18 +37,18 @@ Deno.serve(async (req) => {
 
     if (topics.length === 0) return new Response(JSON.stringify({ state: "needs_topics" }), { headers });
     if (body?.action !== "toggle_saved") {
-      const { data: existing, error: existingError } = await db.from("user_daily_facts").select("id").eq("user_id", user.id).eq("local_date", local.date).maybeSingle();
+      const { data: existing, error: existingError } = await db.from("user_daily_facts").select("id").eq("user_id", user.id).eq("local_date", local.date).eq("language", language).maybeSingle();
       if (existingError) throw existingError;
       if (!existing) {
-        const fact = await selectUnseenFact(user.id, topics);
+        const fact = await selectUnseenFact(user.id, topics, language);
         if (fact) {
-          const { error: insertError } = await db.from("user_daily_facts").insert({ user_id: user.id, fact_id: fact.id, local_date: local.date, timezone });
+          const { error: insertError } = await db.from("user_daily_facts").insert({ user_id: user.id, fact_id: fact.id, local_date: local.date, language, timezone });
           if (insertError && insertError.code !== "23505") throw insertError;
         }
       }
     }
 
-    const query = db.from("user_daily_facts").select("id, local_date, saved_at, health_facts(id, topic, title, body, action_title, action_body, app_action, health_fact_sources(pmid, title, authors, journal, publication_year, publication_type, pubmed_url))").eq("user_id", user.id);
+    const query = db.from("user_daily_facts").select("id, local_date, language, saved_at, health_facts(id, language, topic, title, body, action_title, action_body, app_action, health_fact_sources(pmid, title, authors, journal, publication_year, publication_type, pubmed_url))").eq("user_id", user.id).eq("language", language);
     const { data: assignment, error } = body?.view === "history"
       ? await query.order("local_date", { ascending: false }).limit(120)
       : body?.view === "saved"
@@ -59,6 +60,7 @@ Deno.serve(async (req) => {
       assignmentId: row.id,
       localDate: row.local_date,
       saved: Boolean(row.saved_at),
+      language: row.language,
       ...(row.health_facts ?? {}),
       action: row.health_facts?.action_title && row.health_facts?.action_body ? {
         title: row.health_facts.action_title,

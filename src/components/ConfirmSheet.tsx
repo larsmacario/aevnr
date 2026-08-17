@@ -2,6 +2,7 @@ import { M } from "../theme";
 import { Icon } from "./Icon";
 import { BottomSheet } from "./BottomSheet";
 import { MButton } from "./MButton";
+import { useI18n } from "../lib/i18n";
 
 export interface ConfirmSheetProps {
   open?: boolean;
@@ -19,11 +20,12 @@ export function ConfirmSheet({
   title,
   message,
   confirmLabel,
-  cancelLabel = "Abbrechen",
+  cancelLabel,
   icon,
   onConfirm,
   onCancel,
 }: ConfirmSheetProps) {
+  const { t } = useI18n();
   return (
     <BottomSheet open={open} onClose={onCancel} position="absolute" zIndex={40} aria-label={title}>
       {icon && (
@@ -49,7 +51,7 @@ export function ConfirmSheet({
         {confirmLabel}
       </MButton>
       <MButton type="button" onClick={onCancel} variant="ghost" size="md" fullWidth style={{ flexShrink: 0 }}>
-        {cancelLabel}
+        {cancelLabel ?? t("common.cancel")}
       </MButton>
     </BottomSheet>
   );

@@ -9,6 +9,8 @@ import { Icon } from "./Icon";
 import { ExerciseListRow, ExerciseListRowDumbbellIcon } from "./ExerciseListRow";
 import { MButton } from "./MButton";
 import { ExerciseFormSheet } from "./ExerciseFormSheet";
+import { useI18n } from "../lib/i18n";
+import { equipmentTranslationKey, muscleGroupTranslationKey } from "../lib/catalogLabels";
 
 export interface ExercisePickerSheetProps {
   open: boolean;
@@ -35,12 +37,14 @@ export function ExercisePickerSheet({
   expressTrackingOnly = false,
   library,
   loading,
-  title = "Übungsbibliothek",
+  title,
   showFreeText,
   onFreeText,
   allowCreate,
   onLibraryChange,
 }: ExercisePickerSheetProps) {
+  const { language, t } = useI18n();
+  const resolvedTitle = title ?? t("exercisePicker.title");
   const [query, setQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
   const [freeText, setFreeText] = useState("");
@@ -60,7 +64,7 @@ export function ExercisePickerSheet({
     return library.filter((ex) => {
       if (expressTrackingOnly && !isExpressTrackingLibraryExercise(ex)) return false;
       if (groupFilter && normalizeMuscleGroup(ex.group) !== groupFilter) return false;
-      if (q && !ex.name.toLowerCase().includes(q)) return false;
+      if (q && !`${ex.name} ${ex.nameEn ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [library, query, groupFilter, expressTrackingOnly]);
@@ -90,7 +94,7 @@ export function ExercisePickerSheet({
   const headerBlock = (
     <>
       <div style={{ fontFamily: M.display, fontWeight: 400, fontSize: 22, marginBottom: 12, flexShrink: 0 }}>
-        {title}
+        {resolvedTitle}
       </div>
 
       {showFreeText && onFreeText && (
@@ -99,7 +103,7 @@ export function ExercisePickerSheet({
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleFreeText())}
-            placeholder="Eigener Übungsname…"
+            placeholder={t("exercisePicker.customPlaceholder")}
             style={{
               flex: 1,
               padding: "12px 14px",
@@ -135,7 +139,7 @@ export function ExercisePickerSheet({
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Suchen…"
+        placeholder={t("exercisePicker.search")}
         style={{
           width: "100%",
           padding: "11px 14px",
@@ -172,12 +176,12 @@ export function ExercisePickerSheet({
             flexShrink: 0,
           }}
         >
-          + Eigene Übung anlegen
+          {t("exercisePicker.create")}
         </button>
       )}
 
       {loading && (
-        <div style={{ color: M.mut, fontSize: 14, marginBottom: 12, flexShrink: 0 }}>Lädt…</div>
+        <div style={{ color: M.mut, fontSize: 14, marginBottom: 12, flexShrink: 0 }}>{t("exercisePicker.loading")}</div>
       )}
     </>
   );
@@ -186,7 +190,7 @@ export function ExercisePickerSheet({
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {!loading && filtered.length === 0 && (
         <div style={{ color: M.mut, fontSize: 14, textAlign: "center", padding: "12px 0" }}>
-          Keine Übungen gefunden.
+          {t("exercisePicker.empty")}
         </div>
       )}
       {filtered.map((ex) => {
@@ -194,8 +198,8 @@ export function ExercisePickerSheet({
         return (
           <ExerciseListRow
             key={ex.id}
-            title={ex.name}
-            subtitle={`${ex.group} · ${ex.equip} · ${metricShort(ex.metric)}${ex.userId ? " · Eigene" : ""}`}
+            title={language === "en" ? ex.nameEn?.trim() || ex.name : ex.name}
+            subtitle={`${muscleGroupTranslationKey(ex.group) ? t(muscleGroupTranslationKey(ex.group)!) : ex.group} · ${equipmentTranslationKey(ex.equip) ? t(equipmentTranslationKey(ex.equip)!) : ex.equip} · ${metricShort(ex.metric, language)}${ex.userId ? ` · ${t("exercisePicker.own")}` : ""}`}
             leading={<ExerciseListRowDumbbellIcon />}
             trailing={
               isMulti ? (
@@ -233,7 +237,7 @@ export function ExercisePickerSheet({
         open={open}
         onClose={onClose}
         zIndex={20}
-        aria-label={title}
+        aria-label={resolvedTitle}
         fitContent={!isMulti}
         wrapScroll={!isMulti}
         lockBodyScroll={isMulti}
@@ -269,7 +273,7 @@ export function ExercisePickerSheet({
                 onClick={confirmMulti}
                 style={{ fontFamily: M.label, fontWeight: 700, letterSpacing: 0.3 }}
               >
-                Weiter ({selectedIds.length})
+                {t("exercisePicker.continue", { count: selectedIds.length })}
               </MButton>
             </div>
           </>

@@ -9,6 +9,7 @@ import { SessionExerciseEditor } from "../components/SessionExerciseEditor";
 import { MButton } from "../components/MButton";
 import { SCROLL_BOTTOM_PADDING } from "../lib/responsive";
 import { ScreenBackHeader } from "../components/ScreenScroll";
+import { useI18n } from "../lib/i18n";
 
 export interface SessionEditScreenProps {
   sessionId: string;
@@ -44,6 +45,7 @@ const fieldInput: React.CSSProperties = {
 };
 
 export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScreenProps) {
+  const { t } = useI18n();
   const { data: session, loading, error } = useSession(sessionId);
   const { data: library, loading: libraryLoading, reload: reloadExercises } = useExercises();
   const { preferences } = usePreferences();
@@ -110,7 +112,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
       });
       onSave();
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      setSaveError(e instanceof Error ? e.message : t("session.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -119,7 +121,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
   if (loading || !initialized) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: M.mut, fontSize: 14 }}>
-        Session wird geladen…
+        {t("session.loading")}
       </div>
     );
   }
@@ -127,9 +129,9 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
   if (error || !session) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 22 }}>
-        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? "Session nicht gefunden."}</div>
+        <div style={{ color: M.mut, fontSize: 14 }}>{error ?? t("session.notFound")}</div>
         <MButton onClick={onBack} variant="primary" size="sm">
-          Zurück
+          {t("common.back")}
         </MButton>
       </div>
     );
@@ -139,7 +141,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <ScreenBackHeader
         onBack={onBack}
-        title="SESSION BEARBEITEN"
+        title={t("session.editTitle")}
         trailing={
           <MButton
             disabled={saving || exercises.length === 0}
@@ -149,7 +151,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
             loading={saving}
             style={{ fontFamily: M.label, color: M.fg, letterSpacing: 0.4 }}
           >
-            Speichern
+            {t("session.save")}
           </MButton>
         }
       />
@@ -158,12 +160,12 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `0 22px ${SCROLL_BOTTOM_PADDING}px`, display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
-          <div style={fieldLabel}>NAME</div>
+          <div style={fieldLabel}>{t("session.field.name")}</div>
           <input value={name} onChange={(e) => setName(e.target.value)} style={fieldInput} />
         </div>
 
         <div>
-          <div style={fieldLabel}>DATUM & UHRZEIT</div>
+          <div style={fieldLabel}>{t("session.field.dateTime")}</div>
           <input
             type="datetime-local"
             value={performedAt}
@@ -173,12 +175,12 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
         </div>
 
         <div>
-          <div style={fieldLabel}>DAUER (MIN)</div>
+          <div style={fieldLabel}>{t("session.field.duration")}</div>
           <input type="number" min={1} value={dur} onChange={(e) => setDur(e.target.value)} style={fieldInput} />
         </div>
 
         <div>
-          <div style={fieldLabel}>TAGS</div>
+          <div style={fieldLabel}>{t("session.field.tags")}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {tags.map((t) => (
               <button
@@ -194,7 +196,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-              placeholder="Tag hinzufügen…"
+              placeholder={t("session.field.addTag")}
               style={{ ...fieldInput, flex: "1 1 120px", minWidth: 100, padding: "8px 12px", fontSize: 13 }}
             />
           </div>
@@ -215,7 +217,7 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
             color: M.fg,
           }}
         >
-          <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 15 }}>Personal Record (PR)</span>
+          <span style={{ fontFamily: M.display, fontWeight: 400, fontSize: 15 }}>{t("session.field.personalRecord")}</span>
           <span
             style={{
               fontSize: 13,
@@ -227,12 +229,12 @@ export function SessionEditScreen({ sessionId, onBack, onSave }: SessionEditScre
               borderRadius: 6,
             }}
           >
-            {isPr ? "AN" : "AUS"}
+            {isPr ? t("session.field.on") : t("session.field.off")}
           </span>
         </button>
 
         <div>
-          <div style={fieldLabel}>ÜBUNGEN & SÄTZE</div>
+          <div style={fieldLabel}>{t("session.field.exercises")}</div>
           <SessionExerciseEditor
             exercises={exercises}
             onChange={setExercises}
