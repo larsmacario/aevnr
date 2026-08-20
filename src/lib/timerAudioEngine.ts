@@ -136,6 +136,189 @@ export function playStartCountdown(offsetSeconds = 0) {
   }
 }
 
+let boxBreathBuffer: AudioBuffer | null = null;
+let boxBreathLoadingPromise: Promise<AudioBuffer | null> | null = null;
+let fallbackBoxBreathAudio: HTMLAudioElement | null = null;
+
+export async function preloadBoxBreathSound(): Promise<AudioBuffer | null> {
+  if (typeof window === "undefined") return null;
+  const c = audio();
+  if (!c) return null;
+  if (boxBreathBuffer) return boxBreathBuffer;
+  if (boxBreathLoadingPromise) {
+    return boxBreathLoadingPromise;
+  }
+  boxBreathLoadingPromise = (async () => {
+    try {
+      const url = getSoundAssetUrl("sounds/box_breath.mp3");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      boxBreathBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+        const promise = c.decodeAudioData(arrayBuffer, resolve, reject);
+        if (promise && typeof promise.then === "function") {
+          promise.then(resolve, reject);
+        }
+      });
+      return boxBreathBuffer;
+    } catch (e) {
+      console.warn("Could not decode box_breath sound buffer:", e);
+      return null;
+    } finally {
+      boxBreathLoadingPromise = null;
+    }
+  })();
+  return boxBreathLoadingPromise;
+}
+
+export function playBoxBreathSound() {
+  const c = audio();
+  const destination = out();
+
+  if (c && destination && boxBreathBuffer) {
+    try {
+      const source = c.createBufferSource();
+      source.buffer = boxBreathBuffer;
+      source.connect(destination);
+      source.start(0);
+      return;
+    } catch (e) {
+      console.warn("Failed to play box_breath sound from buffer:", e);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    void preloadBoxBreathSound();
+    const url = getSoundAssetUrl("sounds/box_breath.mp3");
+    try {
+      if (!fallbackBoxBreathAudio) {
+        fallbackBoxBreathAudio = new Audio(url);
+      }
+      fallbackBoxBreathAudio.currentTime = 0;
+      void fallbackBoxBreathAudio.play().catch(() => {
+        // Autoplay policy or unhandled error
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+let breathingTickerBuffer: AudioBuffer | null = null;
+let breathingTickerLoadingPromise: Promise<AudioBuffer | null> | null = null;
+let currentBreathingTickerSource: AudioBufferSourceNode | null = null;
+let currentBreathingTickerGain: GainNode | null = null;
+let fallbackTickerAudio: HTMLAudioElement | null = null;
+
+export async function preloadBreathingTickerSound(): Promise<AudioBuffer | null> {
+  if (typeof window === "undefined") return null;
+  const c = audio();
+  if (!c) return null;
+  if (breathingTickerBuffer) return breathingTickerBuffer;
+  if (breathingTickerLoadingPromise) {
+    return breathingTickerLoadingPromise;
+  }
+  breathingTickerLoadingPromise = (async () => {
+    try {
+      const url = getSoundAssetUrl("sounds/clock-ticking.mp3");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      breathingTickerBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+        const promise = c.decodeAudioData(arrayBuffer, resolve, reject);
+        if (promise && typeof promise.then === "function") {
+          promise.then(resolve, reject);
+        }
+      });
+      return breathingTickerBuffer;
+    } catch (e) {
+      console.warn("Could not decode clock-ticking sound buffer:", e);
+      return null;
+    } finally {
+      breathingTickerLoadingPromise = null;
+    }
+  })();
+  return breathingTickerLoadingPromise;
+}
+
+export function stopBreathingTicker() {
+  if (currentBreathingTickerSource) {
+    try {
+      currentBreathingTickerSource.stop();
+      currentBreathingTickerSource.disconnect();
+    } catch {
+      // already stopped
+    }
+    currentBreathingTickerSource = null;
+  }
+  if (currentBreathingTickerGain) {
+    try {
+      currentBreathingTickerGain.disconnect();
+    } catch {
+      // ignore
+    }
+    currentBreathingTickerGain = null;
+  }
+  if (fallbackTickerAudio) {
+    try {
+      fallbackTickerAudio.pause();
+      fallbackTickerAudio.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function startBreathingTicker(gainLevel = 0.3) {
+  stopBreathingTicker();
+  const c = audio();
+  const destination = out();
+
+  if (c && destination && breathingTickerBuffer) {
+    try {
+      const source = c.createBufferSource();
+      const gainNode = c.createGain();
+      gainNode.gain.value = Math.max(0, Math.min(1, gainLevel));
+      source.buffer = breathingTickerBuffer;
+      source.loop = true;
+      source.connect(gainNode);
+      gainNode.connect(destination);
+      source.start(0);
+      currentBreathingTickerSource = source;
+      currentBreathingTickerGain = gainNode;
+      source.onended = () => {
+        if (currentBreathingTickerSource === source) {
+          currentBreathingTickerSource = null;
+          currentBreathingTickerGain = null;
+        }
+      };
+      return;
+    } catch (e) {
+      console.warn("Failed to start breathing ticker buffer:", e);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    void preloadBreathingTickerSound();
+    const url = getSoundAssetUrl("sounds/clock-ticking.mp3");
+    try {
+      if (!fallbackTickerAudio) {
+        fallbackTickerAudio = new Audio(url);
+      }
+      fallbackTickerAudio.loop = true;
+      fallbackTickerAudio.volume = Math.max(0, Math.min(1, gainLevel));
+      fallbackTickerAudio.currentTime = 0;
+      void fallbackTickerAudio.play().catch(() => {
+        // Autoplay policy or unhandled error
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+
+
 
 
 function tone(

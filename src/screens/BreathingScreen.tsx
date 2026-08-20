@@ -7,7 +7,13 @@ import type { SaveSessionInput } from "../lib/db";
 import { usePreferences } from "../lib/preferences";
 import { useActiveTimer } from "../lib/activeTimer";
 import { buildBreathingSessionInput } from "../lib/timerSession";
-import { playTimerCue } from "../lib/timerSounds";
+import {
+  playBoxBreathSound,
+  preloadBoxBreathSound,
+  preloadBreathingTickerSound,
+  startBreathingTicker,
+  stopBreathingTicker,
+} from "../lib/timerSounds";
 import { triggerTapHaptic } from "../lib/haptics";
 import { M } from "../theme";
 import { MButton } from "../components/MButton";
@@ -150,16 +156,35 @@ export function BreathingScreen({ onBack, onSaveSession }: BreathingScreenProps)
   }, [T.idle, setActive]);
 
   useEffect(() => {
+    if (preferences.timerSounds) {
+      void preloadBoxBreathSound();
+      void preloadBreathingTickerSound();
+    }
+  }, [preferences.timerSounds]);
+
+  useEffect(() => {
+    if (preferences.timerSounds && T.running && !T.done) {
+      startBreathingTicker(0.28);
+    } else {
+      stopBreathingTicker();
+    }
+    return () => {
+      stopBreathingTicker();
+    };
+  }, [preferences.timerSounds, T.running, T.done]);
+
+  useEffect(() => {
     if (!preferences.timerSounds || !T.running) return;
     const key = `${T.phase}:${T.round}:${T.label}`;
     if (previousPhase.current && previousPhase.current !== key) {
-      playTimerCue(T.kind === "rest" ? "rest" : "go", preferences.timerSoundPack);
+      playBoxBreathSound();
       void triggerTapHaptic();
     } else if (!previousPhase.current && T.phase === "run") {
-      playTimerCue("go", preferences.timerSoundPack);
+      playBoxBreathSound();
+      void triggerTapHaptic();
     }
     previousPhase.current = key;
-  }, [T.running, T.phase, T.round, T.label, T.kind, preferences.timerSounds, preferences.timerSoundPack]);
+  }, [T.running, T.phase, T.round, T.label, preferences.timerSounds]);
 
   useEffect(() => {
     if (T.idle) previousPhase.current = null;

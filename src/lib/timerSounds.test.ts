@@ -1,5 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { countdownSecond, playTimerCue, playStartCountdown, stopStartCountdown, preloadStartCountdownSound } from "./timerSounds";
+import {
+  countdownSecond,
+  playTimerCue,
+  playStartCountdown,
+  stopStartCountdown,
+  preloadStartCountdownSound,
+  playBoxBreathSound,
+  preloadBoxBreathSound,
+  startBreathingTicker,
+  stopBreathingTicker,
+  preloadBreathingTickerSound,
+} from "./timerSounds";
 import { getSoundAssetUrl } from "./timerAudioEngine";
 
 describe("timerSounds", () => {
@@ -21,6 +32,12 @@ describe("timerSounds", () => {
   it("resolves sound asset URL cleanly", () => {
     const url = getSoundAssetUrl("sounds/3-2-1.mp3");
     expect(url).toContain("sounds/3-2-1.mp3");
+
+    const breathUrl = getSoundAssetUrl("sounds/box_breath.mp3");
+    expect(breathUrl).toContain("sounds/box_breath.mp3");
+
+    const tickerUrl = getSoundAssetUrl("sounds/clock-ticking.mp3");
+    expect(tickerUrl).toContain("sounds/clock-ticking.mp3");
   });
 
   it("handles playTimerCue and start countdown without throwing", async () => {
@@ -32,5 +49,14 @@ describe("timerSounds", () => {
     expect(() => playStartCountdown(0)).not.toThrow();
     expect(() => stopStartCountdown()).not.toThrow();
     await expect(preloadStartCountdownSound()).resolves.toBeDefined();
+
+    expect(() => playBoxBreathSound()).not.toThrow();
+    await expect(preloadBoxBreathSound()).resolves.toBeDefined();
+
+    expect(() => startBreathingTicker(0.3)).not.toThrow();
+    expect(() => stopBreathingTicker()).not.toThrow();
+    await expect(preloadBreathingTickerSound()).resolves.toBeDefined();
   });
 });
+
+
