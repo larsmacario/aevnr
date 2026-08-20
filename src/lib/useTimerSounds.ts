@@ -1,14 +1,10 @@
 import { useEffect, useRef } from "react";
-import type { SegmentKind } from "../theme";
 import type { TimerSnapshot } from "./engine";
-import { countdownSecond, playTimerCue } from "./timerSounds";
-
-interface IntervalSoundState {
-  phase: TimerSnapshot["phase"];
-  kind: SegmentKind;
-  round: number;
-  done: boolean;
-}
+import {
+  playStartCountdown,
+  preloadStartCountdownSound,
+  stopStartCountdown,
+} from "./timerSounds";
 
 export function useIntervalTimerSounds(
   snapshot: Pick<
@@ -16,68 +12,48 @@ export function useIntervalTimerSounds(
     "running" | "phase" | "kind" | "round" | "bigSeconds" | "done" | "mode" | "countUp" | "idle"
   >,
   enabled: boolean,
-  packId: string,
-  cap?: number,
+  _packId?: string,
+  _cap?: number,
 ) {
-  const prev = useRef<IntervalSoundState | null>(null);
-  const prevTickSec = useRef<number | null>(null);
   const segmentKey = useRef<string>("");
+  const countdownPlaying = useRef(false);
 
   useEffect(() => {
-    if (!enabled || snapshot.idle) {
-      prev.current = null;
-      prevTickSec.current = null;
-      segmentKey.current = "";
+    if (enabled) {
+      void preloadStartCountdownSound();
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || snapshot.idle || !snapshot.running || snapshot.done) {
+      if (countdownPlaying.current) {
+        stopStartCountdown();
+        countdownPlaying.current = false;
+      }
+      if (!enabled || snapshot.idle) {
+        segmentKey.current = "";
+      }
       return;
     }
 
-    if (!snapshot.running) return;
-
-    const current: IntervalSoundState = {
-      phase: snapshot.phase,
-      kind: snapshot.kind,
-      round: snapshot.round,
-      done: snapshot.done,
-    };
-
+    const isBreathe = snapshot.mode === "breathe";
     const key = `${snapshot.phase}:${snapshot.kind}:${snapshot.round}`;
+
     if (key !== segmentKey.current) {
       segmentKey.current = key;
-      prevTickSec.current = null;
+      countdownPlaying.current = false;
     }
 
-    if (prev.current) {
-      if (prev.current.phase === "prep" && current.phase === "run") {
-        playTimerCue("go", packId);
-      } else if (current.phase === "run" && prev.current.phase === "run") {
-        if (prev.current.round !== current.round || prev.current.kind !== current.kind) {
-          playTimerCue(current.kind === "rest" ? "rest" : "go", packId);
-        }
-      }
-
-      if (!prev.current.done && current.done) {
-        const manualForTimeFinish =
-          snapshot.mode === "fortime" && snapshot.countUp && (cap == null || snapshot.bigSeconds < cap - 0.05);
-        if (!manualForTimeFinish) {
-          playTimerCue("done", packId);
-        }
-      }
-    } else if (current.phase === "run") {
-      playTimerCue("go", packId);
-    }
-
-    if (!snapshot.done && (snapshot.phase === "prep" || !snapshot.countUp)) {
-      const sec = countdownSecond(snapshot.bigSeconds);
-      if (sec >= 1 && sec <= 3 && sec !== prevTickSec.current) {
-        playTimerCue("tick", packId);
-        prevTickSec.current = sec;
+    // Play 3-2-1 sound on the last 3 seconds of prep, round (work) or pause (rest)
+    if (!isBreathe && !snapshot.countUp) {
+      if (snapshot.bigSeconds <= 3.05 && !countdownPlaying.current) {
+        countdownPlaying.current = true;
+        const offset = Math.max(0, 3.0 - snapshot.bigSeconds);
+        playStartCountdown(offset);
       }
     }
-
-    prev.current = current;
   }, [
     enabled,
-    packId,
     snapshot.idle,
     snapshot.running,
     snapshot.phase,
@@ -87,45 +63,53 @@ export function useIntervalTimerSounds(
     snapshot.done,
     snapshot.mode,
     snapshot.countUp,
-    cap,
   ]);
-}
-
-export function useRestTimerSounds(rest: number, restActive: boolean, enabled: boolean, packId: string) {
-  const prevActive = useRef(false);
-  const prevRest = useRef(0);
-  const prevTickSec = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!enabled) {
-      prevActive.current = false;
-      prevRest.current = 0;
-      prevTickSec.current = null;
-      return;
-    }
-
-    if (!restActive) {
-      if (prevActive.current && prevRest.current > 0 && prevRest.current <= 1.5 && rest <= 0) {
-        playTimerCue("go", packId);
-      }
-      prevActive.current = false;
-      prevRest.current = rest;
-      prevTickSec.current = null;
-      return;
-    }
-
-    if (!prevActive.current && restActive) {
-      playTimerCue("rest", packId);
-      prevTickSec.current = null;
-    }
-
-    const sec = countdownSecond(rest);
-    if (sec >= 1 && sec <= 3 && sec !== prevTickSec.current) {
-      playTimerCue("tick", packId);
-      prevTickSec.current = sec;
-    }
-
-    prevActive.current = restActive;
-    prevRest.current = rest;
-  }, [enabled, packId, rest, restActive]);
+    return () => {
+      stopStartCountdown();
+    };
+  }, []);
 }
+
+export function useRestTimerSounds(
+  rest: number,
+  restActive: boolean,
+  enabled: boolean,
+  _packId?: string,
+) {
+  const countdownPlaying = useRef(false);
+
+  useEffect(() => {
+    if (enabled) {
+      void preloadStartCountdownSound();
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || !restActive || rest <= 0) {
+      if (countdownPlaying.current) {
+        stopStartCountdown();
+        countdownPlaying.current = false;
+      }
+      return;
+    }
+
+    // Play 3-2-1 countdown on the last 3 seconds of rest timer
+    if (rest <= 3.05) {
+      if (!countdownPlaying.current) {
+        countdownPlaying.current = true;
+        const offset = Math.max(0, 3.0 - rest);
+        playStartCountdown(offset);
+      }
+    }
+  }, [enabled, rest, restActive]);
+
+  useEffect(() => {
+    return () => {
+      stopStartCountdown();
+    };
+  }, []);
+}
+
+

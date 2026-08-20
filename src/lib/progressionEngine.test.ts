@@ -117,7 +117,12 @@ describe("double progression", () => {
 });
 
 describe("resolveWeightIncrement", () => {
-  it("uses lower increment for leg muscles", () => {
+  it("prioritizes single weightIncrementKg", () => {
+    expect(resolveWeightIncrement("Beine", { weightIncrementKg: 3 })).toBe(3);
+    expect(resolveWeightIncrement("Brust", { weightIncrementKg: 1.5 })).toBe(1.5);
+  });
+
+  it("uses legacy lower/upper fallback when weightIncrementKg is undefined", () => {
     expect(resolveWeightIncrement("Beine", { weightIncrementUpperKg: 2.5, weightIncrementLowerKg: 5 })).toBe(5);
     expect(resolveWeightIncrement("Brust")).toBe(2.5);
   });

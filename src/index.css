@@ -92,6 +92,32 @@ body {
   box-shadow: 0 0 0 1px rgba(24, 24, 27, 0.14);
 }
 
+input,
+textarea {
+  font-size: 16px;
+  font-family: inherit;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+select {
+  font-size: 16px;
+  font-family: inherit;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+textarea {
+  font-size: 16px;
+}
+
 input::placeholder {
   color: #a1a1aa;
 }
@@ -109,3 +135,4 @@ button {
 * {
   scrollbar-width: none;
 }
+

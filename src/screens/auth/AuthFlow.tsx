@@ -16,9 +16,10 @@ const inputStyle: React.CSSProperties = {
   background: M.card,
   color: M.fg,
   fontFamily: M.body,
-  fontSize: 15,
+  fontSize: 16,
   outline: "none",
   boxSizing: "border-box",
+  WebkitAppearance: "none",
 };
 
 const linkBtn: React.CSSProperties = {
@@ -143,7 +144,7 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           <div
             style={{
               background: M.dangerSoft,
-              border: "1px solid M.dangerBorder",
+              border: "1px solid " + M.line,
               borderRadius: 12,
               padding: "12px 14px",
               color: M.danger,
@@ -170,66 +171,47 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {(step === "login" || step === "signup" || step === "forgot" || step === "reset") && (
+        {step === "login" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitLogin();
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
             <input
               type="email"
+              name="email"
               placeholder={t("auth.email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               style={inputStyle}
             />
-          )}
-
-          {step === "signup" && (
-            <input
-              type="text"
-              placeholder={t("auth.displayName")}
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              autoComplete="name"
-              style={inputStyle}
-            />
-          )}
-
-          {(step === "login" || step === "signup") && (
             <input
               type="password"
+              name="password"
               placeholder={t("auth.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete={step === "signup" ? "new-password" : "current-password"}
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               style={inputStyle}
             />
-          )}
-
-          {step === "reset" && (
-            <>
-              <input
-                type="text"
-                placeholder={t("auth.resetCode")}
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                style={inputStyle}
-              />
-              <input
-                type="password"
-                placeholder={t("auth.newPassword")}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                style={inputStyle}
-              />
-            </>
-          )}
-        </div>
-
-        {step === "login" && (
-          <>
-            <MButton disabled={busy} onClick={submitLogin} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
+            <MButton
+              type="submit"
+              disabled={busy || !email.trim() || !password}
+              loading={busy}
+              variant="primary"
+              size="md"
+              fullWidth
+              style={{ marginTop: 8 }}
+            >
               {t("auth.action.login")}
             </MButton>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
@@ -240,25 +222,130 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
                 {t("auth.create")}
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {step === "signup" && (
-          <>
-            <MButton disabled={busy} onClick={submitSignup} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitSignup();
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <input
+              type="email"
+              name="email"
+              placeholder={t("auth.email")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              name="displayName"
+              placeholder={t("auth.displayName")}
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              autoComplete="name"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder={t("auth.password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <MButton
+              type="submit"
+              disabled={busy || !email.trim() || !password}
+              loading={busy}
+              variant="primary"
+              size="md"
+              fullWidth
+              style={{ marginTop: 8 }}
+            >
               {t("auth.action.signup")}
             </MButton>
+            <div
+              style={{
+                fontSize: 12,
+                color: M.mut,
+                textAlign: "center",
+                marginTop: 10,
+                lineHeight: 1.4,
+              }}
+            >
+              {t("auth.legalNoticePrefix")}{" "}
+              <a
+                href={`${(import.meta.env.VITE_LEGAL_BASE_URL ?? "https://rephive.app").replace(/\/$/, "")}/agb`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: M.fgBody, textDecoration: "underline", fontWeight: 500 }}
+              >
+                {t("auth.terms")}
+              </a>{" "}
+              {t("auth.and")}{" "}
+              <a
+                href={`${(import.meta.env.VITE_LEGAL_BASE_URL ?? "https://rephive.app").replace(/\/$/, "")}/datenschutz`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: M.fgBody, textDecoration: "underline", fontWeight: 500 }}
+              >
+                {t("auth.privacy")}
+              </a>
+              .
+            </div>
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button type="button" style={linkBtn} onClick={() => setStep("login")}>
                 {t("auth.hasAccount")}
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {step === "forgot" && (
-          <>
-            <MButton disabled={busy} onClick={submitForgot} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitForgot();
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <input
+              type="email"
+              name="email"
+              placeholder={t("auth.email")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <MButton
+              type="submit"
+              disabled={busy || !email.trim()}
+              loading={busy}
+              variant="primary"
+              size="md"
+              fullWidth
+              style={{ marginTop: 8 }}
+            >
               {t("auth.action.sendCode")}
             </MButton>
             <div style={{ textAlign: "center", marginTop: 16 }}>
@@ -266,12 +353,63 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
                 {t("auth.backToLogin")}
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {step === "reset" && (
-          <>
-            <MButton disabled={busy} onClick={submitReset} variant="primary" size="md" fullWidth style={{ marginTop: 8 }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitReset();
+            }}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            <input
+              type="email"
+              name="email"
+              placeholder={t("auth.email")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              name="token"
+              placeholder={t("auth.resetCode")}
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <input
+              type="password"
+              name="newPassword"
+              placeholder={t("auth.newPassword")}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              style={inputStyle}
+            />
+            <MButton
+              type="submit"
+              disabled={busy || !email.trim() || !token.trim() || !newPassword}
+              loading={busy}
+              variant="primary"
+              size="md"
+              fullWidth
+              style={{ marginTop: 8 }}
+            >
               {t("auth.action.savePassword")}
             </MButton>
             <div style={{ textAlign: "center", marginTop: 16 }}>
@@ -279,9 +417,10 @@ export function AuthFlow({ initialStep = "login" }: AuthFlowProps) {
                 {t("auth.backToLogin")}
               </button>
             </div>
-          </>
+          </form>
         )}
       </div>
     </div>
   );
 }
+

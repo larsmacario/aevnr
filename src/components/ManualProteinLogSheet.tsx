@@ -107,12 +107,14 @@ export function ManualProteinLogSheet({ open, onClose, onSaved, userId }: Manual
         style={{
           width: "100%",
           marginTop: 16,
-          padding: "10px 12px",
+          padding: "12px 14px",
           borderRadius: 10,
           border: "1px solid " + M.line2,
           background: M.panel,
           color: M.fg,
-          fontSize: 14,
+          fontSize: 16,
+          boxSizing: "border-box",
+          WebkitAppearance: "none",
         }}
       />
       <div style={{ fontSize: 14, color: M.brand, fontWeight: 700, marginTop: 16, marginBottom: 16, textAlign: "center" }}>

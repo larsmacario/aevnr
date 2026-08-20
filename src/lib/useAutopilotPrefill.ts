@@ -50,7 +50,7 @@ function muscleGroupForExercise(
 export function useAutopilotPrefill(
   userId: string | undefined,
   exercises: Exercise[],
-  preferences: Pick<UserPreferences, "weightIncrementUpperKg" | "weightIncrementLowerKg">,
+  preferences: Pick<UserPreferences, "weightIncrementKg" | "weightIncrementUpperKg" | "weightIncrementLowerKg">,
   library: LibraryExercise[] = [],
   applyDeloadExerciseIds: Set<string> = new Set(),
 ): AutopilotPrefillState {
@@ -151,7 +151,7 @@ export function useAutopilotPrefill(
     return () => {
       cancelled = true;
     };
-  }, [userId, exerciseKey, preferences.weightIncrementUpperKg, preferences.weightIncrementLowerKg, libraryGroupKey]);
+  }, [userId, exerciseKey, preferences.weightIncrementKg, preferences.weightIncrementUpperKg, preferences.weightIncrementLowerKg, libraryGroupKey]);
 
   return state;
 }

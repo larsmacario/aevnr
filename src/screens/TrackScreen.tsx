@@ -11,7 +11,6 @@ import { useAutopilotPrefill } from "../lib/useAutopilotPrefill";
 import { computeNextTarget, inferExerciseBlockFormat, inferTargetRepRange, isWorkingSetPr, resolveWeightIncrement } from "../lib/progressionEngine";
 import { usePreferences } from "../lib/preferences";
 import { useRestTimerSounds } from "../lib/useTimerSounds";
-import { DEFAULT_TIMER_SOUND_PACK_ID } from "../lib/timerSoundPacks";
 import { useContentColumnStyle, CONTENT_HORIZONTAL_PADDING } from "../lib/responsive";
 import type { ActiveWorkoutSnapshot } from "../lib/activeWorkout";
 import {
@@ -122,7 +121,7 @@ export function TrackScreen({ session, startedAt, planDayId, tags, planId, expre
     restSeconds: preferences.restSeconds,
     autoRest: preferences.autoRest,
   });
-  useRestTimerSounds(W.rest, W.restActive, preferences.timerSounds, DEFAULT_TIMER_SOUND_PACK_ID);
+  useRestTimerSounds(W.rest, W.restActive, preferences.timerSounds);
 
   const [view, setView] = useState<TrackView>("overview");
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);

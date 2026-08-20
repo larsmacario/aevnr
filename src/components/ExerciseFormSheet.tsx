@@ -168,9 +168,10 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
               border: "1px solid " + M.line,
               background: M.card,
               color: M.fg,
-              fontSize: 15,
+              fontSize: 16,
               outline: "none",
               boxSizing: "border-box",
+              WebkitAppearance: "none",
             }}
           />
         </label>
@@ -191,12 +192,13 @@ export function ExerciseFormSheet({ open, exercise, onClose, onSaved }: Exercise
               border: "1px solid " + M.line,
               background: M.card,
               color: M.fg,
-              fontSize: 15,
+              fontSize: 16,
               outline: "none",
               boxSizing: "border-box",
               resize: "vertical",
               minHeight: 72,
               fontFamily: "inherit",
+              WebkitAppearance: "none",
             }}
           />
         </label>

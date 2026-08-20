@@ -38,16 +38,17 @@ const rowValueStyle: React.CSSProperties = {
 
 const compactInputStyle: React.CSSProperties = {
   width: "100%",
-  height: 38,
+  height: 42,
   borderRadius: 10,
   border: "1px solid " + M.line,
   background: M.panel,
   color: M.fg,
   fontFamily: M.body,
-  fontSize: 14,
-  padding: "0 10px",
+  fontSize: 16,
+  padding: "0 12px",
   outline: "none",
   boxSizing: "border-box",
+  WebkitAppearance: "none",
 };
 
 const smallOutlineBtn: React.CSSProperties = {

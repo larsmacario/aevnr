@@ -11,7 +11,9 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ios:sync": "npm run build && npx cap sync ios",
+    "postinstall": "node scripts/patch-bluetooth-le.js && node scripts/prepare-app-store-assets.js",
+    "appstore:prep": "node scripts/prepare-app-store-assets.js",
+    "ios:sync": "npm run appstore:prep && npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
   "dependencies": {

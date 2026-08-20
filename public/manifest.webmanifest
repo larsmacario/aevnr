@@ -1,15 +1,15 @@
 {
   "name": "ÆVNR",
   "short_name": "ÆVNR",
-  "description": "Workouts erstellen, live tracken und Interval-Timer (EMOM / AMRAP / TABATA / For Time).",
+  "description": "Healthspan-Coach & Workout-Tracker für präventive Fitness und Training.",
   "lang": "de",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FFFFFF",
+  "background_color": "#F6F6F4",
+  "theme_color": "#F6F6F4",
   "icons": [
     {
       "src": "./favicon/favicon-96x96.png",

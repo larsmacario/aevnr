@@ -27,9 +27,10 @@ const inputStyle: React.CSSProperties = {
   background: M.card,
   color: M.fg,
   fontFamily: M.body,
-  fontSize: 15,
+  fontSize: 16,
   outline: "none",
   boxSizing: "border-box",
+  WebkitAppearance: "none",
 };
 
 const labelStyle: React.CSSProperties = {

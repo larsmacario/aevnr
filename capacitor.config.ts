@@ -4,11 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.larsmacario.rephive',
   appName: 'ÆVNR',
   webDir: 'dist',
-  backgroundColor: '#FFFFFF',
+  backgroundColor: '#F6F6F4',
   ios: {
     scrollEnabled: true,
     contentInset: 'never',
-    backgroundColor: '#FFFFFF'
+    backgroundColor: '#F6F6F4'
   }
 };
 

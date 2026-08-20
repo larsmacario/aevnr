@@ -13,7 +13,7 @@ import { AppLogo } from "../components/AppLogo";
 import { MButton } from "../components/MButton";
 import { createBodyMeasurement, saveDailyCheckin } from "../lib/db";
 import { recommendHealthspanAction, type CoachRecommendation } from "../lib/healthspan";
-import { useBreakpoint, FOOTER_BAR_PADDING_BOTTOM } from "../lib/responsive";
+import { useBreakpoint } from "../lib/responsive";
 import { detectFactTimezone, FACT_TOPICS, type FactTopic } from "../lib/facts";
 import { useI18n } from "../lib/i18n";
 import type { AppLanguage } from "../lib/language";
@@ -27,27 +27,31 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
   const { language, setLanguage, t } = useI18n();
   const breakpoint = useBreakpoint();
   const [step, setStep] = useState(0);
-  const [displayName, setDisplayName] = useState("");
-  const [primaryFocus, setPrimaryFocus] = useState<AevnrFocus | null>(null);
+  const [displayName, setDisplayName] = useState(() => profile?.display_name || user?.user_metadata?.display_name || "");
+  const [primaryFocus, setPrimaryFocus] = useState<AevnrFocus | null>("strength");
   const [secondaryFocus, setSecondaryFocus] = useState<AevnrFocus | null>(null);
   const [weeklyDays, setWeeklyDays] = useState(3);
-  const [minutesPerSession, setMinutesPerSession] = useState<number | null>(null);
-  const [trainingLocation, setTrainingLocation] = useState<"gym" | "home_equipment" | "bodyweight" | null>(null);
-  const [birthDate, setBirthDate] = useState("");
+  const [minutesPerSession, setMinutesPerSession] = useState<number | null>(45);
+  const [trainingLocation, setTrainingLocation] = useState<"gym" | "home_equipment" | "bodyweight" | null>("gym");
+  const [birthDate, setBirthDate] = useState(() => profile?.birth_date ?? "");
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [sleepHours, setSleepHours] = useState(7);
   const [sleepQuality, setSleepQuality] = useState(6);
   const [stressLevel, setStressLevel] = useState(5);
   const [energyLevel, setEnergyLevel] = useState(6);
-  const [factTopics, setFactTopics] = useState<FactTopic[]>([]);
+  const [factTopics, setFactTopics] = useState<FactTopic[]>(["nutrition", "movement", "sleep"]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<CoachRecommendation | null>(null);
 
   useEffect(() => {
-    setDisplayName(profile?.display_name ?? "");
-    setBirthDate(profile?.birth_date ?? "");
+    if (profile?.display_name && !displayName) {
+      setDisplayName(profile.display_name);
+    }
+    if (profile?.birth_date && !birthDate) {
+      setBirthDate(profile.birth_date);
+    }
   }, [profile?.display_name, profile?.birth_date]);
 
   const focusOptions: { id: AevnrFocus; label: string; detail: string; icon: "dumbbell" | "timer" | "bolt" | "flame" }[] = useMemo(() => [
@@ -61,6 +65,21 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
     padding: "14px", borderRadius: 14, border: `1px solid ${selected ? M.brand : M.line}`,
     background: selected ? M.cardHi : M.card, color: M.fg, textAlign: "left", cursor: "pointer",
   });
+
+  const inputStyle: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "14px 16px",
+    borderRadius: 12,
+    border: `1px solid ${M.line}`,
+    background: M.card,
+    color: M.fg,
+    fontFamily: M.body,
+    fontSize: 16,
+    outline: "none",
+    WebkitAppearance: "none",
+  };
 
   const validateStep = () => {
     if (step === 1 && (!displayName.trim() || !primaryFocus)) return t("onboarding.validation.profile");
@@ -77,42 +96,68 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
   };
 
   const finish = async () => {
-    if (!user || !primaryFocus || !minutesPerSession || !trainingLocation) return;
+    if (!user) return;
     setBusy(true);
     setError(null);
     try {
-      if (displayName.trim() !== profile?.display_name) {
-        const { error: nameError } = await updateDisplayName(displayName.trim());
-        if (nameError) throw new Error(nameError);
-      }
-      if (birthDate.trim() && birthDate.trim() !== profile?.birth_date) {
-        const { error: birthDateError } = await updateBirthDate(birthDate.trim());
-        if (birthDateError) throw new Error(birthDateError);
-      }
-      const parsedWeight = weightKg ? Number(weightKg) : null;
-      if (parsedWeight && Number.isFinite(parsedWeight)) await createBodyMeasurement(user.id, { weightKg: parsedWeight });
-      await saveDailyCheckin(user.id, { sleepHours, sleepQuality, stressLevel, energyLevel });
+      const effectiveFocus = primaryFocus || "strength";
+      const effectiveMinutes = minutesPerSession || 45;
+      const effectiveLocation = trainingLocation || "gym";
+      const effectiveTopics: FactTopic[] = factTopics.length > 0 ? factTopics : ["nutrition", "movement", "sleep"];
+      const nameToSave = displayName.trim() || profile?.display_name || user.email?.split("@")[0] || "User";
 
+      if (nameToSave !== profile?.display_name) {
+        try {
+          await updateDisplayName(nameToSave);
+        } catch (e) {
+          console.warn("Could not update display name:", e);
+        }
+      }
+
+      if (birthDate.trim() && birthDate.trim() !== profile?.birth_date) {
+        try {
+          await updateBirthDate(birthDate.trim());
+        } catch (e) {
+          console.warn("Could not update birth date:", e);
+        }
+      }
+
+      const parsedWeight = weightKg ? Number(weightKg.replace(",", ".")) : null;
+      if (parsedWeight && Number.isFinite(parsedWeight) && parsedWeight > 0) {
+        try {
+          await createBodyMeasurement(user.id, { weightKg: parsedWeight });
+        } catch (e) {
+          console.warn("Could not save initial weight:", e);
+        }
+      }
+
+      try {
+        await saveDailyCheckin(user.id, { sleepHours, sleepQuality, stressLevel, energyLevel });
+      } catch (e) {
+        console.warn("Could not save initial checkin:", e);
+      }
+
+      const parsedHeight = heightCm ? Number(heightCm.replace(",", ".")) : null;
       await updatePreferences({
         onboarded: true,
         onboardingVersion: ONBOARDING_VERSION,
-        primaryFocus,
-        secondaryFocus: secondaryFocus === primaryFocus ? null : secondaryFocus,
-        factTopics,
+        primaryFocus: effectiveFocus,
+        secondaryFocus: secondaryFocus === effectiveFocus ? null : secondaryFocus,
+        factTopics: effectiveTopics,
         factTimezone: detectFactTimezone(),
-        fitnessGoal: legacyFitnessGoalForFocus(primaryFocus!),
+        fitnessGoal: legacyFitnessGoalForFocus(effectiveFocus),
         weeklyDays,
-        heightCm: heightCm && Number.isFinite(Number(heightCm)) ? Number(heightCm) : null,
+        heightCm: parsedHeight && Number.isFinite(parsedHeight) ? parsedHeight : null,
         anamnesis: {
           painZones: preferences.anamnesis?.painZones ?? [],
-          trainingLocation: trainingLocation!,
+          trainingLocation: effectiveLocation,
           homeEquipment: preferences.anamnesis?.homeEquipment,
           otherSports: preferences.anamnesis?.otherSports ?? [],
           kfa: preferences.anamnesis?.kfa ?? null,
           waistCm: preferences.anamnesis?.waistCm ?? null,
           hipsCm: preferences.anamnesis?.hipsCm ?? null,
           htv: preferences.anamnesis?.htv ?? null,
-          minutesPerSession,
+          minutesPerSession: effectiveMinutes,
           trainingStructure: preferences.anamnesis?.trainingStructure ?? null,
           trainingSplitDays: preferences.anamnesis?.trainingSplitDays ?? null,
           trainingWeekdays: preferences.anamnesis?.trainingWeekdays ?? [],
@@ -129,11 +174,12 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
       const result = recommendHealthspanAction({
         completedStrengthDays: 0, strengthTargetDays: weeklyDays, zone2Minutes: 0,
         proteinG: 0, proteinTargetG: 100, waterMl: 0, waterTargetMl: 2500,
-        checkins: [{ sleepHours, sleepQuality, stressLevel, energyLevel }], primaryFocus,
+        checkins: [{ sleepHours, sleepQuality, stressLevel, energyLevel }], primaryFocus: effectiveFocus,
       }, language);
       setRecommendation(result);
       setStep(6);
     } catch (cause) {
+      console.error("Onboarding error:", cause);
       setError(cause instanceof Error ? cause.message : t("onboarding.error.save"));
     } finally {
       setBusy(false);
@@ -162,14 +208,53 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
       {step === 0 && <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>{t("language.title")}</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>{t("language.subtitle")}</p></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {(["de", "en"] as AppLanguage[]).map((option) => <button key={option} type="button" aria-pressed={language === option} onClick={() => void setLanguage(option)} style={{ ...tileStyle(language === option), minHeight: 112, textAlign: "center" }}><div style={{ fontFamily: M.display, fontSize: 28, color: language === option ? M.brand : M.fg }}>{option.toUpperCase()}</div><div style={{ fontWeight: 700, marginTop: 8 }}>{t(`language.name.${option}` as TranslationKey)}</div></button>)}
+          {(["de", "en"] as AppLanguage[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={language === option}
+              onClick={() => void setLanguage(option)}
+              style={{
+                ...tileStyle(language === option),
+                minHeight: 112,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div style={{ fontSize: 26, lineHeight: 1, marginBottom: 6 }}>{option === "de" ? "🇩🇪" : "🇬🇧"}</div>
+              <div style={{ fontFamily: M.display, fontSize: 20, color: language === option ? M.brand : M.fg }}>
+                {option.toUpperCase()}
+              </div>
+              <div style={{ fontWeight: 700, marginTop: 4, fontSize: 13, color: language === option ? M.fg : M.mut }}>
+                {t(`language.name.${option}` as TranslationKey)}
+              </div>
+            </button>
+          ))}
         </div>
         <p style={{ color: M.mut, fontSize: 13, lineHeight: 1.5, margin: 0 }}>{t("language.detected")}</p>
       </div>}
       {step === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>{t("onboarding.focus.title")}</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>{t("onboarding.focus.subtitle")}</p></div>
         <label style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("onboarding.focus.nameLabel")}</label>
-        <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder={t("onboarding.focus.namePlaceholder")} autoFocus style={{ width: "100%", boxSizing: "border-box", padding: "13px 14px", borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit" }} />
+        <input
+          type="text"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          placeholder={t("onboarding.focus.namePlaceholder")}
+          autoComplete="name"
+          autoCapitalize="words"
+          autoCorrect="off"
+          spellCheck={false}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              next();
+            }
+          }}
+          style={inputStyle}
+        />
         <div style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("onboarding.focus.primary")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>{focusOptions.map((focus) => <button key={focus.id} type="button" onClick={() => { setPrimaryFocus(focus.id); if (secondaryFocus === focus.id) setSecondaryFocus(null); }} style={tileStyle(primaryFocus === focus.id)}><Icon name={focus.icon} size={19} color={primaryFocus === focus.id ? M.brand : M.fg} /><div style={{ fontWeight: 700, marginTop: 8 }}>{focus.label}</div><div style={{ color: M.mut, fontSize: 12, marginTop: 3 }}>{focus.detail}</div></button>)}</div>
         <div style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("onboarding.focus.secondary")} <span style={{ fontWeight: 400 }}>({t("common.optional")})</span></div>
@@ -187,8 +272,14 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
       {step === 3 && <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>{t("onboarding.body.title")}</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>{t("onboarding.body.subtitle")}</p></div>
         <BirthDateField value={birthDate} onChange={setBirthDate} />
-        <label style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("onboarding.body.height")} <span style={{ fontWeight: 400 }}>({t("common.optional")})</span><input type="number" value={heightCm} min="50" max="280" placeholder={t("onboarding.body.heightPlaceholder")} onChange={(event) => setHeightCm(event.target.value)} style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 8, padding: "13px 14px", borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit" }} /></label>
-        <label style={{ fontSize: 13, color: M.mut, fontWeight: 700 }}>{t("onboarding.body.weight")} <span style={{ fontWeight: 400 }}>({t("common.optional")})</span><input type="number" value={weightKg} min="20" max="300" step="0.1" placeholder={t("onboarding.body.weightPlaceholder")} onChange={(event) => setWeightKg(event.target.value)} style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 8, padding: "13px 14px", borderRadius: 12, border: `1px solid ${M.line}`, background: M.card, color: M.fg, font: "inherit" }} /></label>
+        <div>
+          <label style={{ display: "block", fontSize: 13, color: M.mut, fontWeight: 700, marginBottom: 8 }}>{t("onboarding.body.height")} <span style={{ fontWeight: 400 }}>({t("common.optional")})</span></label>
+          <input type="text" inputMode="numeric" pattern="[0-9]*" value={heightCm} placeholder={t("onboarding.body.heightPlaceholder")} onChange={(event) => setHeightCm(event.target.value.replace(/[^0-9]/g, ""))} style={inputStyle} />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 13, color: M.mut, fontWeight: 700, marginBottom: 8 }}>{t("onboarding.body.weight")} <span style={{ fontWeight: 400 }}>({t("common.optional")})</span></label>
+          <input type="text" inputMode="decimal" value={weightKg} placeholder={t("onboarding.body.weightPlaceholder")} onChange={(event) => setWeightKg(event.target.value.replace(/[^0-9.,]/g, ""))} style={inputStyle} />
+        </div>
       </div>}
       {step === 4 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div><h1 style={{ margin: 0, fontFamily: M.display, fontSize: 32 }}>{t("onboarding.checkin.title")}</h1><p style={{ color: M.mut, lineHeight: 1.5 }}>{t("onboarding.checkin.subtitle")}</p></div>
@@ -212,19 +303,53 @@ export function OnboardingWizard({ onComplete }: { onComplete: (action: Onboardi
   );
 
   const pageInsets: React.CSSProperties = breakpoint === "desktop"
-    ? { paddingTop: 36, paddingRight: 48, paddingBottom: 32, paddingLeft: 48 }
+    ? { paddingTop: 24, paddingRight: 32, paddingBottom: 24, paddingLeft: 32 }
     : {
-        paddingTop: "max(24px, env(safe-area-inset-top, 0px))",
-        paddingRight: "max(22px, env(safe-area-inset-right, 0px))",
-        paddingBottom: `max(${FOOTER_BAR_PADDING_BOTTOM}, 18px)`,
-        paddingLeft: "max(22px, env(safe-area-inset-left, 0px))",
+        paddingTop: 16,
+        paddingRight: 16,
+        paddingBottom: 16,
+        paddingLeft: 16,
       };
 
-  return <div style={{ width: "100%", height: "100%", minWidth: 0, display: "flex", background: M.bg, color: M.fg, fontFamily: M.body }}>
-    <div style={{ width: "100%", maxWidth: 840, minWidth: 0, margin: "0 auto", boxSizing: "border-box", display: "flex", flexDirection: "column", ...pageInsets }}>
-      <header style={{ flexShrink: 0, marginBottom: 24 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}><AppLogo size={32} /><span style={{ color: M.mut, fontSize: 13, fontWeight: 700 }}>{step === 6 ? t("onboarding.ready") : t("onboarding.step", { current: step + 1, total: 6 })}</span></div><div style={{ height: 3, background: M.line, borderRadius: 3 }}><div style={{ width: `${Math.min(100, ((step + 1) / 7) * 100)}%`, height: "100%", background: M.brand, borderRadius: 3, transition: "width .25s ease" }} /></div></header>
-      <main style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: 18 }}>{error ? <div style={{ marginBottom: 16, padding: 12, borderRadius: 12, background: M.dangerSoft, color: M.danger, fontSize: 13 }}>{error}</div> : null}{content}</main>
-      <footer style={{ flexShrink: 0, paddingTop: 12, display: "flex", gap: 10, justifyContent: step > 0 && step < 6 ? "space-between" : "flex-end" }}>{step > 0 && step < 6 ? <MButton type="button" variant="secondary" size="md" disabled={busy} onClick={() => { setError(null); setStep(step - 1); }}>{t("common.back")}</MButton> : null}{step === 6 && recommendation ? <MButton type="button" variant="primary" size="md" onClick={() => onComplete(recommendation.action)}>{t("onboarding.complete.start")} <Icon name="chevR" size={16} /></MButton> : step === 5 ? <MButton type="button" variant="primary" size="md" disabled={busy} onClick={() => void finish()}>{busy ? t("onboarding.saving") : t("onboarding.create")}</MButton> : <MButton type="button" variant="primary" size="md" fullWidth={step === 0} onClick={next}>{t("common.continue")} <Icon name="chevR" size={16} /></MButton>}</footer>
+  return (
+    <div style={{ width: "100%", height: "100%", minWidth: 0, display: "flex", flexDirection: "column", background: M.bg, color: M.fg, fontFamily: M.body }}>
+      <div style={{ width: "100%", maxWidth: 840, minWidth: 0, margin: "0 auto", boxSizing: "border-box", display: "flex", flexDirection: "column", flex: 1, minHeight: 0, ...pageInsets }}>
+        <header style={{ flexShrink: 0, marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <AppLogo size={32} />
+            <span style={{ color: M.mut, fontSize: 13, fontWeight: 700 }}>
+              {step === 6 ? t("onboarding.ready") : t("onboarding.step", { current: step + 1, total: 6 })}
+            </span>
+          </div>
+          <div style={{ height: 3, background: M.line, borderRadius: 3 }}>
+            <div style={{ width: `${Math.min(100, ((step + 1) / 7) * 100)}%`, height: "100%", background: M.brand, borderRadius: 3, transition: "width .25s ease" }} />
+          </div>
+        </header>
+        <main style={{ flex: "1 1 0%", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 18 }}>
+          {error ? <div style={{ marginBottom: 16, padding: 12, borderRadius: 12, background: M.dangerSoft, color: M.danger, fontSize: 13 }}>{error}</div> : null}
+          {content}
+        </main>
+        <footer style={{ flexShrink: 0, paddingTop: 12, display: "flex", gap: 10, justifyContent: step > 0 && step < 6 ? "space-between" : "flex-end" }}>
+          {step > 0 && step < 6 ? (
+            <MButton type="button" variant="secondary" size="md" disabled={busy} onClick={() => { setError(null); setStep(step - 1); }}>
+              {t("common.back")}
+            </MButton>
+          ) : null}
+          {step === 6 && recommendation ? (
+            <MButton type="button" variant="primary" size="md" onClick={() => onComplete(recommendation.action)}>
+              {t("onboarding.complete.start")} <Icon name="chevR" size={16} />
+            </MButton>
+          ) : step === 5 ? (
+            <MButton type="button" variant="primary" size="md" disabled={busy} onClick={() => void finish()}>
+              {busy ? t("onboarding.saving") : t("onboarding.create")}
+            </MButton>
+          ) : (
+            <MButton type="button" variant="primary" size="md" fullWidth={step === 0} onClick={next}>
+              {t("common.continue")} <Icon name="chevR" size={16} />
+            </MButton>
+          )}
+        </footer>
+      </div>
     </div>
-  </div>;
+  );
 }

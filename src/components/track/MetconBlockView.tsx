@@ -58,8 +58,6 @@ export function MetconBlockView({
       idle: T.idle,
     },
     preferences.timerSounds,
-    preferences.timerSoundPack,
-    config.durationSec,
   );
 
   useEffect(() => {

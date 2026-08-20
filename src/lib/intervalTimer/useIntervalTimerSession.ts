@@ -42,7 +42,7 @@ export function useIntervalTimerSession({ onSaveSession, initialMode = "emom", i
     });
   const T = useTimer(mode, cfg);
   const { setActive: setTimerActive } = useActiveTimer();
-  useIntervalTimerSounds(T, preferences.timerSounds, preferences.timerSoundPack, cfg.cap);
+  useIntervalTimerSounds(T, preferences.timerSounds);
 
   useEffect(() => {
     setTimerActive(!T.idle);

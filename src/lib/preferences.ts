@@ -171,8 +171,9 @@ export interface UserPreferences {
   timerSoundPack: string;
   defaultSets: number;
   defaultReps: number;
-  weightIncrementUpperKg: number;
-  weightIncrementLowerKg: number;
+  weightIncrementKg: number;
+  weightIncrementUpperKg?: number;
+  weightIncrementLowerKg?: number;
   timerDefaults: Record<TimerMode, TimerCfg>;
   breathingPresets: BreathingPresetConfigs;
   gender: "male" | "female" | "other" | null;
@@ -230,8 +231,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   timerSoundPack: DEFAULT_TIMER_SOUND_PACK_ID,
   defaultSets: 3,
   defaultReps: 10,
+  weightIncrementKg: 2.5,
   weightIncrementUpperKg: 2.5,
-  weightIncrementLowerKg: 5,
+  weightIncrementLowerKg: 2.5,
   timerDefaults: cloneTimerDefaults(),
   breathingPresets: cloneBreathingPresets(),
   gender: null,
@@ -280,6 +282,13 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
     };
   }
   const obj = raw as Record<string, unknown>;
+  const resolvedIncrement =
+    typeof obj.weightIncrementKg === "number"
+      ? obj.weightIncrementKg
+      : typeof obj.weightIncrementUpperKg === "number"
+      ? obj.weightIncrementUpperKg
+      : DEFAULT_PREFERENCES.weightIncrementKg;
+
   return {
     language: normalizeAppLanguage(obj.language) ?? detectAppLanguage(),
     restSeconds:
@@ -292,14 +301,11 @@ export function mergePreferences(raw: Json | null | undefined): UserPreferences 
       typeof obj.defaultSets === "number" ? obj.defaultSets : DEFAULT_PREFERENCES.defaultSets,
     defaultReps:
       typeof obj.defaultReps === "number" ? obj.defaultReps : DEFAULT_PREFERENCES.defaultReps,
+    weightIncrementKg: resolvedIncrement,
     weightIncrementUpperKg:
-      typeof obj.weightIncrementUpperKg === "number"
-        ? obj.weightIncrementUpperKg
-        : DEFAULT_PREFERENCES.weightIncrementUpperKg,
+      typeof obj.weightIncrementUpperKg === "number" ? obj.weightIncrementUpperKg : resolvedIncrement,
     weightIncrementLowerKg:
-      typeof obj.weightIncrementLowerKg === "number"
-        ? obj.weightIncrementLowerKg
-        : DEFAULT_PREFERENCES.weightIncrementLowerKg,
+      typeof obj.weightIncrementLowerKg === "number" ? obj.weightIncrementLowerKg : resolvedIncrement,
     timerDefaults: mergeTimerDefaults(obj.timerDefaults),
     breathingPresets: normalizeBreathingPresets(obj.breathingPresets),
     gender:
@@ -391,8 +397,9 @@ export function preferencesToJson(prefs: UserPreferences): Json {
     timerSoundPack: prefs.timerSoundPack,
     defaultSets: prefs.defaultSets,
     defaultReps: prefs.defaultReps,
-    weightIncrementUpperKg: prefs.weightIncrementUpperKg,
-    weightIncrementLowerKg: prefs.weightIncrementLowerKg,
+    weightIncrementKg: prefs.weightIncrementKg,
+    weightIncrementUpperKg: prefs.weightIncrementUpperKg ?? prefs.weightIncrementKg,
+    weightIncrementLowerKg: prefs.weightIncrementLowerKg ?? prefs.weightIncrementKg,
     timerDefaults: JSON.parse(JSON.stringify(prefs.timerDefaults)),
     breathingPresets: JSON.parse(JSON.stringify(prefs.breathingPresets)),
     gender: prefs.gender,

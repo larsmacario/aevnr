@@ -11,6 +11,7 @@ export interface MStepperProps {
   fmt?: (v: number) => string;
   disabled?: boolean;
   size?: "default" | "lg";
+  minWidth?: number;
 }
 
 export function MStepper({
@@ -22,17 +23,20 @@ export function MStepper({
   fmt,
   disabled,
   size = "default",
+  minWidth,
 }: MStepperProps) {
   const isLg = size === "lg";
   const btnSize = isLg ? 44 : 26;
   const btnRadius = isLg ? 12 : 8;
   const iconSize = isLg ? 18 : 14;
   const valueFontSize = isLg ? 36 : 22;
-  const valueMinWidth = isLg ? 88 : 46;
+  const defaultMinWidth = isLg ? 96 : 72;
+  const valueMinWidth = minWidth ?? defaultMinWidth;
   const gap = isLg ? 16 : 8;
 
   const btn = (d: number) => (
     <button
+      type="button"
       disabled={disabled}
       onClick={() => onChange(Math.min(max, Math.max(min, value + d)))}
       style={{
@@ -47,6 +51,8 @@ export function MStepper({
         justifyContent: "center",
         cursor: disabled ? "default" : "pointer",
         flex: "0 0 auto",
+        userSelect: "none",
+        touchAction: "manipulation",
       }}
     >
       <Icon name={d > 0 ? "plus" : "minus"} size={iconSize} stroke={2.4} />

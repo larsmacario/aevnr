@@ -29,6 +29,7 @@ export interface SetSuggestion {
 }
 
 export interface WeightIncrementPrefs {
+  weightIncrementKg?: number;
   weightIncrementUpperKg?: number;
   weightIncrementLowerKg?: number;
 }
@@ -114,6 +115,9 @@ export function resolveWeightIncrement(
   muscleGroup?: string,
   prefs?: WeightIncrementPrefs,
 ): number {
+  if (typeof prefs?.weightIncrementKg === "number") {
+    return prefs.weightIncrementKg;
+  }
   const upper = prefs?.weightIncrementUpperKg ?? 2.5;
   const lower = prefs?.weightIncrementLowerKg ?? 5;
   if (!muscleGroup) return upper;

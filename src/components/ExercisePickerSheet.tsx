@@ -147,11 +147,12 @@ export function ExercisePickerSheet({
           border: "1px solid " + M.line,
           background: M.card,
           color: M.fg,
-          fontSize: 14,
+          fontSize: 16,
           outline: "none",
           marginBottom: 10,
           boxSizing: "border-box",
           flexShrink: 0,
+          WebkitAppearance: "none",
         }}
       />
 

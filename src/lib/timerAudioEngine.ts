@@ -26,6 +26,117 @@ function out(): GainNode | null {
   return master;
 }
 
+let countdownBuffer: AudioBuffer | null = null;
+let countdownLoadingPromise: Promise<AudioBuffer | null> | null = null;
+let currentCountdownSource: AudioBufferSourceNode | null = null;
+let fallbackAudio: HTMLAudioElement | null = null;
+
+export function getSoundAssetUrl(relativePath: string): string {
+  const clean = relativePath.startsWith("/") ? relativePath.slice(1) : relativePath;
+  if (typeof window !== "undefined" && window.location) {
+    try {
+      return new URL(clean, document.baseURI || window.location.href).href;
+    } catch {
+      // fallback
+    }
+  }
+  const base = (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "./";
+  return base.endsWith("/") ? `${base}${clean}` : `${base}/${clean}`;
+}
+
+export async function preloadStartCountdownSound(): Promise<AudioBuffer | null> {
+  if (typeof window === "undefined") return null;
+  const c = audio();
+  if (!c) return null;
+  if (countdownBuffer) return countdownBuffer;
+  if (countdownLoadingPromise) {
+    return countdownLoadingPromise;
+  }
+  countdownLoadingPromise = (async () => {
+    try {
+      const url = getSoundAssetUrl("sounds/3-2-1.mp3");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      countdownBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+        const promise = c.decodeAudioData(arrayBuffer, resolve, reject);
+        if (promise && typeof promise.then === "function") {
+          promise.then(resolve, reject);
+        }
+      });
+      return countdownBuffer;
+    } catch (e) {
+      console.warn("Could not decode 3-2-1 sound buffer:", e);
+      return null;
+    } finally {
+      countdownLoadingPromise = null;
+    }
+  })();
+  return countdownLoadingPromise;
+}
+
+export function stopStartCountdown() {
+  if (currentCountdownSource) {
+    try {
+      currentCountdownSource.stop();
+      currentCountdownSource.disconnect();
+    } catch {
+      // already stopped
+    }
+    currentCountdownSource = null;
+  }
+  if (fallbackAudio) {
+    try {
+      fallbackAudio.pause();
+      fallbackAudio.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function playStartCountdown(offsetSeconds = 0) {
+  stopStartCountdown();
+  const c = audio();
+  const destination = out();
+
+  if (c && destination && countdownBuffer) {
+    try {
+      const source = c.createBufferSource();
+      source.buffer = countdownBuffer;
+      source.connect(destination);
+      const validOffset = Math.max(0, Math.min(offsetSeconds, Math.max(0, countdownBuffer.duration - 0.05)));
+      source.start(0, validOffset);
+      currentCountdownSource = source;
+      source.onended = () => {
+        if (currentCountdownSource === source) {
+          currentCountdownSource = null;
+        }
+      };
+      return;
+    } catch (e) {
+      console.warn("Failed to play start countdown from buffer:", e);
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    void preloadStartCountdownSound();
+    const url = getSoundAssetUrl("sounds/3-2-1.mp3");
+    try {
+      if (!fallbackAudio) {
+        fallbackAudio = new Audio(url);
+      }
+      fallbackAudio.currentTime = Math.max(0, offsetSeconds);
+      void fallbackAudio.play().catch(() => {
+        // Autoplay policy or unhandled error
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+
 
 function tone(
   freq: number,

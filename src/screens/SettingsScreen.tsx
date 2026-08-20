@@ -3,7 +3,6 @@ import { M } from "../theme";
 import { fmt, TIMER_DEFAULTS, TIMER_MODES, type TimerMode } from "../lib/engine";
 import { createAiConsentGrant, hasAiConsent, usePreferences, type AevnrFocus } from "../lib/preferences";
 import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "../lib/dashboardPersonalization";
-import { TimerSoundPackPicker } from "../components/TimerSoundPackPicker";
 import { TimerConfigPanel } from "../components/TimerConfigPanel";
 import { MStepper, MSwitch } from "../components/widgets";
 import { MButton } from "../components/MButton";
@@ -148,15 +147,55 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: `0 22px ${SCROLL_BOTTOM_PADDING}px` }}>
         <Section title={t("settings.language.section")}>
-          <div style={{ color: M.fg, fontWeight: 600, fontSize: 15 }}>{t("settings.language.label")}</div>
-          <div style={{ color: M.mut, fontSize: 13, marginTop: 3 }}>{t("settings.language.hint")}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-            {(["de", "en"] as AppLanguage[]).map((option) => (
-              <MButton key={option} type="button" variant={language === option ? "primary" : "secondary"} size="md" onClick={() => void setLanguage(option)}>
-                {t(`language.name.${option}` as TranslationKey)}
-              </MButton>
-            ))}
-          </div>
+          <SettingRow label={t("settings.language.label")} hint={t("settings.language.hint")} last>
+            <div
+              role="group"
+              aria-label={t("settings.language.label")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                background: M.bg,
+                padding: 3,
+                borderRadius: 10,
+                border: "1px solid " + M.line2,
+                gap: 2,
+              }}
+            >
+              {(["de", "en"] as AppLanguage[]).map((option) => {
+                const active = language === option;
+                const flag = option === "de" ? "🇩🇪" : "🇬🇧";
+                const label = option.toUpperCase();
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => void setLanguage(option)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "5px 10px",
+                      borderRadius: 7,
+                      border: "none",
+                      background: active ? M.card : "transparent",
+                      boxShadow: active ? "0 1px 3px rgba(24,24,27,0.08)" : "none",
+                      color: active ? M.fg : M.mut,
+                      fontFamily: M.body,
+                      fontSize: 13,
+                      fontWeight: active ? 650 : 500,
+                      cursor: "pointer",
+                      WebkitTapHighlightColor: "transparent",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, lineHeight: 1 }}>{flag}</span>
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </SettingRow>
         </Section>
 
         <Section title={t("settings.training.section")}>
@@ -176,24 +215,23 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               onChange={(v) => updatePreferences({ autoRest: v }, true)}
             />
           </SettingRow>
-          <SettingRow label={t("settings.training.upperIncrement")} hint={t("settings.training.upperIncrementHint")}>
+          <SettingRow label={t("settings.training.weightIncrement")} hint={t("settings.training.weightIncrementHint")} last>
             <MStepper
-              value={preferences.weightIncrementUpperKg}
-              min={1}
+              value={preferences.weightIncrementKg}
+              min={0.5}
               max={10}
               step={0.5}
               fmt={(v) => `${v} kg`}
-              onChange={(v) => updatePreferences({ weightIncrementUpperKg: v }, true)}
-            />
-          </SettingRow>
-          <SettingRow label={t("settings.training.lowerIncrement")} hint={t("settings.training.lowerIncrementHint")} last>
-            <MStepper
-              value={preferences.weightIncrementLowerKg}
-              min={2.5}
-              max={10}
-              step={0.5}
-              fmt={(v) => `${v} kg`}
-              onChange={(v) => updatePreferences({ weightIncrementLowerKg: v }, true)}
+              onChange={(v) =>
+                updatePreferences(
+                  {
+                    weightIncrementKg: v,
+                    weightIncrementUpperKg: v,
+                    weightIncrementLowerKg: v,
+                  },
+                  true,
+                )
+              }
             />
           </SettingRow>
         </Section>
@@ -262,12 +300,15 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         ) : null}
 
         <Section title={t("settings.timer.section")}>
-          <TimerSoundPackPicker
-            enabled={preferences.timerSounds}
-            packId={preferences.timerSoundPack}
-            onEnabledChange={(v) => updatePreferences({ timerSounds: v }, true)}
-            onPackChange={(id) => updatePreferences({ timerSoundPack: id }, true)}
-          />
+          <SettingRow
+            label={t("timerSounds.title")}
+            hint={t("timerSounds.description")}
+          >
+            <MSwitch
+              checked={preferences.timerSounds}
+              onChange={(v) => updatePreferences({ timerSounds: v }, true)}
+            />
+          </SettingRow>
           <div
             style={{
               display: "flex",
